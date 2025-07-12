@@ -59,12 +59,20 @@ export async function GET(request: NextRequest) {
     
     const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
 
+    // Add timeout and better error handling for deployment environment
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'PokemonIntelligence/1.0'
+        'User-Agent': 'PokemonIntelligence/1.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       },
-      next: { revalidate: 3600 } // Cache for 1 hour
+      signal: controller.signal
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       console.error(`Pokemon TCG API returned ${response.status} for query: "${query}". Response: ${await response.text()}`)
@@ -84,16 +92,27 @@ export async function GET(request: NextRequest) {
         
         const fallbackUrl = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(fallbackQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
         
-        const fallbackResponse = await fetch(fallbackUrl, {
-          headers: {
-            'User-Agent': 'PokemonIntelligence/1.0'
-          },
-          next: { revalidate: 3600 }
-        })
-        
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json()
-          return formatSuggestions(fallbackData)
+        try {
+          const fallbackController = new AbortController()
+          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 8000)
+          
+          const fallbackResponse = await fetch(fallbackUrl, {
+            headers: {
+              'User-Agent': 'PokemonIntelligence/1.0',
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            signal: fallbackController.signal
+          })
+          
+          clearTimeout(fallbackTimeoutId)
+          
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json()
+            return formatSuggestions(fallbackData)
+          }
+        } catch (fallbackError) {
+          console.error('Fallback autocomplete API error:', fallbackError)
         }
       }
       
@@ -105,36 +124,46 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('Autocomplete API error:', error)
-    return NextResponse.json({ suggestions: [] })
+    
+    // Return empty suggestions instead of throwing error
+    return NextResponse.json({ 
+      suggestions: [],
+      error: 'API temporarily unavailable'
+    })
   }
 }
 
 function formatSuggestions(data: any) {
-  if (!data.data || !Array.isArray(data.data)) {
+  try {
+    if (!data || !data.data || !Array.isArray(data.data)) {
+      return NextResponse.json({ suggestions: [] })
+    }
+
+    // Format suggestions for autocomplete
+    const suggestions = data.data.map((card: any) => {
+      const cardName = card.name || 'Unknown Card'
+      const cardNumber = card.number || ''
+      const setName = card.set?.name || 'Unknown Set'
+      
+      // Create search value with card name + number (if available)
+      const searchValue = cardNumber ? `${cardName} ${cardNumber}` : cardName
+      
+      return {
+        id: card.id,
+        name: cardName,
+        set: setName,
+        number: cardNumber,
+        image: card.images?.small || card.images?.large || '',
+        rarity: card.rarity || 'Unknown',
+        // Create a display name that includes set info
+        display: `${cardName} (${setName})`,
+        searchValue: searchValue
+      }
+    })
+
+    return NextResponse.json({ suggestions })
+  } catch (error) {
+    console.error('Error formatting suggestions:', error)
     return NextResponse.json({ suggestions: [] })
   }
-
-  // Format suggestions for autocomplete
-  const suggestions = data.data.map((card: any) => {
-    const cardName = card.name || 'Unknown Card'
-    const cardNumber = card.number || ''
-    const setName = card.set?.name || 'Unknown Set'
-    
-    // Create search value with card name + number (if available)
-    const searchValue = cardNumber ? `${cardName} ${cardNumber}` : cardName
-    
-    return {
-      id: card.id,
-      name: cardName,
-      set: setName,
-      number: cardNumber,
-      image: card.images?.small || card.images?.large || '',
-      rarity: card.rarity || 'Unknown',
-      // Create a display name that includes set info
-      display: `${cardName} (${setName})`,
-      searchValue: searchValue
-    }
-  })
-
-  return NextResponse.json({ suggestions })
 } 
