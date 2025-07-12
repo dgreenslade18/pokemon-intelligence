@@ -197,31 +197,66 @@ function simplifyCardNameForEbay(cardName: string): string[] {
   // Remove common filler words and create multiple search variations
   const fillerWords = ['with', 'the', 'of', 'and', 'in', 'on', 'at', 'for', 'to', 'from']
   
-  // Base clean: remove numbers at the end (card numbers) and filler words
-  let simplified = cardName
-    .replace(/\s+#?\d+$/, '') // Remove card numbers like "#85" or "85" at end
-    .replace(/\([^)]*\)/g, '') // Remove anything in parentheses
-    .trim()
+  // Common recent Pokemon sets that sellers often include
+  const popularSets = [
+    'stellar crown', 'paldean fates', 'paradox rift', 'obsidian flames', 
+    'silver tempest', 'lost origin', 'brilliant stars', 'fusion strike',
+    'evolving skies', 'chilling reign', 'battle styles', 'vivid voltage',
+    'darkness ablaze', 'rebel clash', 'sword shield', 'crown zenith',
+    'scarlet violet', 'pokemon 151', 'twilight masquerade'
+  ]
   
-  // Create search variations in order of specificity
+  // Check if this looks like a simple card name with number (like "Squirtle 148")
+  const isSimpleNumberCard = /^[A-Za-z\s]+\s+\d+$/.test(cardName.trim())
+  
   const variations = []
   
-  // 1. Keep key descriptive words (remove common fillers)
-  const keyWords = simplified.split(' ').filter(word => 
-    !fillerWords.includes(word.toLowerCase()) && word.length > 2
-  )
-  if (keyWords.length > 1) {
-    variations.push(keyWords.join(' '))
+  // For simple number cards (like "Squirtle 148"), keep the number initially
+  if (isSimpleNumberCard) {
+    const pokemonName = cardName.replace(/\s+\d+$/, '').trim()
+    const cardNumber = cardName.match(/\d+$/)?.[0] || ''
+    
+    // 1. Try with specific sets first (most likely to be accurate)
+    variations.push(`${pokemonName} ${cardNumber} stellar crown`)
+    variations.push(`${pokemonName} ${cardNumber} paldean fates`)
+    variations.push(`${pokemonName} ${cardNumber} pokemon 151`)
+    variations.push(`${pokemonName} ${cardNumber} sv`)
+    
+    // 2. Try with card number but generic terms
+    variations.push(`${cardName} pokemon card`)
+    variations.push(`${cardName} pokemon`)
+    
+    // 3. Try exact search as seller might list it
+    variations.push(cardName.trim())
+    
+    // 4. Fallback to just Pokemon name (but less preferred)
+    variations.push(pokemonName)
+  } else {
+    // For complex names, use existing logic
+    let simplified = cardName
+      .replace(/\s+#?\d+$/, '') // Remove card numbers like "#85" or "85" at end
+      .replace(/\([^)]*\)/g, '') // Remove anything in parentheses
+      .trim()
+    
+    // Create search variations in order of specificity
+    
+    // 1. Keep key descriptive words (remove common fillers)
+    const keyWords = simplified.split(' ').filter(word => 
+      !fillerWords.includes(word.toLowerCase()) && word.length > 2
+    )
+    if (keyWords.length > 1) {
+      variations.push(keyWords.join(' '))
+    }
+    
+    // 2. Just the Pokemon name + main descriptor
+    const words = simplified.split(' ')
+    if (words.length >= 2) {
+      variations.push(`${words[0]} ${words[words.length - 1]}`) // First + Last word
+    }
+    
+    // 3. Just the Pokemon name
+    variations.push(words[0])
   }
-  
-  // 2. Just the Pokemon name + main descriptor
-  const words = simplified.split(' ')
-  if (words.length >= 2) {
-    variations.push(`${words[0]} ${words[words.length - 1]}`) // First + Last word
-  }
-  
-  // 3. Just the Pokemon name
-  variations.push(words[0])
   
   // Remove duplicates and return
   return Array.from(new Set(variations))
@@ -241,7 +276,11 @@ async function searchEbayWithApi(
     
     // Try each search variation until we find results
     for (const searchTerm of simplifiedSearches) {
-      const searchQuery = `${searchTerm} pokemon card`
+      // Don't add "pokemon card" if the search term already contains "pokemon"
+      const searchQuery = searchTerm.toLowerCase().includes('pokemon') 
+        ? searchTerm 
+        : `${searchTerm} pokemon card`
+      
       console.log(`🔍 Trying eBay search: "${searchQuery}"`)
       
       const results = await performEbaySearch(searchQuery)
