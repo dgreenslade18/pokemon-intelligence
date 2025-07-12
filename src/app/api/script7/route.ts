@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { spawn } from 'child_process'
+import * as path from 'path'
 
-// Vercel-compatible version - no Python child processes
+// Railway-optimized version using lightweight Python scraper
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -13,53 +15,127 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // For now, return the Pokemon TCG API data directly
-    // This is the only part that was working properly in production
-    const cardmarketData = await searchPokemonTCG(searchTerm.trim())
+    // Use lightweight Python scraper (much lower memory usage)
+    const scriptPath = path.join(process.cwd(), 'lightweight_scraper.py')
+    const venvPythonPath = path.join(process.cwd(), 'venv', 'bin', 'python')
 
-    // Mock eBay and Price Charting data for initial deployment
-    // TODO: Implement proper TypeScript scrapers
-    const mockEbayPrices = [
-      { title: `${searchTerm} - Raw Card`, price: 15.99, source: 'eBay UK', url: 'https://ebay.co.uk' },
-      { title: `${searchTerm} - Mint Condition`, price: 18.50, source: 'eBay UK', url: 'https://ebay.co.uk' },
-      { title: `${searchTerm} - Near Mint`, price: 12.75, source: 'eBay UK', url: 'https://ebay.co.uk' }
-    ]
+    // Run lightweight Python script
+    const pythonProcess = spawn(venvPythonPath, [scriptPath, searchTerm.trim()], {
+      cwd: process.cwd(),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 60000, // 1 minute timeout
+      env: {
+        ...process.env,
+        SEARCH_TERM: searchTerm.trim()
+      }
+    })
 
-    const mockPriceCharting = {
-      title: `${searchTerm} (Price Charting)`,
-      price: 16.25,
-      source: 'Price Charting',
-      url: 'https://pricecharting.com'
-    }
+    let stdout = ''
+    let stderr = ''
+    let progressMessages: any[] = []
 
-    // Calculate analysis
-    const ebayAverage = mockEbayPrices.reduce((sum, item) => sum + item.price, 0) / mockEbayPrices.length
-    const finalAverage = cardmarketData?.price 
-      ? (ebayAverage + mockPriceCharting.price + cardmarketData.price) / 3
-      : (ebayAverage + mockPriceCharting.price) / 2
+    pythonProcess.stdout.on('data', (data) => {
+      const output = data.toString()
+      stdout += output
+      
+      // Extract progress messages
+      const lines = output.split('\n')
+      for (const line of lines) {
+        if (line.startsWith('PROGRESS:')) {
+          try {
+            const progressData = JSON.parse(line.substring(9))
+            progressMessages.push(progressData)
+          } catch (e) {
+            // Ignore invalid JSON
+          }
+        }
+      }
+    })
 
-    const recommendation = `£${(finalAverage * 0.8).toFixed(2)} - £${(finalAverage * 0.9).toFixed(2)}`
+    pythonProcess.stderr.on('data', (data) => {
+      stderr += data.toString()
+    })
 
-    const results = {
-      card_name: searchTerm,
-      timestamp: new Date().toISOString(),
-      ebay_prices: mockEbayPrices,
-      price_charting: mockPriceCharting,
-      cardmarket: cardmarketData,
-      analysis: {
-        ebay_average: parseFloat(ebayAverage.toFixed(2)),
-        price_charting_price: mockPriceCharting.price,
-        cardmarket_price: cardmarketData?.price || null,
-        final_average: parseFloat(finalAverage.toFixed(2)),
-        price_range: `£${Math.min(ebayAverage, mockPriceCharting.price, cardmarketData?.price || Infinity).toFixed(2)} - £${Math.max(ebayAverage, mockPriceCharting.price, cardmarketData?.price || 0).toFixed(2)}`,
-        recommendation: recommendation
+    // Wait for script completion
+    try {
+      await new Promise<void>((resolve, reject) => {
+        pythonProcess.on('close', (code) => {
+          if (code === 0) {
+            resolve()
+          } else {
+            reject(new Error(`Lightweight scraper failed with code ${code}: ${stderr}`))
+          }
+        })
+
+        pythonProcess.on('error', (error) => {
+          reject(error)
+        })
+      })
+
+      // Parse results from stdout
+      const lines = stdout.split('\n')
+      const resultFileName = lines[lines.length - 2] // Second to last line should be the filename
+      
+      if (resultFileName && resultFileName.endsWith('.json')) {
+        const resultPath = path.join(process.cwd(), resultFileName)
+        
+        try {
+          const fs = require('fs')
+          const resultsData = fs.readFileSync(resultPath, 'utf8')
+          const results = JSON.parse(resultsData)
+          
+          // Clean up result file
+          fs.unlinkSync(resultPath)
+          
+          return NextResponse.json({
+            success: true,
+            data: results,
+            progress: progressMessages,
+            message: 'Analysis completed using lightweight scraper'
+          })
+          
+        } catch (fileError) {
+          console.error('Error reading results file:', fileError)
+          throw new Error('Failed to read analysis results')
+        }
+      } else {
+        throw new Error('No valid result file generated')
+      }
+
+    } catch (pythonError) {
+      console.error('Python script error:', pythonError)
+      
+      // Fallback to Pokemon TCG API only if Python fails
+      console.log('Falling back to Pokemon TCG API only...')
+      const cardmarketData = await searchPokemonTCG(searchTerm.trim())
+      
+      if (cardmarketData) {
+        const results = {
+          card_name: searchTerm,
+          timestamp: new Date().toISOString(),
+          ebay_prices: [],
+          price_charting: null,
+          cardmarket: cardmarketData,
+          analysis: {
+            ebay_average: null,
+            price_charting_price: null,
+            cardmarket_price: cardmarketData.price,
+            final_average: cardmarketData.price,
+            price_range: `£${cardmarketData.price}`,
+            recommendation: `£${(cardmarketData.price * 0.8).toFixed(2)} - £${(cardmarketData.price * 0.9).toFixed(2)}`
+          }
+        }
+        
+        return NextResponse.json({
+          success: true,
+          data: results,
+          message: 'Limited analysis - Pokemon TCG API only (scraping failed)',
+          warning: 'eBay and Price Charting data unavailable'
+        })
+      } else {
+        throw pythonError
       }
     }
-
-    return NextResponse.json({
-      success: true,
-      data: results
-    })
 
   } catch (error) {
     console.error('Error in card analysis:', error)
