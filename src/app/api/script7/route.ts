@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Pure TypeScript implementation - no Python dependencies
+// Vercel-compatible version - no Python child processes
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -13,78 +13,53 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    console.log('Analyzing card:', searchTerm)
-
-    // Try Pokemon TCG API first
+    // For now, return the Pokemon TCG API data directly
+    // This is the only part that was working properly in production
     const cardmarketData = await searchPokemonTCG(searchTerm.trim())
-    
-    if (cardmarketData && cardmarketData.price && cardmarketData.price > 0) {
-      // Generate mock eBay data for demonstration
-      const ebayData = generateMockEbayData(cardmarketData.price)
-      
-      // Generate mock Price Charting data
-      const priceChartingData = generateMockPriceCharting(cardmarketData.price)
 
-      // Calculate analysis
-      const ebayAverage = ebayData.reduce((sum, item) => sum + item.price, 0) / ebayData.length
-      const finalAverage = (ebayAverage + priceChartingData.price + cardmarketData.price) / 3
-      const recommendedMin = finalAverage * 0.8
-      const recommendedMax = finalAverage * 0.9
+    // Mock eBay and Price Charting data for initial deployment
+    // TODO: Implement proper TypeScript scrapers
+    const mockEbayPrices = [
+      { title: `${searchTerm} - Raw Card`, price: 15.99, source: 'eBay UK', url: 'https://ebay.co.uk' },
+      { title: `${searchTerm} - Mint Condition`, price: 18.50, source: 'eBay UK', url: 'https://ebay.co.uk' },
+      { title: `${searchTerm} - Near Mint`, price: 12.75, source: 'eBay UK', url: 'https://ebay.co.uk' }
+    ]
 
-      const results = {
-        card_name: searchTerm,
-        timestamp: new Date().toISOString(),
-        ebay_prices: ebayData,
-        price_charting: priceChartingData,
-        cardmarket: cardmarketData,
-        analysis: {
-          ebay_average: parseFloat(ebayAverage.toFixed(2)),
-          price_charting_price: priceChartingData.price,
-          cardmarket_price: cardmarketData.price,
-          final_average: parseFloat(finalAverage.toFixed(2)),
-          price_range: `£${recommendedMin.toFixed(2)} - £${recommendedMax.toFixed(2)}`,
-          recommendation: `£${recommendedMin.toFixed(2)} - £${recommendedMax.toFixed(2)}`
-        }
-      }
-      
-      return NextResponse.json({
-        success: true,
-        data: results,
-        message: 'Analysis completed using TypeScript API'
-      })
-    } else {
-      // Fallback with estimated pricing if API fails or no price data
-      const estimatedPrice = 10.00 // Default fallback price
-      const ebayData = generateMockEbayData(estimatedPrice)
-      const priceChartingData = generateMockPriceCharting(estimatedPrice)
-
-      const results = {
-        card_name: searchTerm,
-        timestamp: new Date().toISOString(),
-        ebay_prices: ebayData,
-        price_charting: priceChartingData,
-        cardmarket: {
-          title: `${searchTerm} (Estimated)`,
-          price: estimatedPrice,
-          source: 'Fallback Data'
-        },
-        analysis: {
-          ebay_average: parseFloat((ebayData.reduce((sum, item) => sum + item.price, 0) / ebayData.length).toFixed(2)),
-          price_charting_price: priceChartingData.price,
-          cardmarket_price: estimatedPrice,
-          final_average: estimatedPrice,
-          price_range: `£${(estimatedPrice * 0.8).toFixed(2)} - £${(estimatedPrice * 0.9).toFixed(2)}`,
-          recommendation: `£${(estimatedPrice * 0.8).toFixed(2)} - £${(estimatedPrice * 0.9).toFixed(2)}`
-        }
-      }
-      
-      return NextResponse.json({
-        success: true,
-        data: results,
-        message: cardmarketData ? 'Analysis completed with estimated data (no pricing available)' : 'Analysis completed with estimated data (API unavailable)',
-        warning: 'Using estimated pricing - actual market data unavailable'
-      })
+    const mockPriceCharting = {
+      title: `${searchTerm} (Price Charting)`,
+      price: 16.25,
+      source: 'Price Charting',
+      url: 'https://pricecharting.com'
     }
+
+    // Calculate analysis
+    const ebayAverage = mockEbayPrices.reduce((sum, item) => sum + item.price, 0) / mockEbayPrices.length
+    const finalAverage = cardmarketData?.price 
+      ? (ebayAverage + mockPriceCharting.price + cardmarketData.price) / 3
+      : (ebayAverage + mockPriceCharting.price) / 2
+
+    const recommendation = `£${(finalAverage * 0.8).toFixed(2)} - £${(finalAverage * 0.9).toFixed(2)}`
+
+    const results = {
+      card_name: searchTerm,
+      timestamp: new Date().toISOString(),
+      ebay_prices: mockEbayPrices,
+      price_charting: mockPriceCharting,
+      cardmarket: cardmarketData,
+      analysis: {
+        ebay_average: parseFloat(ebayAverage.toFixed(2)),
+        price_charting_price: mockPriceCharting.price,
+        cardmarket_price: cardmarketData?.price || null,
+        final_average: parseFloat(finalAverage.toFixed(2)),
+        price_range: `£${Math.min(ebayAverage, mockPriceCharting.price, cardmarketData?.price || Infinity).toFixed(2)} - £${Math.max(ebayAverage, mockPriceCharting.price, cardmarketData?.price || 0).toFixed(2)}`,
+        recommendation: recommendation
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: results
+    })
 
   } catch (error) {
     console.error('Error in card analysis:', error)
@@ -93,40 +68,6 @@ export async function POST(request: NextRequest) {
       error: 'Failed to process card analysis',
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 })
-  }
-}
-
-// Generate mock eBay data based on market price
-function generateMockEbayData(basePrice: number) {
-  // Safety check to ensure we have a valid price
-  const safePrice = basePrice && basePrice > 0 ? basePrice : 10.00
-  
-  const listings = []
-  for (let i = 0; i < 3; i++) {
-    // Add some realistic variation (±20%)
-    const variation = 0.8 + Math.random() * 0.4
-    const price = parseFloat((safePrice * variation).toFixed(2))
-    listings.push({
-      title: `Pokemon Card - Listing ${i + 1}`,
-      price: price,
-      condition: ['Near Mint', 'Excellent', 'Good'][Math.floor(Math.random() * 3)],
-      seller: `seller${i + 1}`,
-      link: `https://ebay.co.uk/itm/mock-${i + 1}`
-    })
-  }
-  return listings
-}
-
-// Generate mock Price Charting data
-function generateMockPriceCharting(basePrice: number) {
-  // Safety check to ensure we have a valid price
-  const safePrice = basePrice && basePrice > 0 ? basePrice : 10.00
-  
-  const variation = 0.9 + Math.random() * 0.2
-  return {
-    price: parseFloat((safePrice * variation).toFixed(2)),
-    source: 'Price Charting',
-    last_updated: new Date().toISOString()
   }
 }
 
@@ -274,11 +215,6 @@ function formatCardData(card: any, searchTerm: string) {
         result.url = result.cardmarket_pricing.url
       }
     }
-  }
-
-  // If no price was found, set a default fallback
-  if (!result.price || result.price <= 0) {
-    result.price = 10.00 // Default fallback price
   }
 
   return result
