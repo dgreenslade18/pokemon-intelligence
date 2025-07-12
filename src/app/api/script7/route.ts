@@ -8,7 +8,7 @@ interface EbayItem {
   source: string
   image?: string
   condition?: string
-  soldDate?: string
+  soldDate?: string // For active listings, this is the end date
 }
 
 interface PriceSource {
@@ -22,11 +22,9 @@ interface AnalysisResult {
   card_name: string
   timestamp: string
   ebay_prices: EbayItem[]
-  price_charting: PriceSource | null
   cardmarket: PriceSource | null
   analysis: {
     ebay_average: number
-    price_charting_price: number
     cardmarket_price: number
     final_average: number
     price_range: string
@@ -125,10 +123,9 @@ async function analyzeCard(
   
   progress('starting', 'Initializing price analysis...')
   
-  // Run all searches in parallel
-  const [ebayPrices, priceCharting, pokemonTcgData] = await Promise.all([
+  // Run searches in parallel - removed Price Charting
+  const [ebayPrices, pokemonTcgData] = await Promise.all([
     searchEbaySoldItems(cardName, progress),
-    searchPriceCharting(cardName, progress),
     searchPokemonTcgApi(cardName, progress)
   ])
 
@@ -140,8 +137,7 @@ async function analyzeCard(
   // Add eBay prices
   ebayPrices.forEach(item => allPrices.push(item.price))
   
-  // Add other prices
-  if (priceCharting) allPrices.push(priceCharting.price)
+  // Add Pokemon TCG API price
   if (pokemonTcgData) allPrices.push(pokemonTcgData.price)
 
   const ebayAverage = ebayPrices.length > 0 
@@ -159,11 +155,9 @@ async function analyzeCard(
     card_name: cardName,
     timestamp: new Date().toISOString(),
     ebay_prices: ebayPrices,
-    price_charting: priceCharting,
     cardmarket: pokemonTcgData,
     analysis: {
       ebay_average: parseFloat(ebayAverage.toFixed(2)),
-      price_charting_price: priceCharting?.price || 0,
       cardmarket_price: pokemonTcgData?.price || 0,
       final_average: parseFloat(finalAverage.toFixed(2)),
       price_range: allPrices.length > 0 ? `£${minPrice.toFixed(2)} - £${maxPrice.toFixed(2)}` : '£0.00 - £0.00',
@@ -182,13 +176,13 @@ async function searchEbaySoldItems(
   progress('ebay', 'Searching eBay for sold items...')
   
   try {
-    // Check if we have eBay API credentials
-    const ebayAppId = process.env.EBAY_APP_ID
-    const ebayToken = process.env.EBAY_ACCESS_TOKEN
+    // Check if we have RapidAPI key for sold items API
+    const rapidApiKey = process.env.RAPID_API_KEY
     
-    if (ebayAppId && ebayToken) {
-      return await searchEbayWithApi(cardName, ebayAppId, ebayToken)
+    if (rapidApiKey) {
+      return await searchEbayWithApi(cardName, '', rapidApiKey)
     } else {
+      console.log('⚠️  No RAPID_API_KEY found, falling back to web scraping')
       // Fallback to web scraping as before
       return await searchEbayWithScraping(cardName)
     }
@@ -198,52 +192,144 @@ async function searchEbaySoldItems(
   }
 }
 
+// Function to simplify complex card names for eBay searching
+function simplifyCardNameForEbay(cardName: string): string[] {
+  // Remove common filler words and create multiple search variations
+  const fillerWords = ['with', 'the', 'of', 'and', 'in', 'on', 'at', 'for', 'to', 'from']
+  
+  // Base clean: remove numbers at the end (card numbers) and filler words
+  let simplified = cardName
+    .replace(/\s+#?\d+$/, '') // Remove card numbers like "#85" or "85" at end
+    .replace(/\([^)]*\)/g, '') // Remove anything in parentheses
+    .trim()
+  
+  // Create search variations in order of specificity
+  const variations = []
+  
+  // 1. Keep key descriptive words (remove common fillers)
+  const keyWords = simplified.split(' ').filter(word => 
+    !fillerWords.includes(word.toLowerCase()) && word.length > 2
+  )
+  if (keyWords.length > 1) {
+    variations.push(keyWords.join(' '))
+  }
+  
+  // 2. Just the Pokemon name + main descriptor
+  const words = simplified.split(' ')
+  if (words.length >= 2) {
+    variations.push(`${words[0]} ${words[words.length - 1]}`) // First + Last word
+  }
+  
+  // 3. Just the Pokemon name
+  variations.push(words[0])
+  
+  // Remove duplicates and return
+  return Array.from(new Set(variations))
+}
+
 async function searchEbayWithApi(
   cardName: string,
   appId: string,
   token: string
 ): Promise<EbayItem[]> {
   try {
-    // Use eBay Browse API to search for items
-    const searchQuery = `${cardName} pokemon card`
-    const url = `https://api.ebay.com/buy/browse/v1/item_summary/search`
+    console.log(`🔍 eBay Sold Items API: Searching for "${cardName}" sold items...`)
     
-    const params = new URLSearchParams({
-      q: searchQuery,
-      limit: '10',
-      filter: 'buyingOptions:{AUCTION|FIXED_PRICE}',
-      sort: 'price'
-    })
-
-    const response = await fetch(`${url}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB',
-        'X-EBAY-C-ENDUSERCTX': 'contextualLocation=country%3DGB'
+    // Get simplified search terms for eBay
+    const simplifiedSearches = simplifyCardNameForEbay(cardName)
+    console.log(`🎯 eBay search variations:`, simplifiedSearches)
+    
+    // Try each search variation until we find results
+    for (const searchTerm of simplifiedSearches) {
+      const searchQuery = `${searchTerm} pokemon card`
+      console.log(`🔍 Trying eBay search: "${searchQuery}"`)
+      
+      const results = await performEbaySearch(searchQuery)
+      if (results.length > 0) {
+        console.log(`✅ Found ${results.length} results with search: "${searchQuery}"`)
+        return results
       }
-    })
-
-    if (!response.ok) {
-      throw new Error(`eBay API returned ${response.status}`)
     }
-
-    const data = await response.json()
     
-    if (!data.itemSummaries || !Array.isArray(data.itemSummaries)) {
-      return []
-    }
-
-    return data.itemSummaries.slice(0, 3).map((item: any) => ({
-      title: item.title || `${cardName} - eBay Listing`,
-      price: item.price?.value ? parseFloat(item.price.value) : 0,
-      url: item.itemWebUrl || 'https://www.ebay.co.uk',
-      source: 'eBay UK',
-      image: item.image?.imageUrl,
-      condition: item.condition
-    })).filter((item: EbayItem) => item.price > 0)
+    console.log(`⚠️  No sold items found with any search variation for "${cardName}"`)
+    return []
     
   } catch (error) {
-    console.error('eBay API search failed:', error)
+    console.error('❌ eBay Sold Items API search failed:', error)
+    return []
+  }
+}
+
+async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
+  try {
+    // Using the eBay Sold Items API via RapidAPI (ecommet version)
+    const url = 'https://ebay-average-selling-price.p.rapidapi.com/findCompletedItems'
+    
+    const requestBody = {
+      keywords: searchQuery,
+      max_search_results: 25, // We'll filter to 3 most recent
+      excluded_keywords: "graded psa bgs cgc", // Exclude graded items
+      site_id: "3", // UK eBay site
+      remove_outliers: true,
+      aspects: [
+        {
+          name: "LH_Auction",
+          value: "1" // Auction only
+        }
+      ]
+    }
+    
+    console.log(`📡 eBay Sold Items API Request:`, JSON.stringify(requestBody, null, 2))
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-RapidAPI-Host': 'ebay-average-selling-price.p.rapidapi.com',
+        'X-RapidAPI-Key': process.env.RAPID_API_KEY || ''
+      },
+      body: JSON.stringify(requestBody)
+    })
+    
+    console.log(`🌐 eBay Sold Items API Response Status: ${response.status}`)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.log(`❌ eBay Sold Items API Error: ${response.status} - ${errorText}`)
+      return [] // Return empty array instead of throwing
+    }
+    
+    const data = await response.json()
+    console.log(`📦 eBay Sold Items API Response: ${data.results || 0} sold items found`)
+    console.log(`💰 Average sold price: £${data.average_price || 0}`)
+    
+    if (!data.success || !data.products || data.products.length === 0) {
+      return [] // Return empty array if no results
+    }
+    
+    // Sort by date sold (most recent first) and take top 3
+    const sortedProducts = data.products
+      .sort((a: any, b: any) => new Date(b.date_sold).getTime() - new Date(a.date_sold).getTime())
+      .slice(0, 3)
+    
+    const results = sortedProducts.map((item: any) => ({
+      title: item.title,
+      price: parseFloat(item.sale_price),
+      url: item.link,
+      source: 'eBay (Sold)',
+      condition: 'Used/Ungraded',
+      soldDate: item.date_sold
+    }))
+    
+    console.log(`✅ eBay Search Found: ${results.length} recent sold items`)
+    if (results.length > 0) {
+      console.log(`🎯 Price range: £${Math.min(...results.map(r => r.price))} - £${Math.max(...results.map(r => r.price))}`)
+    }
+    
+    return results
+    
+  } catch (error) {
+    console.error('❌ eBay API search error:', error)
     return []
   }
 }
@@ -310,58 +396,6 @@ async function searchEbayWithScraping(cardName: string): Promise<EbayItem[]> {
   }
 }
 
-async function searchPriceCharting(
-  cardName: string,
-  progress: (stage: string, message: string) => void
-): Promise<PriceSource | null> {
-  progress('price_charting', 'Searching Price Charting...')
-  
-  try {
-    const searchQuery = encodeURIComponent(`${cardName} pokemon`)
-    const url = `https://www.pricecharting.com/search-products?q=${searchQuery}&type=prices`
-    
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`Price Charting returned ${response.status}`)
-    }
-
-    const html = await response.text()
-    
-    // Simple regex to extract first price
-    const priceRegex = /\$(\d+\.?\d*)/
-    const match = html.match(priceRegex)
-    
-    if (match) {
-      const usdPrice = parseFloat(match[1])
-      const gbpPrice = usdPrice * 0.79 // Convert USD to GBP
-      
-      return {
-        title: `${cardName} (Price Charting)`,
-        price: parseFloat(gbpPrice.toFixed(2)),
-        source: 'Price Charting',
-        url: 'https://www.pricecharting.com'
-      }
-    }
-    
-    // Fallback price
-    return {
-      title: `${cardName} (Price Charting)`,
-      price: 15.50,
-      source: 'Price Charting',
-      url: 'https://www.pricecharting.com'
-    }
-    
-  } catch (error) {
-    console.error('Price Charting search failed:', error)
-    return null
-  }
-}
-
 async function searchPokemonTcgApi(
   cardName: string,
   progress: (stage: string, message: string) => void
@@ -369,53 +403,116 @@ async function searchPokemonTcgApi(
   progress('cardmarket', 'Searching Pokemon TCG API...')
   
   try {
-    const searchQuery = encodeURIComponent(cardName)
-    const url = `https://api.pokemontcg.io/v2/cards?q=name:${searchQuery}`
+    // Use the same successful logic as the autocomplete
+    let searchTerm = cardName.trim()
+    
+    // Check if search term contains a number (card number) first
+    const cardNumberMatch = searchTerm.match(/^(.+?)\s+(\d+)$/)
+    let searchQuery: string
+    
+    if (cardNumberMatch) {
+      // Search for card name AND card number - use original card name without transformations
+      const baseCardName = cardNumberMatch[1].trim()
+      const cardNumber = cardNumberMatch[2].trim()
+      
+      if (baseCardName.includes(' ')) {
+        // Multi-word card name with number
+        const words = baseCardName.split(' ')
+        const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+        searchQuery = `(${nameQueries}) AND number:${cardNumber}`
+      } else {
+        // Single word card name with number
+        searchQuery = `name:${baseCardName}* AND number:${cardNumber}`
+      }
+    } else {
+      // Apply transformations for general searches (no specific card number)
+      if (searchTerm.toLowerCase().includes(' ex ') || searchTerm.toLowerCase().endsWith(' ex')) {
+        // For EX cards, try both formats
+        searchTerm = searchTerm.replace(/ ex$/i, '-EX').replace(/ ex /gi, '-EX ')
+      }
+      
+      if (searchTerm.includes(' ')) {
+        // Multi-word search without card number
+        const words = searchTerm.split(' ')
+        const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+        searchQuery = nameQueries
+      } else {
+        // Single word search
+        searchQuery = `name:${searchTerm}*`
+      }
+    }
+    
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=10`
+    
+    console.log(`🔍 Pokemon TCG API Search: "${cardName}" -> "${searchQuery}"`)
+    console.log(`📡 Pokemon TCG API URL: ${url}`)
     
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        'User-Agent': 'PokemonIntelligence/1.0'
       }
     })
 
+    console.log(`🌐 Pokemon TCG API Response Status: ${response.status}`)
+
     if (!response.ok) {
+      console.error(`❌ Pokemon TCG API Error: ${response.status}`)
       throw new Error(`Pokemon TCG API returned ${response.status}`)
     }
 
     const data = await response.json()
+    console.log(`📦 Pokemon TCG API Response: ${data.data?.length || 0} cards found`)
     
     if (data.data && Array.isArray(data.data) && data.data.length > 0) {
       const card = data.data[0]
+      console.log(`🎯 First card: ${card.name} (${card.set?.name || 'Unknown Set'})`)
       
       // Extract pricing if available
       if (card.tcgplayer && card.tcgplayer.prices) {
         const prices = card.tcgplayer.prices
+        console.log(`💰 TCGPlayer prices available:`, Object.keys(prices))
+        
+        // Try different price types
+        let usdPrice = null
+        
         if (prices.normal && prices.normal.market) {
-          const usdPrice = prices.normal.market
+          usdPrice = prices.normal.market
+          console.log(`💵 Normal market price: $${usdPrice}`)
+        } else if (prices.holofoil && prices.holofoil.market) {
+          usdPrice = prices.holofoil.market
+          console.log(`✨ Holofoil market price: $${usdPrice}`)
+        } else if (prices.reverseHolofoil && prices.reverseHolofoil.market) {
+          usdPrice = prices.reverseHolofoil.market
+          console.log(`🔄 Reverse holofoil market price: $${usdPrice}`)
+        }
+        
+        if (usdPrice) {
           const gbpPrice = usdPrice * 0.79 // Convert USD to GBP
+          console.log(`✅ Pokemon TCG API price: $${usdPrice} USD = £${gbpPrice.toFixed(2)} GBP`)
           
           return {
             title: `${card.name || cardName} (Pokemon TCG API)`,
             price: parseFloat(gbpPrice.toFixed(2)),
             source: 'Pokemon TCG API',
-            url: 'https://pokemontcg.io'
+            url: card.tcgplayer?.url || 'https://pokemontcg.io'
           }
         }
       }
+      
+      console.log(`📊 Card found but no TCGPlayer pricing available`)
+      return {
+        title: `${card.name || cardName} (Pokemon TCG API)`,
+        price: 0,
+        source: 'Pokemon TCG API',
+        url: 'https://pokemontcg.io'
+      }
     }
     
-    // Fallback price
-    return {
-      title: `${cardName} (Pokemon TCG API)`,
-      price: 18.75,
-      source: 'Pokemon TCG API',
-      url: 'https://pokemontcg.io'
-    }
+    console.log(`❌ No cards found for query: "${searchQuery}"`)
+    return null
     
   } catch (error) {
     console.error('Pokemon TCG API search failed:', error)
     return null
   }
 }
-
- 

@@ -21,16 +21,9 @@ interface AnalysisResult {
     source: string
     url?: string
   }>
-  price_charting: {
-    title: string
-    price: number
-    source: string
-    url?: string
-  } | null
   cardmarket: CardMarketData | null
   analysis: {
     ebay_average?: number
-    price_charting_price?: number
     cardmarket_price?: number
     final_average?: number
     price_range?: string
@@ -113,6 +106,8 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
   const [showAutocomplete, setShowAutocomplete] = useState(false)
   const [autocompleteLoading, setAutocompleteLoading] = useState(false)
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
+  const [dropdownPosition, setDropdownPosition] = useState<'below' | 'above'>('below')
+  const [maxDropdownHeight, setMaxDropdownHeight] = useState(320)
   const resultsRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<HTMLDivElement>(null)
@@ -121,6 +116,39 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
   const formatPrice = (price: number | string): string => {
     const num = typeof price === 'string' ? parseFloat(price) : price
     return num.toFixed(2)
+  }
+
+  // Calculate optimal dropdown position based on available space
+  const calculateDropdownPosition = () => {
+    if (!searchInputRef.current) return
+
+    const inputRect = searchInputRef.current.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const spaceBelow = viewportHeight - inputRect.bottom
+    const spaceAbove = inputRect.top
+    
+    // Account for padding and margins
+    const minSpaceNeeded = 200 // Minimum space needed for a reasonable dropdown
+    const preferredDropdownHeight = 320 // Default max height
+    
+    if (spaceBelow >= minSpaceNeeded) {
+      // Enough space below - use below position
+      setDropdownPosition('below')
+      setMaxDropdownHeight(Math.min(preferredDropdownHeight, spaceBelow - 20))
+    } else if (spaceAbove >= minSpaceNeeded) {
+      // Not enough space below, but enough above - use above position
+      setDropdownPosition('above')
+      setMaxDropdownHeight(Math.min(preferredDropdownHeight, spaceAbove - 20))
+    } else {
+      // Very little space in both directions - use the larger space
+      if (spaceBelow >= spaceAbove) {
+        setDropdownPosition('below')
+        setMaxDropdownHeight(spaceBelow - 20)
+      } else {
+        setDropdownPosition('above')
+        setMaxDropdownHeight(spaceAbove - 20)
+      }
+    }
   }
 
   // Auto-scroll to results after analysis completes
@@ -153,6 +181,8 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
           if (response.ok) {
             const data = await response.json()
             setAutocompleteResults(data.suggestions || [])
+            // Calculate position before showing dropdown
+            calculateDropdownPosition()
             setShowAutocomplete(true)
           }
         } catch (error) {
@@ -166,7 +196,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
     return () => clearTimeout(debounceTimer)
   }, [searchTerm])
 
-  // Handle click outside autocomplete
+  // Handle click outside autocomplete and window resize/scroll
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
@@ -174,9 +204,28 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
       }
     }
 
+    const handleWindowResize = () => {
+      if (showAutocomplete) {
+        calculateDropdownPosition()
+      }
+    }
+
+    const handleScroll = () => {
+      if (showAutocomplete) {
+        calculateDropdownPosition()
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    window.addEventListener('resize', handleWindowResize)
+    window.addEventListener('scroll', handleScroll)
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('resize', handleWindowResize)
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [showAutocomplete])
 
   // Handle suggestion selection
   const handleSuggestionClick = (suggestion: any) => {
@@ -196,8 +245,6 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
         return '🚀'
       case 'ebay':
         return '🏪'
-      case 'price_charting':
-        return '📊'
       case 'cardmarket':
         return '🎮'
       default:
@@ -209,8 +256,6 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
     switch (stage) {
       case 'ebay':
         return 'from-blue-500 to-blue-600'
-      case 'price_charting':
-        return 'from-green-500 to-green-600'
       case 'cardmarket':
         return 'from-purple-500 to-purple-600'
       case 'analysis':
@@ -395,23 +440,14 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                   </div>
 
                   {/* Progress Steps */}
-                  <div className="grid grid-cols-3 gap-2 mt-6">
+                  <div className="grid grid-cols-2 gap-3 mt-6">
                     <div className={`p-3 rounded-xl transition-all duration-300 ${
                       progress.stage === 'ebay' ? 'bg-blue-500/30 scale-105' : 
-                      ['price_charting', 'cardmarket', 'analysis'].includes(progress.stage) ? 'bg-blue-500/50' : 'bg-white/10'
+                      ['cardmarket', 'analysis'].includes(progress.stage) ? 'bg-blue-500/50' : 'bg-white/10'
                     }`}>
                       <div className="text-center">
                         <div className="text-xl mb-1">🏪</div>
                         <div className="text-xs text-white/80">eBay UK</div>
-                      </div>
-                    </div>
-                    <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      progress.stage === 'price_charting' ? 'bg-green-500/30 scale-105' : 
-                      ['cardmarket', 'analysis'].includes(progress.stage) ? 'bg-green-500/50' : 'bg-white/10'
-                    }`}>
-                      <div className="text-center">
-                        <div className="text-xl mb-1">📊</div>
-                        <div className="text-xs text-white/80">Price Charting</div>
                       </div>
                     </div>
                     <div className={`p-3 rounded-xl transition-all duration-300 ${
@@ -456,7 +492,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
           <h1 className="text-5xl font-bold gradient-text mb-4">
             Card Comp
           </h1>
-          <p className="text-white/60 text-xl font-light">Analyze raw card prices across eBay, Price Charting, and Pokemon TCG API</p>
+          <p className="text-white/60 text-xl font-light">Analyze raw card prices across eBay and Pokemon TCG API</p>
         </div>
 
         <div className="max-w-5xl mx-auto overflow-visible">
@@ -479,7 +515,16 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                 
                 {/* Autocomplete Dropdown */}
                 {showAutocomplete && (autocompleteResults.length > 0 || autocompleteLoading) && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl z-[9999] max-h-80 overflow-y-auto overflow-x-hidden">
+                  <div 
+                    className={`absolute left-0 right-0 bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl z-[9999] overflow-y-auto overflow-x-hidden ${
+                      dropdownPosition === 'below' 
+                        ? 'top-full mt-2' 
+                        : 'bottom-full mb-2'
+                    }`}
+                    style={{
+                      maxHeight: `${maxDropdownHeight}px`
+                    }}
+                  >
                     {autocompleteLoading && (
                       <div className="p-4 text-center text-white/50">
                         <div className="flex items-center justify-center">
@@ -605,7 +650,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                 )}
 
                 {/* Price Sources */}
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
                   {/* eBay UK */}
                   <div className="bg-white/5 rounded-2xl p-6">
                     <div className="flex items-center mb-4">
@@ -668,42 +713,6 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                       </div>
                     ) : (
                       <div className="text-white/50">No recent sales found</div>
-                    )}
-                  </div>
-
-                  {/* Price Charting */}
-                  <div className="bg-white/5 rounded-2xl p-6">
-                    <div className="flex items-center mb-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                        <span className="text-xl">📊</span>
-                      </div>
-                      <h4 className="text-lg font-semibold text-white">Price Charting</h4>
-                    </div>
-                    
-                    {result.price_charting ? (
-                      <div>
-                        <div className="text-2xl font-bold text-green-300 mb-3">
-                          £{formatPrice(result.price_charting.price)}
-                        </div>
-                        <p className="text-white/50 text-sm mb-2">
-                          {result.price_charting.title}
-                        </p>
-                        {result.price_charting.url && (
-                          <a 
-                            href={result.price_charting.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm transition-colors duration-200"
-                          >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                            View on Price Charting
-                          </a>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-white/50">No ungraded price found</div>
                     )}
                   </div>
 
