@@ -9,29 +9,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // RapidAPI Pokemon TCG API configuration (same as the main script)
-    const apiHost = "pokemon-tcg-api.p.rapidapi.com"
-    const apiKey = "2390eefca8msh0b090b1b575b879p1c9090jsn0df6e6a47659"
-    
-    const headers = {
-      'X-RapidAPI-Key': apiKey,
-      'X-RapidAPI-Host': apiHost
-    }
+    // Use the direct Pokemon TCG API (no API key required)
+    const searchQuery = encodeURIComponent(query)
+    const url = `https://api.pokemontcg.io/v2/cards?q=name:${searchQuery}*&pageSize=8&select=id,name,set,number,images,rarity`
 
-    // Search for cards with the query
-    const searchUrl = `https://${apiHost}/cards`
-    const params = new URLSearchParams({
-      'search': query,
-      'pageSize': '8' // Limit to 8 suggestions
-    })
-
-    const response = await fetch(`${searchUrl}?${params}`, { 
-      headers,
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      },
       next: { revalidate: 3600 } // Cache for 1 hour
     })
 
     if (!response.ok) {
-      throw new Error(`API returned ${response.status}`)
+      throw new Error(`Pokemon TCG API returned ${response.status}`)
     }
 
     const data = await response.json()
@@ -43,20 +33,21 @@ export async function GET(request: NextRequest) {
     // Format suggestions for autocomplete
     const suggestions = data.data.map((card: any) => {
       const cardName = card.name || 'Unknown Card'
-      const cardNumber = card.card_number || ''
+      const cardNumber = card.number || ''
+      const setName = card.set?.name || 'Unknown Set'
       
       // Create search value with card name + number (if available)
       const searchValue = cardNumber ? `${cardName} ${cardNumber}` : cardName
       
       return {
-        id: card.tcgid || card.id,
+        id: card.id,
         name: cardName,
-        set: card.episode?.name || 'Unknown Set',
+        set: setName,
         number: cardNumber,
-        image: card.image || '',
+        image: card.images?.small || card.images?.large || '',
         rarity: card.rarity || 'Unknown',
         // Create a display name that includes set info
-        display: `${cardName} (${card.episode?.name || 'Unknown Set'})`,
+        display: `${cardName} (${setName})`,
         searchValue: searchValue
       }
     })

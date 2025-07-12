@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, buffer)
 
     // Run the Python script (Script 1)
-    const scriptPath = path.join(process.cwd(), '..', 'bulk_simple.py')
-    const pythonEnv = path.join(process.cwd(), '..', 'venv', 'bin', 'python3')
+    const scriptPath = path.join(process.cwd(), 'bulk_simple.py')
+    const pythonEnv = path.join(process.cwd(), 'venv', 'bin', 'python3')
     
     // Execute the script
     try {

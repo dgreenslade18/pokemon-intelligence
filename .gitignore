@@ -48,3 +48,4 @@ build/
 *.pyc
 __pycache__/
 .pytest_cache/ 
+.vercel

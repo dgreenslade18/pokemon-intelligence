@@ -1,0 +1,92 @@
+{
+  "card_name": "Charizard",
+  "timestamp": "2025-07-12T17:20:38.917599",
+  "ebay_prices": [
+    {
+      "title": "NEW LISTINGPok\u00e9mon TCG Charizard EX Crimson Dive",
+      "price": 2.8,
+      "source": "eBay UK Sold Auction",
+      "url": "https://www.ebay.co.uk/itm/376400027075?_skw=Charizard&itmmeta=01JZZQ0N3CFR4E3SWAQXHA2BZF&hash=item57a3309dc3%3Ag%3A0yMAAeSwWb1ocnvm&itmprp=enc%3AAQAKAAAAwFkggFvd1GGDu0w3yXCmi1euLjJxSQw5%2BPBo8uGWRgRwMosgawKwGNHQOOQqLQsOF46QGLXX%2FhCYpmgTOIN94kvFC4UuX2i4AvQwuGXlYkwJZgMbNBn2cTqOUVABWdA2uyobq2Z3R385tokPjjaF6RGqUM14KB3u338aK3rq1Tjc5km6gpuGMaUxCIKl5kdArdnC31Hda07Xoadnm3fT0hIJV%2BUij62IkHs5pA82imi5xz8%2Fyeue86Gvu4XiAGmRAA%3D%3D%7Ctkp%3ABk9SR5TSgvf_ZQ&LH_Auction=1"
+    },
+    {
+      "title": "Charizard & Braixen GX - SM230 - Sun & Moon - Black Star Promo NM",
+      "price": 48.04,
+      "source": "eBay UK Sold Auction",
+      "url": "https://www.ebay.co.uk/itm/136106051210?_skw=Charizard&itmmeta=01JZZQ0N3CTS3JHQ10VGM281R1&hash=item1fb08d868a%3Ag%3AP8UAAeSwx6loaRTF&itmprp=enc%3AAQAKAAAA4FkggFvd1GGDu0w3yXCmi1e2b6G%2FrY433%2BebvB6VwjbUwukqV6SyjhVk%2Bgeg32hlh%2BTFz78JHnMLp7ip8T6pXcUccU1H%2BOsiH9arL9vVUJFQJTXi%2BypvH97SUhCHBLmO6PG7sxr%2F7hEP7WB2R5lnD0dbFEqb02eAjmDDxn1K4ihAAWabizd5evRG7LaVz7i2nH6vRHR3ZjT1y0QtJuSLg3CaBoedZ0SQ3dLXlipfeKrx8ipCVw3z5yam8E3smCc94WpQC6ervXtrZPvEeMqLzAnqwsul9%2BnGg9Ne%2BgRyhGtn%7Ctkp%3ABk9SR5bSgvf_ZQ&LH_Auction=1"
+    },
+    {
+      "title": "Pok\u00e9mon TCG Charizard EX XY121 Holographic Black Star Promo 2016 NM",
+      "price": 46.04,
+      "source": "eBay UK Sold Auction",
+      "url": "https://www.ebay.co.uk/itm/136106719555?_skw=Charizard&itmmeta=01JZZQ0N3C1SC9FG9B45Z08GYB&hash=item1fb097b943%3Ag%3AwU8AAeSwjxhoaSvy&itmprp=enc%3AAQAKAAAA0FkggFvd1GGDu0w3yXCmi1fGbSbtbEbmzTfrg%2BrQJcqwKgfAhdf355K0om4WlcZ0tYC6l69yvlLRthwrGXdI7x8%2Frqb04i8Un42lf%2F4zVUdJRI4Sn8f6ZC75EouFoz1drwgr53ZgTYdZ6URkxYx1450PzBOof3LTatW4GLFsymTvMIALaCluxuJ6U3LeguCn4esaAaV5s03w3Ewz%2Ba%2FZjTU1hHRLwb%2BaK87ZUEsnKjt3M31yfF5S4aW9Vlc4BdQbcWr3say7J4nxEDbEdQxvjx0%3D%7Ctkp%3ABk9SR5bSgvf_ZQ&LH_Auction=1"
+    }
+  ],
+  "price_charting": {
+    "title": "Charizard (Price Charting)",
+    "price": 145.87,
+    "source": "Price Charting",
+    "url": "https://www.pricecharting.com/game/pokemon-scarlet-&-violet-151/charizard-ex-199"
+  },
+  "cardmarket": {
+    "title": "Charizard ex (Pokemon TCG API)",
+    "card_info": {
+      "name": "Charizard ex",
+      "set": "Paldean Fates",
+      "number": "54",
+      "rarity": "Double Rare",
+      "artist": "5ban Graphics",
+      "hp": "330",
+      "types": [],
+      "supertype": "Pok\u00e9mon"
+    },
+    "images": {
+      "small": "https://images.tcggo.com/tcggo/storage/2072/charizard-ex-paf-54-paldean-fates-pokemon.png",
+      "large": "https://images.tcggo.com/tcggo/storage/2072/charizard-ex-paf-54-paldean-fates-pokemon.png"
+    },
+    "tcgplayer_pricing": {
+      "url": "https://www.tcggo.com/pokemon/paldean-fates/charizard-ex-54",
+      "updated_at": "",
+      "prices": {
+        "normal": {
+          "market": 2.46,
+          "mid": 2.75,
+          "low": null,
+          "high": null,
+          "directLow": null
+        }
+      }
+    },
+    "cardmarket_pricing": {
+      "url": "https://www.tcggo.com/pokemon/paldean-fates/charizard-ex-54",
+      "updated_at": "",
+      "prices": {
+        "trendPrice": 3.07,
+        "averageSellPrice": 3.07,
+        "lowPrice": 1.99,
+        "avg7": 3.36,
+        "avg30": 3.07,
+        "germanProLow": null,
+        "suggestedPrice": null,
+        "reverseHoloSell": null,
+        "reverseHoloLow": null,
+        "reverseHoloTrend": null,
+        "lowPriceExPlus": null,
+        "avg1": null,
+        "reverseHoloAvg1": null,
+        "reverseHoloAvg7": null,
+        "reverseHoloAvg30": null
+      }
+    },
+    "source": "Pokemon TCG API",
+    "url": "https://www.tcggo.com/pokemon/paldean-fates/charizard-ex-54",
+    "price": 2.1
+  },
+  "analysis": {
+    "ebay_average": 32.29,
+    "price_charting_price": 145.87,
+    "cardmarket_price": 2.1,
+    "final_average": 60.09,
+    "price_range": "\u00a32.1 - \u00a3145.87",
+    "recommendation": "\u00a348.07 - \u00a354.08"
+  }
+}
