@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Try Pokemon TCG API first
     const cardmarketData = await searchPokemonTCG(searchTerm.trim())
     
-    if (cardmarketData) {
+    if (cardmarketData && cardmarketData.price && cardmarketData.price > 0) {
       // Generate mock eBay data for demonstration
       const ebayData = generateMockEbayData(cardmarketData.price)
       
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         message: 'Analysis completed using TypeScript API'
       })
     } else {
-      // Fallback with estimated pricing if API fails
+      // Fallback with estimated pricing if API fails or no price data
       const estimatedPrice = 10.00 // Default fallback price
       const ebayData = generateMockEbayData(estimatedPrice)
       const priceChartingData = generateMockPriceCharting(estimatedPrice)
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: results,
-        message: 'Analysis completed with estimated data (API unavailable)',
+        message: cardmarketData ? 'Analysis completed with estimated data (no pricing available)' : 'Analysis completed with estimated data (API unavailable)',
         warning: 'Using estimated pricing - actual market data unavailable'
       })
     }
@@ -98,11 +98,14 @@ export async function POST(request: NextRequest) {
 
 // Generate mock eBay data based on market price
 function generateMockEbayData(basePrice: number) {
+  // Safety check to ensure we have a valid price
+  const safePrice = basePrice && basePrice > 0 ? basePrice : 10.00
+  
   const listings = []
   for (let i = 0; i < 3; i++) {
     // Add some realistic variation (±20%)
     const variation = 0.8 + Math.random() * 0.4
-    const price = parseFloat((basePrice * variation).toFixed(2))
+    const price = parseFloat((safePrice * variation).toFixed(2))
     listings.push({
       title: `Pokemon Card - Listing ${i + 1}`,
       price: price,
@@ -116,9 +119,12 @@ function generateMockEbayData(basePrice: number) {
 
 // Generate mock Price Charting data
 function generateMockPriceCharting(basePrice: number) {
+  // Safety check to ensure we have a valid price
+  const safePrice = basePrice && basePrice > 0 ? basePrice : 10.00
+  
   const variation = 0.9 + Math.random() * 0.2
   return {
-    price: parseFloat((basePrice * variation).toFixed(2)),
+    price: parseFloat((safePrice * variation).toFixed(2)),
     source: 'Price Charting',
     last_updated: new Date().toISOString()
   }
@@ -268,6 +274,11 @@ function formatCardData(card: any, searchTerm: string) {
         result.url = result.cardmarket_pricing.url
       }
     }
+  }
+
+  // If no price was found, set a default fallback
+  if (!result.price || result.price <= 0) {
+    result.price = 10.00 // Default fallback price
   }
 
   return result
