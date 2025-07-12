@@ -6,9 +6,9 @@ import * as path from 'path'
 export async function GET(request: NextRequest) {
   try {
     // Path to Python script and virtual environment
-    const scriptPath = path.join(process.cwd(), '..', 'etb_arbitrage_analyzer.py')
-    const venvPythonPath = path.join(process.cwd(), '..', 'venv', 'bin', 'python')
-    const resultPath = path.join(process.cwd(), '..', 'etb_arbitrage_results.json')
+    const scriptPath = path.join(process.cwd(), 'etb_arbitrage_analyzer.py')
+    const venvPythonPath = path.join(process.cwd(), 'venv', 'bin', 'python')
+    const resultPath = path.join(process.cwd(), 'etb_arbitrage_results.json')
 
     // Check if script exists
     if (!fs.existsSync(scriptPath)) {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     // Run Python script
     const pythonProcess = spawn(venvPythonPath, [scriptPath], {
-      cwd: path.join(process.cwd(), '..'),
+      cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 30000 // 30 second timeout
     })

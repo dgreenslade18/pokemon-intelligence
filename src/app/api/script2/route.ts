@@ -133,8 +133,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Path to Python script and virtual environment
-    const scriptPath = path.join(process.cwd(), '..', 'grading_arbitrage_analyzer.py')
-    const venvPythonPath = path.join(process.cwd(), '..', 'venv', 'bin', 'python')
+    const scriptPath = path.join(process.cwd(), 'grading_arbitrage_analyzer.py')
+    const venvPythonPath = path.join(process.cwd(), 'venv', 'bin', 'python')
 
     // Check if script exists
     if (!fs.existsSync(scriptPath)) {
@@ -146,12 +146,12 @@ export async function POST(request: NextRequest) {
 
     // Write sets to environment or file for Python script
     const setsData = JSON.stringify(sets)
-    const setsFile = path.join(process.cwd(), '..', 'selected_sets.json')
+    const setsFile = path.join(process.cwd(), 'selected_sets.json')
     fs.writeFileSync(setsFile, setsData)
 
     // Run Python script
     const pythonProcess = spawn(venvPythonPath, [scriptPath], {
-      cwd: path.join(process.cwd(), '..'),
+      cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 300000, // 5 minutes timeout
       env: {
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       
       if (outputMatch) {
         const outputFile = outputMatch[0]
-        const fullOutputPath = path.join(process.cwd(), '..', outputFile)
+        const fullOutputPath = path.join(process.cwd(), outputFile)
         
         if (fs.existsSync(fullOutputPath)) {
           const summaryData = parsePythonOutput(stdout)
