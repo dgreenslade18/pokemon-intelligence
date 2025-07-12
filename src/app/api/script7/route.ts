@@ -18,11 +18,84 @@ interface PriceSource {
   url: string
 }
 
+interface CardDetails {
+  id: string
+  name: string
+  number?: string
+  set?: {
+    id: string
+    name: string
+    series: string
+    releaseDate: string
+    total: number
+  }
+  images?: {
+    small: string
+    large: string
+  }
+  rarity?: string
+  artist?: string
+  types?: string[]
+  hp?: number
+  attacks?: Array<{
+    name: string
+    cost: string[]
+    damage: string
+    text: string
+  }>
+  weaknesses?: Array<{
+    type: string
+    value: string
+  }>
+  resistances?: Array<{
+    type: string
+    value: string
+  }>
+  retreatCost?: string[]
+  convertedRetreatCost?: number
+  subtypes?: string[]
+  supertype?: string
+  nationalPokedexNumbers?: number[]
+  legalities?: {
+    standard?: string
+    expanded?: string
+    unlimited?: string
+  }
+  tcgplayer?: {
+    url: string
+    updatedAt: string
+    prices?: {
+      normal?: {
+        low: number
+        mid: number
+        high: number
+        market: number
+        directLow: number
+      }
+      holofoil?: {
+        low: number
+        mid: number
+        high: number
+        market: number
+        directLow: number
+      }
+      reverseHolofoil?: {
+        low: number
+        mid: number
+        high: number
+        market: number
+        directLow: number
+      }
+    }
+  }
+}
+
 interface AnalysisResult {
   card_name: string
   timestamp: string
   ebay_prices: EbayItem[]
   cardmarket: PriceSource | null
+  card_details: CardDetails | null  // Add rich card details
   analysis: {
     ebay_average: number
     cardmarket_price: number
@@ -124,12 +197,16 @@ async function analyzeCard(
   progress('starting', 'Initializing price analysis...')
   
   // Run searches in parallel - removed Price Charting
-  const [ebayPrices, pokemonTcgData] = await Promise.all([
+  const [ebayPrices, pokemonTcgResult] = await Promise.all([
     searchEbaySoldItems(cardName, progress),
     searchPokemonTcgApi(cardName, progress)
   ])
 
   progress('analysis', 'Calculating final analysis...')
+
+  // Extract price source and card details
+  const pokemonTcgData = pokemonTcgResult.priceSource
+  const cardDetails = pokemonTcgResult.cardDetails
 
   // Calculate analysis
   const allPrices: number[] = []
@@ -156,6 +233,7 @@ async function analyzeCard(
     timestamp: new Date().toISOString(),
     ebay_prices: ebayPrices,
     cardmarket: pokemonTcgData,
+    card_details: cardDetails,
     analysis: {
       ebay_average: parseFloat(ebayAverage.toFixed(2)),
       cardmarket_price: pokemonTcgData?.price || 0,
@@ -438,7 +516,7 @@ async function searchEbayWithScraping(cardName: string): Promise<EbayItem[]> {
 async function searchPokemonTcgApi(
   cardName: string,
   progress: (stage: string, message: string) => void
-): Promise<PriceSource | null> {
+): Promise<{ priceSource: PriceSource | null, cardDetails: CardDetails | null }> {
   progress('cardmarket', 'Searching Pokemon TCG API...')
   
   try {
@@ -506,7 +584,40 @@ async function searchPokemonTcgApi(
       const card = data.data[0]
       console.log(`🎯 First card: ${card.name} (${card.set?.name || 'Unknown Set'})`)
       
+      // Extract card details
+      const cardDetails: CardDetails = {
+        id: card.id,
+        name: card.name,
+        number: card.number,
+        set: card.set ? {
+          id: card.set.id,
+          name: card.set.name,
+          series: card.set.series,
+          releaseDate: card.set.releaseDate,
+          total: card.set.total
+        } : undefined,
+        images: card.images ? {
+          small: card.images.small,
+          large: card.images.large
+        } : undefined,
+        rarity: card.rarity,
+        artist: card.artist,
+        types: card.types,
+        hp: card.hp,
+        attacks: card.attacks,
+        weaknesses: card.weaknesses,
+        resistances: card.resistances,
+        retreatCost: card.retreatCost,
+        convertedRetreatCost: card.convertedRetreatCost,
+        subtypes: card.subtypes,
+        supertype: card.supertype,
+        nationalPokedexNumbers: card.nationalPokedexNumbers,
+        legalities: card.legalities,
+        tcgplayer: card.tcgplayer
+      }
+      
       // Extract pricing if available
+      let priceSource: PriceSource | null = null
       if (card.tcgplayer && card.tcgplayer.prices) {
         const prices = card.tcgplayer.prices
         console.log(`💰 TCGPlayer prices available:`, Object.keys(prices))
@@ -529,7 +640,7 @@ async function searchPokemonTcgApi(
           const gbpPrice = usdPrice * 0.79 // Convert USD to GBP
           console.log(`✅ Pokemon TCG API price: $${usdPrice} USD = £${gbpPrice.toFixed(2)} GBP`)
           
-          return {
+          priceSource = {
             title: `${card.name || cardName} (Pokemon TCG API)`,
             price: parseFloat(gbpPrice.toFixed(2)),
             source: 'Pokemon TCG API',
@@ -538,20 +649,33 @@ async function searchPokemonTcgApi(
         }
       }
       
-      console.log(`📊 Card found but no TCGPlayer pricing available`)
+      if (!priceSource) {
+        console.log(`📊 Card found but no TCGPlayer pricing available`)
+        priceSource = {
+          title: `${card.name || cardName} (Pokemon TCG API)`,
+          price: 0,
+          source: 'Pokemon TCG API',
+          url: 'https://pokemontcg.io'
+        }
+      }
+      
       return {
-        title: `${card.name || cardName} (Pokemon TCG API)`,
-        price: 0,
-        source: 'Pokemon TCG API',
-        url: 'https://pokemontcg.io'
+        priceSource,
+        cardDetails
       }
     }
     
     console.log(`❌ No cards found for query: "${searchQuery}"`)
-    return null
+    return {
+      priceSource: null,
+      cardDetails: null
+    }
     
   } catch (error) {
     console.error('Pokemon TCG API search failed:', error)
-    return null
+    return {
+      priceSource: null,
+      cardDetails: null
+    }
   }
 }
