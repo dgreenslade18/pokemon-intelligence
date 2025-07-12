@@ -1,0 +1,1 @@
+web: cd pokemon-arbitrage-ui && npm run build && npm start 

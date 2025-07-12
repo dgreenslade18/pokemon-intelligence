@@ -1,0 +1,1371 @@
+{
+  "created": "2025-07-04T14:23:56.778219",
+  "total_pokemon": 273,
+  "mappings": {
+    "フシギダネ": {
+      "english": "Bulbasaur",
+      "hepburn": "Fushigidane",
+      "ndex": "001"
+    },
+    "フシギソウ": {
+      "english": "Ivysaur",
+      "hepburn": "Fushigisō",
+      "ndex": "002"
+    },
+    "フシギバナ": {
+      "english": "Venusaur",
+      "hepburn": "Fushigibana",
+      "ndex": "003"
+    },
+    "ヒトカゲ": {
+      "english": "Charmander",
+      "hepburn": "Hitokage",
+      "ndex": "004"
+    },
+    "リザード": {
+      "english": "Charmeleon",
+      "hepburn": "Rizādo",
+      "ndex": "005"
+    },
+    "リザードン": {
+      "english": "Charizard",
+      "hepburn": "Rizādon",
+      "ndex": "006"
+    },
+    "ゼニガメ": {
+      "english": "Squirtle",
+      "hepburn": "Zenigame",
+      "ndex": "007"
+    },
+    "カメール": {
+      "english": "Wartortle",
+      "hepburn": "Kamēru",
+      "ndex": "008"
+    },
+    "カメックス": {
+      "english": "Blastoise",
+      "hepburn": "Kamekkusu",
+      "ndex": "009"
+    },
+    "キャタピー": {
+      "english": "Caterpie",
+      "hepburn": "Kyatapī",
+      "ndex": "010"
+    },
+    "トランセル": {
+      "english": "Metapod",
+      "hepburn": "Toranseru",
+      "ndex": "011"
+    },
+    "バタフリー": {
+      "english": "Butterfree",
+      "hepburn": "Batafurī",
+      "ndex": "012"
+    },
+    "ビードル": {
+      "english": "Weedle",
+      "hepburn": "Bīdoru",
+      "ndex": "013"
+    },
+    "コクーン": {
+      "english": "Kakuna",
+      "hepburn": "Kokūn",
+      "ndex": "014"
+    },
+    "スピアー": {
+      "english": "Beedrill",
+      "hepburn": "Supiā",
+      "ndex": "015"
+    },
+    "ポッポ": {
+      "english": "Pidgey",
+      "hepburn": "Poppo",
+      "ndex": "016"
+    },
+    "ピジョン": {
+      "english": "Pidgeotto",
+      "hepburn": "Pijon",
+      "ndex": "017"
+    },
+    "ピジョット": {
+      "english": "Pidgeot",
+      "hepburn": "Pijotto",
+      "ndex": "018"
+    },
+    "コラッタ": {
+      "english": "Rattata",
+      "hepburn": "Koratta",
+      "ndex": "019"
+    },
+    "ラッタ": {
+      "english": "Raticate",
+      "hepburn": "Ratta",
+      "ndex": "020"
+    },
+    "オニスズメ": {
+      "english": "Spearow",
+      "hepburn": "Onisuzume",
+      "ndex": "021"
+    },
+    "オニドリル": {
+      "english": "Fearow",
+      "hepburn": "Onidoriru",
+      "ndex": "022"
+    },
+    "アーボ": {
+      "english": "Ekans",
+      "hepburn": "Ābo",
+      "ndex": "023"
+    },
+    "アーボック": {
+      "english": "Arbok",
+      "hepburn": "Ābokku",
+      "ndex": "024"
+    },
+    "ピカチュウ": {
+      "english": "Pikachu",
+      "hepburn": "Pikachū",
+      "ndex": "025"
+    },
+    "ライチュウ": {
+      "english": "Raichu",
+      "hepburn": "Raichū",
+      "ndex": "026"
+    },
+    "サンド": {
+      "english": "Sandshrew",
+      "hepburn": "Sando",
+      "ndex": "027"
+    },
+    "サンドパン": {
+      "english": "Sandslash",
+      "hepburn": "Sandopan",
+      "ndex": "028"
+    },
+    "ニドラン♀": {
+      "english": "Nidoran♀",
+      "hepburn": "Nidoran♀",
+      "ndex": "029"
+    },
+    "ニドリーナ": {
+      "english": "Nidorina",
+      "hepburn": "Nidorīna",
+      "ndex": "030"
+    },
+    "ニドクイン": {
+      "english": "Nidoqueen",
+      "hepburn": "Nidokuin",
+      "ndex": "031"
+    },
+    "ニドラン♂": {
+      "english": "Nidoran♂",
+      "hepburn": "Nidoran♂",
+      "ndex": "032"
+    },
+    "ニドリーノ": {
+      "english": "Nidorino",
+      "hepburn": "Nidorīno",
+      "ndex": "033"
+    },
+    "ニドキング": {
+      "english": "Nidoking",
+      "hepburn": "Nidokingu",
+      "ndex": "034"
+    },
+    "ピッピ": {
+      "english": "Clefairy",
+      "hepburn": "Pippi",
+      "ndex": "035"
+    },
+    "ピクシー": {
+      "english": "Clefable",
+      "hepburn": "Pikushī",
+      "ndex": "036"
+    },
+    "ロコン": {
+      "english": "Vulpix",
+      "hepburn": "Rokon",
+      "ndex": "037"
+    },
+    "キュウコン": {
+      "english": "Ninetales",
+      "hepburn": "Kyūkon",
+      "ndex": "038"
+    },
+    "プリン": {
+      "english": "Jigglypuff",
+      "hepburn": "Purin",
+      "ndex": "039"
+    },
+    "プクリン": {
+      "english": "Wigglytuff",
+      "hepburn": "Pukurin",
+      "ndex": "040"
+    },
+    "ズバット": {
+      "english": "Zubat",
+      "hepburn": "Zubatto",
+      "ndex": "041"
+    },
+    "ゴルバット": {
+      "english": "Golbat",
+      "hepburn": "Gorubatto",
+      "ndex": "042"
+    },
+    "ナゾノクサ": {
+      "english": "Oddish",
+      "hepburn": "Nazonokusa",
+      "ndex": "043"
+    },
+    "クサイハナ": {
+      "english": "Gloom",
+      "hepburn": "Kusaihana",
+      "ndex": "044"
+    },
+    "ラフレシア": {
+      "english": "Vileplume",
+      "hepburn": "Rafureshia",
+      "ndex": "045"
+    },
+    "パラス": {
+      "english": "Paras",
+      "hepburn": "Parasu",
+      "ndex": "046"
+    },
+    "パラセクト": {
+      "english": "Parasect",
+      "hepburn": "Parasekuto",
+      "ndex": "047"
+    },
+    "コンパン": {
+      "english": "Venonat",
+      "hepburn": "Konpan",
+      "ndex": "048"
+    },
+    "モルフォン": {
+      "english": "Venomoth",
+      "hepburn": "Morufon",
+      "ndex": "049"
+    },
+    "ディグダ": {
+      "english": "Diglett",
+      "hepburn": "Diguda",
+      "ndex": "050"
+    },
+    "ダグトリオ": {
+      "english": "Dugtrio",
+      "hepburn": "Dagutorio",
+      "ndex": "051"
+    },
+    "ニャース": {
+      "english": "Meowth",
+      "hepburn": "Nyāsu",
+      "ndex": "052"
+    },
+    "ペルシアン": {
+      "english": "Persian",
+      "hepburn": "Perushian",
+      "ndex": "053"
+    },
+    "コダック": {
+      "english": "Psyduck",
+      "hepburn": "Kodakku",
+      "ndex": "054"
+    },
+    "ゴルダック": {
+      "english": "Golduck",
+      "hepburn": "Gorudakku",
+      "ndex": "055"
+    },
+    "マンキー": {
+      "english": "Mankey",
+      "hepburn": "Mankī",
+      "ndex": "056"
+    },
+    "オコリザル": {
+      "english": "Primeape",
+      "hepburn": "Okorizaru",
+      "ndex": "057"
+    },
+    "ガーディ": {
+      "english": "Growlithe",
+      "hepburn": "Gādi",
+      "ndex": "058"
+    },
+    "ウインディ": {
+      "english": "Arcanine",
+      "hepburn": "Uindi",
+      "ndex": "059"
+    },
+    "ニョロモ": {
+      "english": "Poliwag",
+      "hepburn": "Nyoromo",
+      "ndex": "060"
+    },
+    "ニョロゾ": {
+      "english": "Poliwhirl",
+      "hepburn": "Nyorozo",
+      "ndex": "061"
+    },
+    "ニョロボン": {
+      "english": "Poliwrath",
+      "hepburn": "Nyorobon",
+      "ndex": "062"
+    },
+    "ケーシィ": {
+      "english": "Abra",
+      "hepburn": "Kēsyi",
+      "ndex": "063"
+    },
+    "ユンゲラー": {
+      "english": "Kadabra",
+      "hepburn": "Yungerā",
+      "ndex": "064"
+    },
+    "フーディン": {
+      "english": "Alakazam",
+      "hepburn": "Fūdin",
+      "ndex": "065"
+    },
+    "ワンリキー": {
+      "english": "Machop",
+      "hepburn": "Wanrikī",
+      "ndex": "066"
+    },
+    "ゴーリキー": {
+      "english": "Machoke",
+      "hepburn": "Gōrikī",
+      "ndex": "067"
+    },
+    "カイリキー": {
+      "english": "Machamp",
+      "hepburn": "Kairikī",
+      "ndex": "068"
+    },
+    "マダツボミ": {
+      "english": "Bellsprout",
+      "hepburn": "Madatsubomi",
+      "ndex": "069"
+    },
+    "ウツドン": {
+      "english": "Weepinbell",
+      "hepburn": "Utsudon",
+      "ndex": "070"
+    },
+    "ウツボット": {
+      "english": "Victreebel",
+      "hepburn": "Utsubotto",
+      "ndex": "071"
+    },
+    "メノクラゲ": {
+      "english": "Tentacool",
+      "hepburn": "Menokurage",
+      "ndex": "072"
+    },
+    "ドククラゲ": {
+      "english": "Tentacruel",
+      "hepburn": "Dokukurage",
+      "ndex": "073"
+    },
+    "イシツブテ": {
+      "english": "Geodude",
+      "hepburn": "Ishitsubute",
+      "ndex": "074"
+    },
+    "ゴローン": {
+      "english": "Graveler",
+      "hepburn": "Gorōn",
+      "ndex": "075"
+    },
+    "ゴローニャ": {
+      "english": "Golem",
+      "hepburn": "Gorōnya",
+      "ndex": "076"
+    },
+    "ポニータ": {
+      "english": "Ponyta",
+      "hepburn": "Ponīta",
+      "ndex": "077"
+    },
+    "ギャロップ": {
+      "english": "Rapidash",
+      "hepburn": "Gyaroppu",
+      "ndex": "078"
+    },
+    "ヤドン": {
+      "english": "Slowpoke",
+      "hepburn": "Yadon",
+      "ndex": "079"
+    },
+    "ヤドラン": {
+      "english": "Slowbro",
+      "hepburn": "Yadoran",
+      "ndex": "080"
+    },
+    "コイル": {
+      "english": "Magnemite",
+      "hepburn": "Koiru",
+      "ndex": "081"
+    },
+    "レアコイル": {
+      "english": "Magneton",
+      "hepburn": "Reakoiru",
+      "ndex": "082"
+    },
+    "カモネギ": {
+      "english": "Farfetch'd",
+      "hepburn": "Kamonegi",
+      "ndex": "083"
+    },
+    "ドードー": {
+      "english": "Doduo",
+      "hepburn": "Dōdō",
+      "ndex": "084"
+    },
+    "ドードリオ": {
+      "english": "Dodrio",
+      "hepburn": "Dōdorio",
+      "ndex": "085"
+    },
+    "パウワウ": {
+      "english": "Seel",
+      "hepburn": "Pauwau",
+      "ndex": "086"
+    },
+    "ジュゴン": {
+      "english": "Dewgong",
+      "hepburn": "Jugon",
+      "ndex": "087"
+    },
+    "ベトベター": {
+      "english": "Grimer",
+      "hepburn": "Betobetā",
+      "ndex": "088"
+    },
+    "ベトベトン": {
+      "english": "Muk",
+      "hepburn": "Betobeton",
+      "ndex": "089"
+    },
+    "シェルダー": {
+      "english": "Shellder",
+      "hepburn": "Sherudā",
+      "ndex": "090"
+    },
+    "パルシェン": {
+      "english": "Cloyster",
+      "hepburn": "Parushen",
+      "ndex": "091"
+    },
+    "ゴース": {
+      "english": "Gastly",
+      "hepburn": "Gōsu",
+      "ndex": "092"
+    },
+    "ゴースト": {
+      "english": "Haunter",
+      "hepburn": "Gōsuto",
+      "ndex": "093"
+    },
+    "ゲンガー": {
+      "english": "Gengar",
+      "hepburn": "Gengā",
+      "ndex": "094"
+    },
+    "イワーク": {
+      "english": "Onix",
+      "hepburn": "Iwāku",
+      "ndex": "095"
+    },
+    "スリープ": {
+      "english": "Drowzee",
+      "hepburn": "Surīpu",
+      "ndex": "096"
+    },
+    "スリーパー": {
+      "english": "Hypno",
+      "hepburn": "Surīpā",
+      "ndex": "097"
+    },
+    "クラブ": {
+      "english": "Krabby",
+      "hepburn": "Kurabu",
+      "ndex": "098"
+    },
+    "キングラー": {
+      "english": "Kingler",
+      "hepburn": "Kingurā",
+      "ndex": "099"
+    },
+    "ビリリダマ": {
+      "english": "Voltorb",
+      "hepburn": "Biriridama",
+      "ndex": "100"
+    },
+    "マルマイン": {
+      "english": "Electrode",
+      "hepburn": "Marumain",
+      "ndex": "101"
+    },
+    "タマタマ": {
+      "english": "Exeggcute",
+      "hepburn": "Tamatama",
+      "ndex": "102"
+    },
+    "ナッシー": {
+      "english": "Exeggutor",
+      "hepburn": "Nasshī",
+      "ndex": "103"
+    },
+    "カラカラ": {
+      "english": "Cubone",
+      "hepburn": "Karakara",
+      "ndex": "104"
+    },
+    "ガラガラ": {
+      "english": "Marowak",
+      "hepburn": "Garagara",
+      "ndex": "105"
+    },
+    "サワムラー": {
+      "english": "Hitmonlee",
+      "hepburn": "Sawamurā",
+      "ndex": "106"
+    },
+    "エビワラー": {
+      "english": "Hitmonchan",
+      "hepburn": "Ebiwarā",
+      "ndex": "107"
+    },
+    "ベロリンガ": {
+      "english": "Lickitung",
+      "hepburn": "Beroringa",
+      "ndex": "108"
+    },
+    "ドガース": {
+      "english": "Koffing",
+      "hepburn": "Dogāsu",
+      "ndex": "109"
+    },
+    "マタドガス": {
+      "english": "Weezing",
+      "hepburn": "Matadogasu",
+      "ndex": "110"
+    },
+    "サイホーン": {
+      "english": "Rhyhorn",
+      "hepburn": "Saihōn",
+      "ndex": "111"
+    },
+    "サイドン": {
+      "english": "Rhydon",
+      "hepburn": "Saidon",
+      "ndex": "112"
+    },
+    "ラッキー": {
+      "english": "Chansey",
+      "hepburn": "Rakkī",
+      "ndex": "113"
+    },
+    "モンジャラ": {
+      "english": "Tangela",
+      "hepburn": "Monjara",
+      "ndex": "114"
+    },
+    "ガルーラ": {
+      "english": "Kangaskhan",
+      "hepburn": "Garūra",
+      "ndex": "115"
+    },
+    "タッツー": {
+      "english": "Horsea",
+      "hepburn": "Tattsū",
+      "ndex": "116"
+    },
+    "シードラ": {
+      "english": "Seadra",
+      "hepburn": "Shīdora",
+      "ndex": "117"
+    },
+    "トサキント": {
+      "english": "Goldeen",
+      "hepburn": "Tosakinto",
+      "ndex": "118"
+    },
+    "アズマオウ": {
+      "english": "Seaking",
+      "hepburn": "Azumaō",
+      "ndex": "119"
+    },
+    "ヒトデマン": {
+      "english": "Staryu",
+      "hepburn": "Hitodeman",
+      "ndex": "120"
+    },
+    "スターミー": {
+      "english": "Starmie",
+      "hepburn": "Sutāmī",
+      "ndex": "121"
+    },
+    "バリヤード": {
+      "english": "Mr. Mime",
+      "hepburn": "Bariyādo",
+      "ndex": "122"
+    },
+    "ストライク": {
+      "english": "Scyther",
+      "hepburn": "Sutoraiku",
+      "ndex": "123"
+    },
+    "ルージュラ": {
+      "english": "Jynx",
+      "hepburn": "Rūjura",
+      "ndex": "124"
+    },
+    "エレブー": {
+      "english": "Electabuzz",
+      "hepburn": "Erebū",
+      "ndex": "125"
+    },
+    "ブーバー": {
+      "english": "Magmar",
+      "hepburn": "Būbā",
+      "ndex": "126"
+    },
+    "カイロス": {
+      "english": "Pinsir",
+      "hepburn": "Kairosu",
+      "ndex": "127"
+    },
+    "ケンタロス": {
+      "english": "Tauros",
+      "hepburn": "Kentarosu",
+      "ndex": "128"
+    },
+    "コイキング": {
+      "english": "Magikarp",
+      "hepburn": "Koikingu",
+      "ndex": "129"
+    },
+    "ギャラドス": {
+      "english": "Gyarados",
+      "hepburn": "Gyaradosu",
+      "ndex": "130"
+    },
+    "ラプラス": {
+      "english": "Lapras",
+      "hepburn": "Rapurasu",
+      "ndex": "131"
+    },
+    "メタモン": {
+      "english": "Ditto",
+      "hepburn": "Metamon",
+      "ndex": "132"
+    },
+    "イーブイ": {
+      "english": "Eevee",
+      "hepburn": "Ībui",
+      "ndex": "133"
+    },
+    "シャワーズ": {
+      "english": "Vaporeon",
+      "hepburn": "Shawāzu",
+      "ndex": "134"
+    },
+    "サンダース": {
+      "english": "Jolteon",
+      "hepburn": "Sandāsu",
+      "ndex": "135"
+    },
+    "ブースター": {
+      "english": "Flareon",
+      "hepburn": "Būsutā",
+      "ndex": "136"
+    },
+    "ポリゴン": {
+      "english": "Porygon",
+      "hepburn": "Porigon",
+      "ndex": "137"
+    },
+    "オムナイト": {
+      "english": "Omanyte",
+      "hepburn": "Omunaito",
+      "ndex": "138"
+    },
+    "オムスター": {
+      "english": "Omastar",
+      "hepburn": "Omusutā",
+      "ndex": "139"
+    },
+    "カブト": {
+      "english": "Kabuto",
+      "hepburn": "Kabuto",
+      "ndex": "140"
+    },
+    "カブトプス": {
+      "english": "Kabutops",
+      "hepburn": "Kabutopusu",
+      "ndex": "141"
+    },
+    "プテラ": {
+      "english": "Aerodactyl",
+      "hepburn": "Putera",
+      "ndex": "142"
+    },
+    "カビゴン": {
+      "english": "Snorlax",
+      "hepburn": "Kabigon",
+      "ndex": "143"
+    },
+    "フリーザー": {
+      "english": "Articuno",
+      "hepburn": "Furīzā",
+      "ndex": "144"
+    },
+    "サンダー": {
+      "english": "Zapdos",
+      "hepburn": "Sandā",
+      "ndex": "145"
+    },
+    "ファイヤー": {
+      "english": "Moltres",
+      "hepburn": "Faiyā",
+      "ndex": "146"
+    },
+    "ミニリュウ": {
+      "english": "Dratini",
+      "hepburn": "Miniryū",
+      "ndex": "147"
+    },
+    "ハクリュー": {
+      "english": "Dragonair",
+      "hepburn": "Hakuryū",
+      "ndex": "148"
+    },
+    "カイリュー": {
+      "english": "Dragonite",
+      "hepburn": "Kairyū",
+      "ndex": "149"
+    },
+    "ミュウツー": {
+      "english": "Mewtwo",
+      "hepburn": "Myūtsū",
+      "ndex": "150"
+    },
+    "ミュウ": {
+      "english": "Mew",
+      "hepburn": "Myū",
+      "ndex": "151"
+    },
+    "チコリータ": {
+      "english": "Chikorita",
+      "hepburn": "Chikorīta",
+      "ndex": "152"
+    },
+    "ベイリーフ": {
+      "english": "Bayleef",
+      "hepburn": "Beirīfu",
+      "ndex": "153"
+    },
+    "メガニウム": {
+      "english": "Meganium",
+      "hepburn": "Meganiumu",
+      "ndex": "154"
+    },
+    "ヒノアラシ": {
+      "english": "Cyndaquil",
+      "hepburn": "Hinoarashi",
+      "ndex": "155"
+    },
+    "マグマラシ": {
+      "english": "Quilava",
+      "hepburn": "Magumarashi",
+      "ndex": "156"
+    },
+    "バクフーン": {
+      "english": "Typhlosion",
+      "hepburn": "Bakufūn",
+      "ndex": "157"
+    },
+    "ワニノコ": {
+      "english": "Totodile",
+      "hepburn": "Waninoko",
+      "ndex": "158"
+    },
+    "アリゲイツ": {
+      "english": "Croconaw",
+      "hepburn": "Arigeitsu",
+      "ndex": "159"
+    },
+    "オーダイル": {
+      "english": "Feraligatr",
+      "hepburn": "Ōdairu",
+      "ndex": "160"
+    },
+    "オタチ": {
+      "english": "Sentret",
+      "hepburn": "Otachi",
+      "ndex": "161"
+    },
+    "オオタチ": {
+      "english": "Furret",
+      "hepburn": "Ōtachi",
+      "ndex": "162"
+    },
+    "ホーホー": {
+      "english": "Hoothoot",
+      "hepburn": "Hōhō",
+      "ndex": "163"
+    },
+    "ヨルノズク": {
+      "english": "Noctowl",
+      "hepburn": "Yorunozuku",
+      "ndex": "164"
+    },
+    "レディバ": {
+      "english": "Ledyba",
+      "hepburn": "Rediba",
+      "ndex": "165"
+    },
+    "レディアン": {
+      "english": "Ledian",
+      "hepburn": "Redian",
+      "ndex": "166"
+    },
+    "イトマル": {
+      "english": "Spinarak",
+      "hepburn": "Itomaru",
+      "ndex": "167"
+    },
+    "アリアドス": {
+      "english": "Ariados",
+      "hepburn": "Ariadosu",
+      "ndex": "168"
+    },
+    "クロバット": {
+      "english": "Crobat",
+      "hepburn": "Kurobatto",
+      "ndex": "169"
+    },
+    "チョンチー": {
+      "english": "Chinchou",
+      "hepburn": "Chonchī",
+      "ndex": "170"
+    },
+    "ランターン": {
+      "english": "Lanturn",
+      "hepburn": "Rantān",
+      "ndex": "171"
+    },
+    "ピチュー": {
+      "english": "Pichu",
+      "hepburn": "Pichū",
+      "ndex": "172"
+    },
+    "ピィ": {
+      "english": "Cleffa",
+      "hepburn": "Pyi",
+      "ndex": "173"
+    },
+    "ププリン": {
+      "english": "Igglybuff",
+      "hepburn": "Pupurin",
+      "ndex": "174"
+    },
+    "トゲピー": {
+      "english": "Togepi",
+      "hepburn": "Togepī",
+      "ndex": "175"
+    },
+    "トゲチック": {
+      "english": "Togetic",
+      "hepburn": "Togechikku",
+      "ndex": "176"
+    },
+    "ネイティ": {
+      "english": "Natu",
+      "hepburn": "Neiti",
+      "ndex": "177"
+    },
+    "ネイティオ": {
+      "english": "Xatu",
+      "hepburn": "Neitio",
+      "ndex": "178"
+    },
+    "メリープ": {
+      "english": "Mareep",
+      "hepburn": "Merīpu",
+      "ndex": "179"
+    },
+    "モココ": {
+      "english": "Flaaffy",
+      "hepburn": "Mokoko",
+      "ndex": "180"
+    },
+    "デンリュウ": {
+      "english": "Ampharos",
+      "hepburn": "Denryū",
+      "ndex": "181"
+    },
+    "キレイハナ": {
+      "english": "Bellossom",
+      "hepburn": "Kireihana",
+      "ndex": "182"
+    },
+    "マリル": {
+      "english": "Marill",
+      "hepburn": "Mariru",
+      "ndex": "183"
+    },
+    "マリルリ": {
+      "english": "Azumarill",
+      "hepburn": "Mariruri",
+      "ndex": "184"
+    },
+    "ウソッキー": {
+      "english": "Sudowoodo",
+      "hepburn": "Usokkī",
+      "ndex": "185"
+    },
+    "ニョロトノ": {
+      "english": "Politoed",
+      "hepburn": "Nyorotono",
+      "ndex": "186"
+    },
+    "ハネッコ": {
+      "english": "Hoppip",
+      "hepburn": "Hanekko",
+      "ndex": "187"
+    },
+    "ポポッコ": {
+      "english": "Skiploom",
+      "hepburn": "Popokko",
+      "ndex": "188"
+    },
+    "ワタッコ": {
+      "english": "Jumpluff",
+      "hepburn": "Watakko",
+      "ndex": "189"
+    },
+    "エイパム": {
+      "english": "Aipom",
+      "hepburn": "Eipamu",
+      "ndex": "190"
+    },
+    "ヒマナッツ": {
+      "english": "Sunkern",
+      "hepburn": "Himanattsu",
+      "ndex": "191"
+    },
+    "キマワリ": {
+      "english": "Sunflora",
+      "hepburn": "Kimawari",
+      "ndex": "192"
+    },
+    "ヤンヤンマ": {
+      "english": "Yanma",
+      "hepburn": "Yanyanma",
+      "ndex": "193"
+    },
+    "ウパー": {
+      "english": "Wooper",
+      "hepburn": "Upā",
+      "ndex": "194"
+    },
+    "ヌオー": {
+      "english": "Quagsire",
+      "hepburn": "Nuō",
+      "ndex": "195"
+    },
+    "エーフィ": {
+      "english": "Espeon",
+      "hepburn": "Ēfi",
+      "ndex": "196"
+    },
+    "ブラッキー": {
+      "english": "Umbreon",
+      "hepburn": "Burakkī",
+      "ndex": "197"
+    },
+    "ヤミカラス": {
+      "english": "Murkrow",
+      "hepburn": "Yamikarasu",
+      "ndex": "198"
+    },
+    "ヤドキング": {
+      "english": "Slowking",
+      "hepburn": "Yadokingu",
+      "ndex": "199"
+    },
+    "ムウマ": {
+      "english": "Misdreavus",
+      "hepburn": "Mūma",
+      "ndex": "200"
+    },
+    "アンノーン": {
+      "english": "Unown",
+      "hepburn": "Annōn",
+      "ndex": "201"
+    },
+    "ソーナンス": {
+      "english": "Wobbuffet",
+      "hepburn": "Sōnansu",
+      "ndex": "202"
+    },
+    "キリンリキ": {
+      "english": "Girafarig",
+      "hepburn": "Kirinriki",
+      "ndex": "203"
+    },
+    "クヌギダマ": {
+      "english": "Pineco",
+      "hepburn": "Kunugidama",
+      "ndex": "204"
+    },
+    "フォレトス": {
+      "english": "Forretress",
+      "hepburn": "Foretosu",
+      "ndex": "205"
+    },
+    "ノコッチ": {
+      "english": "Dunsparce",
+      "hepburn": "Nokocchi",
+      "ndex": "206"
+    },
+    "グライガー": {
+      "english": "Gligar",
+      "hepburn": "Guraigā",
+      "ndex": "207"
+    },
+    "ハガネール": {
+      "english": "Steelix",
+      "hepburn": "Haganeeru",
+      "ndex": "208"
+    },
+    "ブルー": {
+      "english": "Snubbull",
+      "hepburn": "Burū",
+      "ndex": "209"
+    },
+    "グランブル": {
+      "english": "Granbull",
+      "hepburn": "Guranburu",
+      "ndex": "210"
+    },
+    "ハリーセン": {
+      "english": "Qwilfish",
+      "hepburn": "Harīsen",
+      "ndex": "211"
+    },
+    "ハッサム": {
+      "english": "Scizor",
+      "hepburn": "Hassamu",
+      "ndex": "212"
+    },
+    "ツボツボ": {
+      "english": "Shuckle",
+      "hepburn": "Tsubotsubo",
+      "ndex": "213"
+    },
+    "ヘラクロス": {
+      "english": "Heracross",
+      "hepburn": "Herakurosu",
+      "ndex": "214"
+    },
+    "ニューラ": {
+      "english": "Sneasel",
+      "hepburn": "Nyūra",
+      "ndex": "215"
+    },
+    "ヒメグマ": {
+      "english": "Teddiursa",
+      "hepburn": "Himeguma",
+      "ndex": "216"
+    },
+    "リングマ": {
+      "english": "Ursaring",
+      "hepburn": "Ringuma",
+      "ndex": "217"
+    },
+    "マグマッグ": {
+      "english": "Slugma",
+      "hepburn": "Magumaggu",
+      "ndex": "218"
+    },
+    "マグカルゴ": {
+      "english": "Magcargo",
+      "hepburn": "Magukarugo",
+      "ndex": "219"
+    },
+    "ウリムー": {
+      "english": "Swinub",
+      "hepburn": "Urimū",
+      "ndex": "220"
+    },
+    "イノムー": {
+      "english": "Piloswine",
+      "hepburn": "Inomū",
+      "ndex": "221"
+    },
+    "サニーゴ": {
+      "english": "Corsola",
+      "hepburn": "Sanīgo",
+      "ndex": "222"
+    },
+    "テッポウオ": {
+      "english": "Remoraid",
+      "hepburn": "Teppouo",
+      "ndex": "223"
+    },
+    "オクタン": {
+      "english": "Octillery",
+      "hepburn": "Okutan",
+      "ndex": "224"
+    },
+    "デリバード": {
+      "english": "Delibird",
+      "hepburn": "Deribādo",
+      "ndex": "225"
+    },
+    "マンタイン": {
+      "english": "Mantine",
+      "hepburn": "Mantain",
+      "ndex": "226"
+    },
+    "エアームド": {
+      "english": "Skarmory",
+      "hepburn": "Eāmudo",
+      "ndex": "227"
+    },
+    "デルビル": {
+      "english": "Houndour",
+      "hepburn": "Derubiru",
+      "ndex": "228"
+    },
+    "ヘルガー": {
+      "english": "Houndoom",
+      "hepburn": "Herugā",
+      "ndex": "229"
+    },
+    "キングドラ": {
+      "english": "Kingdra",
+      "hepburn": "Kingudora",
+      "ndex": "230"
+    },
+    "ゴマゾウ": {
+      "english": "Phanpy",
+      "hepburn": "Gomazō",
+      "ndex": "231"
+    },
+    "ドンファン": {
+      "english": "Donphan",
+      "hepburn": "Donfan",
+      "ndex": "232"
+    },
+    "ポリゴン２": {
+      "english": "Porygon2",
+      "hepburn": "Porigon2",
+      "ndex": "233"
+    },
+    "オドシシ": {
+      "english": "Stantler",
+      "hepburn": "Odoshishi",
+      "ndex": "234"
+    },
+    "ドーブル": {
+      "english": "Smeargle",
+      "hepburn": "Dōburu",
+      "ndex": "235"
+    },
+    "バルキー": {
+      "english": "Tyrogue",
+      "hepburn": "Barukī",
+      "ndex": "236"
+    },
+    "カポエラー": {
+      "english": "Hitmontop",
+      "hepburn": "Kapoerā",
+      "ndex": "237"
+    },
+    "ムチュール": {
+      "english": "Smoochum",
+      "hepburn": "Muchūru",
+      "ndex": "238"
+    },
+    "エレキッド": {
+      "english": "Elekid",
+      "hepburn": "Erekiddo",
+      "ndex": "239"
+    },
+    "ブビィ": {
+      "english": "Magby",
+      "hepburn": "Bubyi",
+      "ndex": "240"
+    },
+    "ミルタンク": {
+      "english": "Miltank",
+      "hepburn": "Mirutanku",
+      "ndex": "241"
+    },
+    "ハピナス": {
+      "english": "Blissey",
+      "hepburn": "Hapinasu",
+      "ndex": "242"
+    },
+    "ライコウ": {
+      "english": "Raikou",
+      "hepburn": "Raikō",
+      "ndex": "243"
+    },
+    "エンテイ": {
+      "english": "Entei",
+      "hepburn": "Entei",
+      "ndex": "244"
+    },
+    "スイクン": {
+      "english": "Suicune",
+      "hepburn": "Suikun",
+      "ndex": "245"
+    },
+    "ヨーギラス": {
+      "english": "Larvitar",
+      "hepburn": "Yōgirasu",
+      "ndex": "246"
+    },
+    "サナギラス": {
+      "english": "Pupitar",
+      "hepburn": "Sanagirasu",
+      "ndex": "247"
+    },
+    "バンギラス": {
+      "english": "Tyranitar",
+      "hepburn": "Bangirasu",
+      "ndex": "248"
+    },
+    "ルギア": {
+      "english": "Lugia",
+      "hepburn": "Rugia",
+      "ndex": "249"
+    },
+    "ホウオウ": {
+      "english": "Ho-Oh",
+      "hepburn": "Hōō",
+      "ndex": "250"
+    },
+    "セレビィ": {
+      "english": "Celebi",
+      "hepburn": "Serebyi",
+      "ndex": "251"
+    },
+    "ルリリ": {
+      "english": "Azurill",
+      "hepburn": "Ruriri",
+      "ndex": "298"
+    },
+    "ソーナノ": {
+      "english": "Wynaut",
+      "hepburn": "Sōnano",
+      "ndex": "360"
+    },
+    "エテボース": {
+      "english": "Ambipom",
+      "hepburn": "Etebōsu",
+      "ndex": "424"
+    },
+    "ムウマージ": {
+      "english": "Mismagius",
+      "hepburn": "Mūmāji",
+      "ndex": "429"
+    },
+    "ドンカラス": {
+      "english": "Honchkrow",
+      "hepburn": "Donkarasu",
+      "ndex": "430"
+    },
+    "ウソハチ": {
+      "english": "Bonsly",
+      "hepburn": "Usohachi",
+      "ndex": "438"
+    },
+    "マネネ": {
+      "english": "Mime Jr.",
+      "hepburn": "Manene",
+      "ndex": "439"
+    },
+    "ピンプク": {
+      "english": "Happiny",
+      "hepburn": "Pinpuku",
+      "ndex": "440"
+    },
+    "マニューラ": {
+      "english": "Weavile",
+      "hepburn": "Manyūra",
+      "ndex": "461"
+    },
+    "ジバコイル": {
+      "english": "Magnezone",
+      "hepburn": "Jibakoiru",
+      "ndex": "462"
+    },
+    "ベロベルト": {
+      "english": "Lickilicky",
+      "hepburn": "Beroberuto",
+      "ndex": "463"
+    },
+    "ドサイドン": {
+      "english": "Rhyperior",
+      "hepburn": "Dosaidon",
+      "ndex": "464"
+    },
+    "モジャンボ": {
+      "english": "Tangrowth",
+      "hepburn": "Mojanbo",
+      "ndex": "465"
+    },
+    "エレキブル": {
+      "english": "Electivire",
+      "hepburn": "Erekiburu",
+      "ndex": "466"
+    },
+    "ブーバーン": {
+      "english": "Magmortar",
+      "hepburn": "Būbān",
+      "ndex": "467"
+    },
+    "トゲキッス": {
+      "english": "Togekiss",
+      "hepburn": "Togekissu",
+      "ndex": "468"
+    },
+    "メガヤンマ": {
+      "english": "Yanmega",
+      "hepburn": "Megayanma",
+      "ndex": "469"
+    },
+    "リーフィア": {
+      "english": "Leafeon",
+      "hepburn": "Rīfia",
+      "ndex": "470"
+    },
+    "グレイシア": {
+      "english": "Glaceon",
+      "hepburn": "Gureishia",
+      "ndex": "471"
+    },
+    "グライオン": {
+      "english": "Gliscor",
+      "hepburn": "Guraion",
+      "ndex": "472"
+    },
+    "マンムー": {
+      "english": "Mamoswine",
+      "hepburn": "Manmū",
+      "ndex": "473"
+    },
+    "ポリゴンＺ": {
+      "english": "Porygon-Z",
+      "hepburn": "PorigonZ",
+      "ndex": "474"
+    }
+  }
+}
