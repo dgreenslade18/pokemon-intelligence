@@ -307,7 +307,7 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
     const requestBody = {
       keywords: searchQuery,
       max_search_results: 25, // We'll filter to 3 most recent
-      excluded_keywords: "graded psa bgs cgc", // Exclude graded items
+      excluded_keywords: "graded psa bgs cgc ace sgc hga gma gem mint 10 mint 9 pristine perfect", // Exclude all graded items
       site_id: "3", // UK eBay site
       remove_outliers: true,
       aspects: [
