@@ -13,6 +13,19 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import sys
+import gc
+import os
+
+# Memory monitoring for Railway deployment
+try:
+    from memory_monitor import check_memory_limit, get_memory_usage
+    MEMORY_MONITORING = True
+except ImportError:
+    MEMORY_MONITORING = False
+    def check_memory_limit(*args, **kwargs):
+        return True
+    def get_memory_usage():
+        return 0
 
 def emit_progress(stage, message):
     """Emit progress updates that can be captured by the API"""
@@ -44,13 +57,27 @@ def search_ebay_uk_sold(card_name, max_results=3):
                 '--disable-renderer-backgrounding',
                 '--disable-features=TranslateUI',
                 '--disable-web-security',
-                '--no-first-run'
+                '--no-first-run',
+                # Additional memory optimization flags for Railway
+                '--memory-pressure-off',
+                '--max-old-space-size=256',
+                '--disable-background-networking',
+                '--disable-background-mode',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--mute-audio',
+                '--no-default-browser-check',
+                '--no-first-run',
+                '--disable-gpu',
+                '--single-process'
             ]
         )
         
-        # Use a more aggressive context with better performance settings
+        # Use smaller viewport to save memory
         context = browser.new_context(
-            viewport={'width': 1280, 'height': 720},
+            viewport={'width': 800, 'height': 600},  # Reduced from 1280x720
             user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
         )
         page = context.new_page()
@@ -73,9 +100,9 @@ def search_ebay_uk_sold(card_name, max_results=3):
             
             emit_progress("ebay", "Processing auction results...")
             
-            # Debug: Save page content to see structure
-            content = page.content()
-            print(f"   Page loaded, content length: {len(content)}")
+            # Don't save debug files in production to save memory
+            content_length = len(page.content())
+            print(f"   Page loaded, content length: {content_length}")
             
             # Try multiple possible selectors for eBay listings
             possible_selectors = [
@@ -94,16 +121,7 @@ def search_ebay_uk_sold(card_name, max_results=3):
             
             if not listings:
                 print("   ❌ No listings found with any selector")
-                # Save page for debugging
-                with open('debug_ebay.html', 'w') as f:
-                    f.write(content)
-                print("   Debug: Saved page to debug_ebay.html")
                 return prices
-            
-            # Always save debug page to see what we're getting
-            with open('debug_ebay_listings.html', 'w') as f:
-                f.write(content)
-            print(f"   Debug: Saved page to debug_ebay_listings.html")
             
             count = 0
             processed = 0
@@ -222,7 +240,15 @@ def search_ebay_uk_sold(card_name, max_results=3):
         except Exception as e:
             print(f"   ❌ eBay search failed: {e}")
         finally:
-            browser.close()
+            # Explicit cleanup for memory optimization
+            try:
+                context.close()
+            except:
+                pass
+            try:
+                browser.close()
+            except:
+                pass
     
     emit_progress("ebay", f"eBay search completed - found {len(prices)} auction results")
     return prices
@@ -243,11 +269,24 @@ def search_price_charting(card_name):
                 '--disable-extensions',
                 '--disable-background-timer-throttling',
                 '--disable-renderer-backgrounding',
-                '--no-first-run'
+                '--no-first-run',
+                # Additional memory optimization flags for Railway
+                '--memory-pressure-off',
+                '--max-old-space-size=256',
+                '--disable-background-networking',
+                '--disable-background-mode',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--mute-audio',
+                '--no-default-browser-check',
+                '--disable-gpu',
+                '--single-process'
             ]
         )
         context = browser.new_context(
-            viewport={'width': 1280, 'height': 720},
+            viewport={'width': 800, 'height': 600},  # Reduced for memory optimization
             user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
         )
         page = context.new_page()
@@ -261,9 +300,9 @@ def search_price_charting(card_name):
             page.goto(search_url, timeout=15000, wait_until='domcontentloaded')
             page.wait_for_timeout(1500)
             
-            # Debug - save search page
-            content = page.content()
-            print(f"   Search page loaded, content length: {len(content)}")
+            # Don't save debug files in production to save memory
+            content_length = len(page.content())
+            print(f"   Search page loaded, content length: {content_length}")
             
             # Find the first result link - try broader selectors
             product_link = None
@@ -506,7 +545,15 @@ def search_price_charting(card_name):
             print(f"   ❌ Price Charting search failed: {e}")
             emit_progress("price_charting", "Search failed")
         finally:
-            browser.close()
+            # Explicit cleanup for memory optimization
+            try:
+                context.close()
+            except:
+                pass
+            try:
+                browser.close()
+            except:
+                pass
     
     print("   No matching prices found")
     emit_progress("price_charting", "Price Charting search completed")
@@ -765,6 +812,14 @@ def analyze_what_to_pay(card_name):
     print("Raw cards only - auction data (no Buy It Now or graded cards)")
     print("=" * 80)
     
+    # Memory monitoring for Railway deployment
+    if MEMORY_MONITORING:
+        initial_memory = get_memory_usage()
+        print(f"💾 Initial memory usage: {initial_memory:.1f}MB")
+        if not check_memory_limit(400):
+            print("❌ Memory limit exceeded before starting analysis")
+            return None
+    
     results = {
         'card_name': card_name,
         'timestamp': datetime.now().isoformat(),
@@ -799,6 +854,14 @@ def analyze_what_to_pay(card_name):
     elapsed_time = time.time() - start_time
     print(f"\n⚡ All searches completed in {elapsed_time:.1f} seconds")
     emit_progress("analysis", f"All searches completed in {elapsed_time:.1f}s")
+    
+    # Memory monitoring after searches
+    if MEMORY_MONITORING:
+        current_memory = get_memory_usage()
+        print(f"💾 Memory after searches: {current_memory:.1f}MB")
+        check_memory_limit(400)
+        # Force garbage collection after intensive scraping
+        gc.collect()
     
     results['ebay_prices'] = ebay_prices
     results['price_charting'] = price_charting

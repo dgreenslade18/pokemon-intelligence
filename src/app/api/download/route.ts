@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file' }, { status: 400 })
     }
 
-    const filePath = path.join(process.cwd(), '..', fileName)
+    const filePath = path.join(process.cwd(), fileName)
     
     try {
       const fileBuffer = await readFile(filePath)

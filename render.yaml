@@ -2,8 +2,19 @@ services:
   - type: web
     name: pokemon-arbitrage-ui
     env: node
-    buildCommand: cd pokemon-arbitrage-ui && npm install && npm run build
-    startCommand: cd pokemon-arbitrage-ui && npm start
+    buildCommand: |
+      npm install &&
+      pip install -r requirements.txt &&
+      npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
-        value: production 
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "/tmp/playwright"
+    plan: free
+    region: oregon
+    autoDeploy: false
+    healthCheckPath: / 

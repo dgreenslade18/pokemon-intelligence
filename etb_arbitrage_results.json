@@ -5,7 +5,11 @@
     "undervalued_count": 8,
     "avg_current_price": 47.91,
     "total_market_value": 646417.5,
+<<<<<<< HEAD
     "last_updated": "2025-07-12T10:35:28.783161",
+=======
+    "last_updated": "2025-07-12T08:49:44.678617",
+>>>>>>> origin/main
     "data_sources": [
       "tcgplayer",
       "ebay_sold_listings",

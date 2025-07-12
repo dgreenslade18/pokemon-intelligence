@@ -1,0 +1,18 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+start_command = "npm run build && npm start"
+health_check_path = "/"
+health_check_timeout = 300
+restart_policy_type = "ON_FAILURE"
+restart_policy_max_retries = 3
+
+# Memory and performance optimizations for Railway
+[nixpacks.variables]
+NODE_OPTIONS = "--max-old-space-size=512"
+PLAYWRIGHT_BROWSERS_PATH = "/tmp/playwright"
+
+# Python optimization
+PYTHONUNBUFFERED = "1"
+PYTHONDONTWRITEBYTECODE = "1" 

@@ -1,5 +1,11 @@
+# Lightweight scraping dependencies (much lower memory usage)
 beautifulsoup4==4.13.4
 requests==2.32.4
-playwright==1.53.0
 lxml==6.0.0
-soupsieve==2.7 
+soupsieve==2.7
+
+# Memory optimization packages
+psutil==6.1.0
+
+# Keep Playwright for other scripts if needed, but not used in lightweight version
+# playwright==1.53.0 
