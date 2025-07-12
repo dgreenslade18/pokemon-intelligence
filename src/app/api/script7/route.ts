@@ -121,7 +121,7 @@ async function searchPokemonTCG(cardName: string) {
       }
       
       // Check for name match
-      const cardTerms = cardNameLower.split()
+      const cardTerms = cardNameLower.split(' ')
       const keyTerms = cardTerms.filter(term => term.length > 2 || ['v', 'x', 'ex'].includes(term))
       
       const nameMatches = keyTerms.filter(term => apiCardNameLower.includes(term)).length
