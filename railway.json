@@ -3,7 +3,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "cd pokemon-arbitrage-ui && npm run build && npm start",
+    "startCommand": "npm run build && npm start",
     "healthcheckPath": "/",
     "healthcheckTimeout": 300
   }
