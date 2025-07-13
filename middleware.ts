@@ -32,15 +32,15 @@ export const config = {
   matcher: [
     // Only match specific protected routes
     '/',
-    '/api/script1/:path*',
-    '/api/script2/:path*', 
-    '/api/script3/:path*',
-    '/api/script4/:path*',
-    '/api/script5/:path*',
-    '/api/script6/:path*',
-    '/api/script7/:path*',
-    '/api/comp-list/:path*',
-    '/api/autocomplete/:path*',
-    '/api/download/:path*'
+    '/api/script1',
+    '/api/script2', 
+    '/api/script3',
+    '/api/script4',
+    '/api/script5',
+    '/api/script6',
+    '/api/script7',
+    '/api/comp-list',
+    '/api/autocomplete',
+    '/api/download'
   ],
 } 
