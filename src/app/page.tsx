@@ -57,7 +57,7 @@ export default function Home() {
       <div className="relative z-10">
         <UserHeader />
         <div className="container mx-auto px-4 py-8">
-          <Script7Panel onBack={() => {}} />
+          <Script7Panel onBack={() => {}} hideBackButton={true} />
         </div>
       </div>
     </main>
