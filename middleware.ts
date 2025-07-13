@@ -23,6 +23,17 @@ export default withAuth(
           return true
         }
         
+        // Allow access to homepage without authentication
+        if (req.nextUrl.pathname === '/') {
+          return true
+        }
+        
+        // Allow access to public API routes
+        if (req.nextUrl.pathname.startsWith('/api/script7') || 
+            req.nextUrl.pathname.startsWith('/api/autocomplete')) {
+          return true
+        }
+        
         // Require authentication for all other routes
         return !!token
       },
@@ -32,7 +43,9 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    // Match all paths except public files
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    // Temporarily disable middleware - only protect specific routes
+    '/dashboard/:path*',
+    '/profile/:path*',
+    // '/((?!_next/static|_next/image|favicon.ico|public/).*)',
   ],
 } 
