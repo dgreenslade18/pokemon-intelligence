@@ -1,32 +1,20 @@
-import { NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
-import type { NextRequest } from 'next/server'
+import { withAuth } from 'next-auth/middleware'
 
-export async function middleware(request: NextRequest) {
-  // Only protect specific routes, not everything
-  const protectedPaths = ['/', '/api/script1', '/api/script2', '/api/script3', '/api/script4', '/api/script5', '/api/script6', '/api/script7', '/api/comp-list', '/api/autocomplete', '/api/download']
-  
-  if (!protectedPaths.some(path => request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path))) {
-    return NextResponse.next()
+export default withAuth(
+  // `withAuth` augments your `Request` with the user's token.
+  function middleware(req) {
+    console.log('🔒 Middleware running for:', req.nextUrl.pathname)
+    console.log('🔑 User token:', req.nextauth.token?.email)
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => {
+        console.log('🔐 Authorization check - Token exists:', !!token)
+        return !!token
+      },
+    },
   }
-  
-  console.log('🔒 Middleware protecting:', request.nextUrl.pathname)
-  
-  const token = await getToken({ 
-    req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
-  })
-  console.log('🔑 Token exists:', !!token)
-  
-  // If no token, redirect to sign-in
-  if (!token) {
-    console.log('❌ No token, redirecting to sign-in')
-    return NextResponse.redirect(new URL('/auth/signin', request.url))
-  }
-  
-  console.log('✅ Token valid, allowing access')
-  return NextResponse.next()
-}
+)
 
 export const config = {
   matcher: [
