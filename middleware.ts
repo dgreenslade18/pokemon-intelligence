@@ -3,28 +3,20 @@ import { getToken } from 'next-auth/jwt'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  console.log('🔒 Middleware running for:', request.nextUrl.pathname)
+  // Only protect specific routes, not everything
+  const protectedPaths = ['/', '/api/script1', '/api/script2', '/api/script3', '/api/script4', '/api/script5', '/api/script6', '/api/script7', '/api/comp-list', '/api/autocomplete', '/api/download']
   
-  const token = await getToken({ req: request })
+  if (!protectedPaths.some(path => request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path))) {
+    return NextResponse.next()
+  }
+  
+  console.log('🔒 Middleware protecting:', request.nextUrl.pathname)
+  
+  const token = await getToken({ 
+    req: request, 
+    secret: process.env.NEXTAUTH_SECRET 
+  })
   console.log('🔑 Token exists:', !!token)
-  
-  // Allow access to auth pages without authentication
-  if (request.nextUrl.pathname.startsWith('/auth/')) {
-    console.log('✅ Allowing auth page access')
-    return NextResponse.next()
-  }
-  
-  // Allow access to API routes that don't require auth
-  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
-    console.log('✅ Allowing API auth access')
-    return NextResponse.next()
-  }
-  
-  // Allow access to init-db for database setup (only needed once)
-  if (request.nextUrl.pathname === '/api/init-db') {
-    console.log('✅ Allowing init-db access')
-    return NextResponse.next()
-  }
   
   // If no token, redirect to sign-in
   if (!token) {
@@ -33,13 +25,22 @@ export async function middleware(request: NextRequest) {
   }
   
   console.log('✅ Token valid, allowing access')
-  // Allow access for authenticated users
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    // Protect all routes except static files and images
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    // Only match specific protected routes
+    '/',
+    '/api/script1/:path*',
+    '/api/script2/:path*', 
+    '/api/script3/:path*',
+    '/api/script4/:path*',
+    '/api/script5/:path*',
+    '/api/script6/:path*',
+    '/api/script7/:path*',
+    '/api/comp-list/:path*',
+    '/api/autocomplete/:path*',
+    '/api/download/:path*'
   ],
 } 
