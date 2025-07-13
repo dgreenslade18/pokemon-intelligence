@@ -9,9 +9,11 @@ import Script4Panel from '../components/Script4Panel'
 import Script5Panel from '../components/Script5Panel'
 import Script6Panel from '../components/Script6Panel'
 import Script7Panel from '../components/Script7Panel'
+import CompListPanel from '../components/CompListPanel'
+import UserHeader from '../components/UserHeader'
 
 export default function Home() {
-  const [selectedScript, setSelectedScript] = useState<'script1' | 'script2' | 'script3' | 'script4' | 'script5' | 'script6' | 'script7' | null>(null)
+  const [selectedScript, setSelectedScript] = useState<'script1' | 'script2' | 'script3' | 'script4' | 'script5' | 'script6' | 'script7' | 'complist' | null>(null)
 
   const renderContent = () => {
     switch (selectedScript) {
@@ -29,6 +31,8 @@ export default function Home() {
         return <Script6Panel onBack={() => setSelectedScript(null)} />
       case 'script7':
         return <Script7Panel onBack={() => setSelectedScript(null)} />
+      case 'complist':
+        return <CompListPanel onBack={() => setSelectedScript(null)} />
       default:
         return <ScriptSelector onSelectScript={setSelectedScript} />
     }
@@ -49,6 +53,9 @@ export default function Home() {
       <div className="absolute top-1/4 left-1/2 w-2 h-2 bg-white/30 rounded-full rotating-slow" />
       <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-blue-400/50 rounded-full rotating-slow-reverse" />
       <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-purple-400/40 rounded-full rotating-slow" />
+      
+      {/* User Header */}
+      <UserHeader />
       
       {renderContent()}
     </main>

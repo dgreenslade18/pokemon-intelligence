@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 
 interface Script7PanelProps {
   onBack: () => void
@@ -22,6 +23,7 @@ interface AnalysisResult {
     url?: string
   }>
   cardmarket: CardMarketData | null
+  card_details?: CardDetails
   analysis: {
     ebay_average?: number
     cardmarket_price?: number
@@ -67,6 +69,51 @@ interface CardMarketPricing {
   }
 }
 
+interface CardDetails {
+  images?: {
+    small: string
+    large: string
+  }
+  set?: {
+    id: string
+    name: string
+    series: string
+    releaseDate: string
+    total: number
+  }
+  name: string
+  number: string
+  rarity: string
+  artist: string
+  hp?: string
+  types: string[]
+  supertype: string
+  attacks?: Array<{
+    name: string
+    cost: string[]
+    convertedEnergyCost: number
+    damage: string
+    text: string
+  }>
+  weaknesses?: Array<{
+    type: string
+    value: string
+  }>
+  resistances?: Array<{
+    type: string
+    value: string
+  }>
+  retreatCost?: string[]
+  legalities?: {
+    standard: string
+    expanded: string
+    unlimited: string
+  }
+  nationalPokedexNumbers?: number[]
+  tcgplayer_pricing?: TCGPlayerPricing
+  cardmarket_pricing?: CardMarketPricing
+}
+
 interface CardInfo {
   name: string
   set: string
@@ -95,6 +142,7 @@ interface CardMarketData {
 }
 
 export default function Script7Panel({ onBack }: Script7PanelProps) {
+  const { data: session } = useSession()
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
@@ -108,6 +156,8 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
   const [dropdownPosition, setDropdownPosition] = useState<'below' | 'above'>('below')
   const [maxDropdownHeight, setMaxDropdownHeight] = useState(320)
+  const [saving, setSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<HTMLDivElement>(null)
@@ -402,6 +452,50 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
     }
   }
 
+  // Save to comp list function
+  const handleSaveToCompList = async () => {
+    if (!result || !session?.user?.id) {
+      setSaveMessage('Please sign in to save cards to your comp list')
+      setTimeout(() => setSaveMessage(null), 3000)
+      return
+    }
+
+    setSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const response = await fetch('/api/comp-list', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cardName: result.card_name,
+          cardNumber: result.card_details?.number || '',
+          recommendedPrice: result.analysis.recommendation || result.analysis.price_range || '',
+          tcgPrice: result.analysis.cardmarket_price || 0,
+          ebayAverage: result.analysis.ebay_average || 0,
+          cardImageUrl: result.card_details?.images?.large || result.card_details?.images?.small || '',
+          setName: result.card_details?.set?.name || ''
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setSaveMessage('✅ Card saved to your comp list!')
+      } else {
+        setSaveMessage('❌ Failed to save card. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error saving card:', error)
+      setSaveMessage('❌ Failed to save card. Please try again.')
+    } finally {
+      setSaving(false)
+      setTimeout(() => setSaveMessage(null), 3000)
+    }
+  }
+
   return (
     <div className="min-h-screen relative">
       {/* Progress Overlay */}
@@ -477,7 +571,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
         </div>
       )}
 
-      <div className="container mx-auto px-6 py-12 relative z-10 overflow-visible">
+      <div className="container mx-auto px-6 py-6 md:py-12 relative z-10 overflow-visible">
         {/* Header */}
         <div className="mb-12">
           <button
@@ -489,18 +583,18 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
             </svg>
             Back to Scripts
           </button>
-          <h1 className="text-5xl font-bold gradient-text mb-4">
+          <h1 className="text-3xl md:text-5xl font-bold gradient-text mb-4">
             Card Comp
           </h1>
-          <p className="text-white/60 text-xl font-light">Analyze raw card prices across eBay and Pokemon TCG API</p>
+          <p className="text-white/60 text-l md:text-xl font-light max-w-[75%]">Analyze raw card prices across eBay and Pokemon TCG API</p>
         </div>
 
         <div className="max-w-5xl mx-auto overflow-visible">
           {/* Search Section */}
-          <div className="bento-card rounded-3xl p-10 mb-8 relative z-10 !overflow-visible">
-            <h2 className="text-3xl font-semibold text-white mb-8">Enter Pokemon Card Name</h2>
+          <div className="bento-card rounded-3xl p-6 md:p-10 mb-8 relative z-10 !overflow-visible">
+            <h2 className="text-xl md:text-3xl font-semibold text-white mb-8">Enter Pokemon Card Name</h2>
             
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-4 mb-6 flex-col md:flex-row">
               <div className="flex-1 relative" ref={autocompleteRef}>
                 <input
                   ref={searchInputRef}
@@ -509,7 +603,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="e.g., Charizard V, Special Delivery Charizard"
-                  className="w-full px-6 py-4 relative z-10 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+                  className="w-full px-4 md:px-6 py-4 relative z-10 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
                   disabled={loading}
                 />
                 
@@ -526,7 +620,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                     }}
                   >
                     {autocompleteLoading && (
-                      <div className="p-4 text-center text-white/50">
+                      <div className="p-3 md:p-4 text-center text-white/50">
                         <div className="flex items-center justify-center">
                           <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -540,7 +634,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                       <div
                         key={suggestion.id || index}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className={`flex items-center p-4 cursor-pointer transition-colors duration-200 border-b border-white/10 last:border-b-0 ${
+                        className={`flex items-center p-3 md:Fbento-card rounded-3xl p-10p-4 cursor-pointer transition-colors duration-200 border-b border-white/10 last:border-b-0 ${
                           selectedSuggestionIndex === index 
                             ? 'bg-white/20 border-blue-400/30' 
                             : 'hover:bg-white/10'
@@ -550,7 +644,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                           <img 
                             src={suggestion.image} 
                             alt={suggestion.name}
-                            className="w-12 h-16 object-cover rounded-lg mr-4 bg-white/5 flex-shrink-0"
+                            className="w-9 h-13 md:w-12 md:h-16 object-cover rounded-lg mr-4 bg-white/5 flex-shrink-0"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement
                               target.style.display = 'none'
@@ -590,7 +684,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
               <button
                 onClick={handleAnalyze}
                 disabled={loading || !searchTerm.trim()}
-                className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-semibold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-blue-500/30"
+                className="px-4 md:px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-semibold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-blue-500/30"
               >
                 {loading ? (
                   <div className="flex items-center">
@@ -629,22 +723,58 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
           {result && (
             <div ref={resultsRef} className="space-y-8">
               {/* Summary Card */}
-              <div className="bento-card rounded-3xl p-10">
-                <h2 className="text-3xl font-semibold text-white mb-8">Analysis Results: {result.card_name}</h2>
+              <div className="bento-card rounded-3xl p-6 md:p-10">
+                <h2 className="text-xl md:text-3xl font-semibold text-white mb-8">Analysis Results: {result.card_name}</h2>
                 
                 {result.analysis.final_average ? (
-                  <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-2xl p-8 mb-8">
+                  <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-2xl p-4 md:p-8 mb-8">
                     <div className="text-center">
-                      <h3 className="text-2xl font-bold text-white mb-4">💰 Recommended Price Range</h3>
-                      <div className="text-4xl font-bold text-green-300 mb-2">{result.analysis.recommendation}</div>
-                      <p className="text-white/60">Based on current market average of £{formatPrice(result.analysis.final_average || 0)}</p>
+                      <h3 className="text-lg md:text-2xl font-bold text-white mb-4">💰 Recommended Price Range</h3>
+                      <div className="text-xl md:text-4xl font-bold text-green-300 mb-2">{result.analysis.recommendation}</div>
+                      <p className="text-sm md:text-base text-white/60">Based on current market average of £{formatPrice(result.analysis.final_average || 0)}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-2xl p-8 mb-8">
+                  <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-2xl p-4 md:p-8 mb-8">
                     <div className="text-center">
-                      <h3 className="text-2xl font-bold text-white mb-4">⚠️ Insufficient Data</h3>
+                      <h3 className="text-xl font-bold text-white mb-4">⚠️ Insufficient Data</h3>
                       <p className="text-white/60">Not enough price data found to make a recommendation</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Save to Comp List Button */}
+                <div className="mb-8 flex justify-center">
+                  <button
+                    onClick={handleSaveToCompList}
+                    disabled={saving}
+                    className="flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {saving ? (
+                      <>
+                        <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                        Save to Comp List
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Save message */}
+                {saveMessage && (
+                  <div className="mb-6 text-center">
+                    <div className={`inline-block px-4 py-2 rounded-lg ${
+                      saveMessage.includes('✅') ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                    }`}>
+                      {saveMessage}
                     </div>
                   </div>
                 )}
@@ -752,18 +882,18 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                 </div>
 
                 {/* Comprehensive Card Details */}
-                {result.cardmarket && (result.cardmarket.images || result.cardmarket.tcgplayer_pricing || result.cardmarket.cardmarket_pricing || result.cardmarket.card_info) && (
+                {result.card_details && (result.card_details.images || result.card_details.tcgplayer_pricing || result.card_details.cardmarket_pricing || result.card_details.name) && (
                   <div className="mt-8 bg-white/5 rounded-2xl p-6">
                     <h4 className="text-lg font-semibold text-white mb-6">🎴 Complete Card Information</h4>
                     
                     <div className="grid lg:grid-cols-3 gap-8">
                       {/* Card Image & Basic Info */}
-                      <div className="space-y-4">
-                        {result.cardmarket.images?.large && (
+                      
+                        {result.card_details.images?.large && (
                           <div className="bg-white/10 rounded-xl p-4">
                             <img 
-                              src={result.cardmarket.images.large} 
-                              alt={result.cardmarket.card_info?.name || 'Pokemon Card'}
+                              src={result.card_details.images.large} 
+                              alt={result.card_details.name || 'Pokemon Card'}
                               className="w-full max-w-xs mx-auto rounded-lg shadow-lg"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
@@ -773,56 +903,176 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                           </div>
                         )}
                         
-                        {result.cardmarket.card_info && (
+                        {result.card_details.name && (
                           <div className="space-y-3">
                             <h5 className="text-md font-semibold text-white">Card Details</h5>
                             <div className="space-y-2 text-sm">
                               <div className="flex justify-between">
                                 <span className="text-white/50">Name:</span>
-                                <span className="text-white">{result.cardmarket.card_info.name}</span>
+                                <span className="text-white">{result.card_details.name}</span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-white/50">Set:</span>
-                                <span className="text-white">{result.cardmarket.card_info.set}</span>
-                              </div>
+                              {result.card_details.set?.name && (
+                                <div className="flex justify-between">
+                                  <span className="text-white/50">Set:</span>
+                                  <span className="text-white">{result.card_details.set.name}</span>
+                                </div>
+                              )}
                               <div className="flex justify-between">
                                 <span className="text-white/50">Number:</span>
-                                <span className="text-white">{result.cardmarket.card_info.number}</span>
+                                <span className="text-white">{result.card_details.number}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-white/50">Rarity:</span>
-                                <span className="text-white">{result.cardmarket.card_info.rarity}</span>
+                                <span className="text-white">{result.card_details.rarity}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-white/50">Artist:</span>
-                                <span className="text-white">{result.cardmarket.card_info.artist}</span>
+                                <span className="text-white">{result.card_details.artist}</span>
                               </div>
-                              {result.cardmarket.card_info.hp && (
+                              {result.card_details.hp && (
                                 <div className="flex justify-between">
                                   <span className="text-white/50">HP:</span>
-                                  <span className="text-white">{result.cardmarket.card_info.hp}</span>
+                                  <span className="text-white">{result.card_details.hp}</span>
                                 </div>
                               )}
-                              {result.cardmarket.card_info.types.length > 0 && (
+                              {result.card_details.types.length > 0 && (
                                 <div className="flex justify-between">
                                   <span className="text-white/50">Types:</span>
-                                  <span className="text-white">{result.cardmarket.card_info.types.join(', ')}</span>
+                                  <span className="text-white">{result.card_details.types.join(', ')}</span>
+                                </div>
+                              )}
+                              {result.card_details.supertype && (
+                                <div className="flex justify-between">
+                                  <span className="text-white/50">Supertype:</span>
+                                  <span className="text-white">{result.card_details.supertype}</span>
                                 </div>
                               )}
                             </div>
                           </div>
                         )}
-                      </div>
+
+                        {/* Game Statistics */}
+                        {(result.card_details.attacks || result.card_details.weaknesses || result.card_details.resistances || result.card_details.retreatCost) && (
+                          <div className="space-y-3">
+                            <h5 className="text-md font-semibold text-white">Game Statistics</h5>
+                            
+                            {/* Attacks */}
+                            {result.card_details.attacks && result.card_details.attacks.length > 0 && (
+                              <div className="space-y-2">
+                                <h6 className="text-sm font-medium text-white/70">Attacks</h6>
+                                {result.card_details.attacks.map((attack, index) => (
+                                  <div key={index} className="bg-white/5 rounded-lg p-3">
+                                    <div className="flex justify-between items-start mb-1">
+                                      <span className="text-white font-medium">{attack.name}</span>
+                                      <span className="text-orange-300 font-bold">{attack.damage}</span>
+                                    </div>
+                                    <div className="text-xs text-white/50 mb-1">
+                                      Energy Cost: {attack.cost.length > 0 ? attack.cost.join(', ') : 'None'}
+                                    </div>
+                                    {attack.text && (
+                                      <div className="text-xs text-white/70">{attack.text}</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Weaknesses */}
+                            {result.card_details.weaknesses && result.card_details.weaknesses.length > 0 && (
+                              <div>
+                                <h6 className="text-sm font-medium text-white/70 mb-2">Weaknesses</h6>
+                                <div className="flex flex-wrap gap-2">
+                                  {result.card_details.weaknesses.map((weakness, index) => (
+                                    <div key={index} className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs">
+                                      {weakness.type} {weakness.value}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Resistances */}
+                            {result.card_details.resistances && result.card_details.resistances.length > 0 && (
+                              <div>
+                                <h6 className="text-sm font-medium text-white/70 mb-2">Resistances</h6>
+                                <div className="flex flex-wrap gap-2">
+                                  {result.card_details.resistances.map((resistance, index) => (
+                                    <div key={index} className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs">
+                                      {resistance.type} {resistance.value}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Retreat Cost */}
+                            {result.card_details.retreatCost && result.card_details.retreatCost.length > 0 && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-white/50">Retreat Cost:</span>
+                                <span className="text-white">{result.card_details.retreatCost.join(', ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Legalities */}
+                        {result.card_details.legalities && (
+                          <div className="space-y-3">
+                            <h5 className="text-md font-semibold text-white">Format Legalities</h5>
+                            <div className="grid grid-cols-1 gap-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-white/50">Standard:</span>
+                                <span className={`${result.card_details.legalities.standard === 'Legal' ? 'text-green-300' : 'text-red-300'}`}>
+                                  {result.card_details.legalities.standard}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/50">Expanded:</span>
+                                <span className={`${result.card_details.legalities.expanded === 'Legal' ? 'text-green-300' : 'text-red-300'}`}>
+                                  {result.card_details.legalities.expanded}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/50">Unlimited:</span>
+                                <span className={`${result.card_details.legalities.unlimited === 'Legal' ? 'text-green-300' : 'text-red-300'}`}>
+                                  {result.card_details.legalities.unlimited}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Set Information */}
+                        {result.card_details.set && (
+                          <div className="space-y-3">
+                            <h5 className="text-md font-semibold text-white">Set Information</h5>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-white/50">Series:</span>
+                                <span className="text-white">{result.card_details.set.series}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/50">Release Date:</span>
+                                <span className="text-white">{result.card_details.set.releaseDate}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/50">Total Cards:</span>
+                                <span className="text-white">{result.card_details.set.total}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                     
 
                       {/* TCGPlayer Pricing */}
-                      {result.cardmarket.tcgplayer_pricing?.prices && Object.keys(result.cardmarket.tcgplayer_pricing.prices).length > 0 && (
+                      {result.card_details.tcgplayer_pricing?.prices && Object.keys(result.card_details.tcgplayer_pricing.prices).length > 0 && (
                         <div>
                           <h5 className="text-md font-semibold text-white mb-4 flex items-center">
                             <span className="mr-2">🇺🇸</span>
                             TCGPlayer Pricing (USD)
                           </h5>
                           <div className="space-y-3">
-                            {Object.entries(result.cardmarket.tcgplayer_pricing.prices).map(([category, prices]) => (
+                            {Object.entries(result.card_details.tcgplayer_pricing.prices).map(([category, prices]) => (
                               <div key={category} className="bg-white/5 rounded-lg p-3">
                                 <div className="font-medium text-white capitalize mb-2">{category.replace(/([A-Z])/g, ' $1').trim()}</div>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -854,9 +1104,9 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                               </div>
                             ))}
                           </div>
-                          {result.cardmarket.tcgplayer_pricing.url && (
+                          {result.card_details.tcgplayer_pricing.url && (
                             <a 
-                              href={result.cardmarket.tcgplayer_pricing.url} 
+                              href={result.card_details.tcgplayer_pricing.url} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors duration-200"
@@ -871,7 +1121,7 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                       )}
 
                       {/* CardMarket Pricing */}
-                      {result.cardmarket.cardmarket_pricing?.prices && (
+                      {result.card_details.cardmarket_pricing?.prices && (
                         <div>
                           <h5 className="text-md font-semibold text-white mb-4 flex items-center">
                             <span className="mr-2">🇪🇺</span>
@@ -882,57 +1132,57 @@ export default function Script7Panel({ onBack }: Script7PanelProps) {
                             <div className="bg-white/5 rounded-lg p-3">
                               <div className="font-medium text-white mb-2">Current Market</div>
                               <div className="space-y-1 text-xs">
-                                {result.cardmarket.cardmarket_pricing.prices.trendPrice && (
+                                {result.card_details.cardmarket_pricing.prices.trendPrice && (
                                   <div className="flex justify-between">
                                     <span className="text-white/50">Trend Price:</span>
-                                    <span className="text-green-300 font-medium">€{formatPrice(result.cardmarket.cardmarket_pricing.prices.trendPrice)}</span>
+                                    <span className="text-green-300 font-medium">€{formatPrice(result.card_details.cardmarket_pricing.prices.trendPrice)}</span>
                                   </div>
                                 )}
-                                {result.cardmarket.cardmarket_pricing.prices.averageSellPrice && (
+                                {result.card_details.cardmarket_pricing.prices.averageSellPrice && (
                                   <div className="flex justify-between">
                                     <span className="text-white/50">Avg Sell:</span>
-                                    <span className="text-white">€{formatPrice(result.cardmarket.cardmarket_pricing.prices.averageSellPrice)}</span>
+                                    <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.averageSellPrice)}</span>
                                   </div>
                                 )}
-                                {result.cardmarket.cardmarket_pricing.prices.lowPrice && (
+                                {result.card_details.cardmarket_pricing.prices.lowPrice && (
                                   <div className="flex justify-between">
                                     <span className="text-white/50">Low Price:</span>
-                                    <span className="text-white">€{formatPrice(result.cardmarket.cardmarket_pricing.prices.lowPrice)}</span>
+                                    <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.lowPrice)}</span>
                                   </div>
                                 )}
                               </div>
                             </div>
 
                             {/* Recent Averages */}
-                            {(result.cardmarket.cardmarket_pricing.prices.avg1 || result.cardmarket.cardmarket_pricing.prices.avg7 || result.cardmarket.cardmarket_pricing.prices.avg30) && (
+                            {(result.card_details.cardmarket_pricing.prices.avg1 || result.card_details.cardmarket_pricing.prices.avg7 || result.card_details.cardmarket_pricing.prices.avg30) && (
                               <div className="bg-white/5 rounded-lg p-3">
                                 <div className="font-medium text-white mb-2">Recent Averages</div>
                                 <div className="space-y-1 text-xs">
-                                  {result.cardmarket.cardmarket_pricing.prices.avg1 && (
+                                  {result.card_details.cardmarket_pricing.prices.avg1 && (
                                     <div className="flex justify-between">
                                       <span className="text-white/50">1-day:</span>
-                                      <span className="text-white">€{formatPrice(result.cardmarket.cardmarket_pricing.prices.avg1)}</span>
+                                      <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg1)}</span>
                                     </div>
                                   )}
-                                  {result.cardmarket.cardmarket_pricing.prices.avg7 && (
+                                  {result.card_details.cardmarket_pricing.prices.avg7 && (
                                     <div className="flex justify-between">
                                       <span className="text-white/50">7-day:</span>
-                                      <span className="text-white">€{formatPrice(result.cardmarket.cardmarket_pricing.prices.avg7)}</span>
+                                      <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg7)}</span>
                                     </div>
                                   )}
-                                  {result.cardmarket.cardmarket_pricing.prices.avg30 && (
+                                  {result.card_details.cardmarket_pricing.prices.avg30 && (
                                     <div className="flex justify-between">
                                       <span className="text-white/50">30-day:</span>
-                                      <span className="text-white">€{formatPrice(result.cardmarket.cardmarket_pricing.prices.avg30)}</span>
+                                      <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg30)}</span>
                                     </div>
                                   )}
                                 </div>
                               </div>
                             )}
                           </div>
-                          {result.cardmarket.cardmarket_pricing.url && (
+                          {result.card_details.cardmarket_pricing.url && (
                             <a 
-                              href={result.cardmarket.cardmarket_pricing.url} 
+                              href={result.card_details.cardmarket_pricing.url} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors duration-200"
