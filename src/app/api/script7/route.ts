@@ -525,6 +525,8 @@ async function searchPokemonTcgApi(
     
     // Check if search term contains a number (card number) first
     const cardNumberMatch = searchTerm.match(/^(.+?)\s+(\d+)$/)
+    // Check if search term contains alphanumeric promo codes
+    const promoCodeMatch = searchTerm.match(/^(.+?)\s+([a-zA-Z]+\d+|[a-zA-Z]{2}\d+)$/i)
     let searchQuery: string
     
     if (cardNumberMatch) {
@@ -541,6 +543,14 @@ async function searchPokemonTcgApi(
         // Single word card name with number
         searchQuery = `name:${baseCardName}* AND number:${cardNumber}`
       }
+    } else if (promoCodeMatch) {
+      // Handle promo codes like "gg10", "ex", "v", etc.
+      const baseCardName = promoCodeMatch[1].trim()
+      const promoCode = promoCodeMatch[2].trim()
+      
+      // For promo cards, try the exact search first, then fall back to base name
+      // This handles cases like "mew gg10" which might not exist as exact matches
+      searchQuery = `name:*${baseCardName}*`
     } else {
       // Apply transformations for general searches (no specific card number)
       if (searchTerm.toLowerCase().includes(' ex ') || searchTerm.toLowerCase().endsWith(' ex')) {
