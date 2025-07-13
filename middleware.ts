@@ -1,10 +1,16 @@
 import { withAuth } from 'next-auth/middleware'
+import { NextResponse } from 'next/server'
 
 export default withAuth(
   // `withAuth` augments your `Request` with the user's token.
   function middleware(req) {
     console.log('🔒 Middleware running for:', req.nextUrl.pathname)
     console.log('🔑 User token:', req.nextauth.token?.email)
+    
+    // Add a custom header to verify middleware is running
+    const response = NextResponse.next()
+    response.headers.set('X-Middleware-Test', 'WORKING')
+    return response
   },
   {
     callbacks: {
