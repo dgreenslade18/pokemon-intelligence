@@ -13,18 +13,7 @@ interface UserPreferences {
   whatnot_fees: number
 }
 
-interface CompListItem {
-  id: string
-  user_id: string
-  card_name: string
-  card_number: string
-  recommended_price: string
-  tcg_price: number
-  ebay_average: number
-  saved_at: string
-  card_image_url?: string
-  set_name?: string
-}
+
 
 export default function AccountPage() {
   const { data: session, status } = useSession()
@@ -37,9 +26,7 @@ export default function AccountPage() {
     cash_percentage: 70,
     whatnot_fees: 12.5
   })
-  const [compList, setCompList] = useState<CompListItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [compListLoading, setCompListLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -76,30 +63,7 @@ export default function AccountPage() {
     }
   }, [session])
 
-  // Load comp list
-  useEffect(() => {
-    const loadCompList = async () => {
-      if (!session?.user?.id) return
 
-      try {
-        const response = await fetch('/api/comp-list')
-        if (response.ok) {
-          const result = await response.json()
-          setCompList(result.items || [])
-        } else {
-          console.error('Failed to load comp list')
-        }
-      } catch (error) {
-        console.error('Error loading comp list:', error)
-      } finally {
-        setCompListLoading(false)
-      }
-    }
-
-    if (session?.user?.id) {
-      loadCompList()
-    }
-  }, [session])
 
   const handleSave = async () => {
     setSaving(true)
@@ -130,23 +94,7 @@ export default function AccountPage() {
     }
   }
 
-  const handleRemoveFromCompList = async (itemId: string) => {
-    try {
-      const response = await fetch(`/api/comp-list?id=${itemId}`, {
-        method: 'DELETE'
-      })
 
-      if (response.ok) {
-        setCompList(prev => prev.filter(item => item.id !== itemId))
-        setMessage('Card removed from comp list!')
-        setTimeout(() => setMessage(''), 3000)
-      } else {
-        setError('Failed to remove card from comp list')
-      }
-    } catch (error) {
-      setError('An error occurred while removing card')
-    }
-  }
 
   const updatePreference = (key: keyof UserPreferences, value: boolean | number) => {
     setPreferences(prev => ({
@@ -381,126 +329,7 @@ export default function AccountPage() {
           </button>
         </div>
 
-        {/* Comp List Card */}
-        <div className="backdrop-blur-md bg-white/10 rounded-xl border border-white/20 p-6 mt-6">
-          <h2 className="text-xl font-semibold text-white mb-6">My Comp List</h2>
-          
-          {compListLoading ? (
-            <div className="text-center py-8">
-              <div className="text-white text-lg">Loading comp list...</div>
-            </div>
-          ) : compList.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-lg mb-2">No cards in your comp list yet</div>
-              <p className="text-gray-500 text-sm">Cards you analyse will appear here for easy reference</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {compList.map((item) => (
-                <div key={item.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    {/* Card Image */}
-                    <div className="flex-shrink-0">
-                      {item.card_image_url ? (
-                        <img 
-                          src={item.card_image_url} 
-                          alt={item.card_name}
-                          className="w-20 h-28 object-cover rounded-lg border border-white/20"
-                        />
-                      ) : (
-                        <div className="w-20 h-28 bg-white/10 rounded-lg border border-white/20 flex items-center justify-center">
-                          <span className="text-white/50 text-xs text-center">No Image</span>
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Card Details */}
-                    <div className="flex-grow">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
-                        <div>
-                          <h3 className="text-white font-semibold text-lg">{item.card_name}</h3>
-                          {item.set_name && (
-                            <p className="text-gray-300 text-sm">{item.set_name}</p>
-                          )}
-                          {item.card_number && (
-                            <p className="text-gray-400 text-sm">#{item.card_number}</p>
-                          )}
-                        </div>
-                        
-                        {/* Remove Button */}
-                        <button
-                          onClick={() => handleRemoveFromCompList(item.id)}
-                          className="text-red-400 hover:text-red-300 transition-colors text-sm px-3 py-1 rounded bg-red-500/20 hover:bg-red-500/30"
-                        >
-                          Remove
-                        </button>
-                      </div>
-
-                      {/* Price Information */}
-                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="bg-white/5 rounded-lg p-3">
-                          <p className="text-gray-400 text-xs uppercase tracking-wide">Recommended Price</p>
-                          <p className="text-green-400 font-semibold">{item.recommended_price}</p>
-                        </div>
-                        
-                        {item.tcg_price > 0 && (
-                          <div className="bg-white/5 rounded-lg p-3">
-                            <p className="text-gray-400 text-xs uppercase tracking-wide">TCG Price</p>
-                            <p className="text-blue-400 font-semibold">£{item.tcg_price.toFixed(2)}</p>
-                          </div>
-                        )}
-                        
-                        {item.ebay_average > 0 && (
-                          <div className="bg-white/5 rounded-lg p-3">
-                            <p className="text-gray-400 text-xs uppercase tracking-wide">eBay Average</p>
-                            <p className="text-purple-400 font-semibold">£{item.ebay_average.toFixed(2)}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Saved Date */}
-                      <div className="mt-3">
-                        <p className="text-gray-500 text-xs">
-                          Saved on {new Date(item.saved_at).toLocaleDateString('en-GB', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* Comp List Stats */}
-          {compList.length > 0 && (
-            <div className="mt-6 pt-4 border-t border-white/10">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-white">{compList.length}</p>
-                  <p className="text-gray-400 text-sm">Total Cards</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-green-400">
-                    £{compList.reduce((sum, item) => sum + (item.tcg_price || 0), 0).toFixed(2)}
-                  </p>
-                  <p className="text-gray-400 text-sm">Total TCG Value</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-purple-400">
-                    £{compList.reduce((sum, item) => sum + (item.ebay_average || 0), 0).toFixed(2)}
-                  </p>
-                  <p className="text-gray-400 text-sm">Total eBay Value</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )

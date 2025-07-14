@@ -911,23 +911,23 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       <div className="grid gap-4">
                         {/* Price to charge to receive market average - NOW FIRST */}
                         <div className="bg-cyan-500/20 border border-cyan-500/30 rounded-lg p-4">
-                          <div className="flex items-center justify-between">
+                          <div className="flex text-center md:text-left items-center justify-between flex-col md:flex-row">
                             <div>
                               <h5 className="text-cyan-300 font-medium">🎯 Price to Charge for Market Value</h5>
                               <p className="text-cyan-200 text-sm">List price to receive £{(result?.analysis?.final_average || 0).toFixed(2)} after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees</p>
                             </div>
-                            <p className="text-2xl font-bold text-cyan-300">{result?.analysis?.whatnot_pricing?.price_to_charge_for_market}</p>
+                            <p className="text-2xl font-bold text-cyan-300 mt-4 md:mt-0">{result?.analysis?.whatnot_pricing?.price_to_charge_for_market}</p>
                           </div>
                         </div>
 
                         {/* Net proceeds if selling at market average - NOW SECOND */}
                         <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
+                        <div className="flex text-center md:text-left items-center justify-between flex-col md:flex-row">
+                        <div>
                               <h5 className="text-purple-300 font-medium">💰 Net Proceeds at Market Price</h5>
                               <p className="text-purple-200 text-sm">What you'll receive selling at £{(result?.analysis?.final_average || 0).toFixed(2)} (after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees)</p>
                             </div>
-                            <p className="text-2xl font-bold text-purple-300">{result?.analysis?.whatnot_pricing?.net_proceeds_at_market}</p>
+                            <p className="text-2xl font-bold text-purple-300 mt-4 md:mt-0">{result?.analysis?.whatnot_pricing?.net_proceeds_at_market}</p>
                           </div>
                         </div>
                       </div>
@@ -959,7 +959,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                                   <h5 className="text-green-300 font-medium">💵 Buy Value</h5>
                                   <p className="text-green-200 text-sm">Market price for buying/selling</p>
                                 </div>
-                                <p className="text-2xl font-bold text-green-300">{result.analysis.pricing_strategy.buy_price}</p>
+                                <p className="text-lg md:text-2xl text-right font-bold text-green-300">{result.analysis.pricing_strategy.buy_price}</p>
                               </div>
                             </div>
                           )}
@@ -971,7 +971,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                                   <h5 className="text-blue-300 font-medium">🔄 Trade Value</h5>
                                   <p className="text-blue-200 text-sm">Price to pay for store credit/trade</p>
                                 </div>
-                                <p className="text-2xl font-bold text-blue-300">{result.analysis.pricing_strategy.trade_price}</p>
+                                <p className="text-lg md:text-2xl text-right font-bold text-blue-300">{result.analysis.pricing_strategy.trade_price}</p>
                               </div>
                             </div>
                           )}
@@ -983,7 +983,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                                   <h5 className="text-orange-300 font-medium">💸 Cash Value</h5>
                                   <p className="text-orange-200 text-sm">Price to pay with cash</p>
                                 </div>
-                                <p className="text-2xl font-bold text-orange-300">{result.analysis.pricing_strategy.cash_price}</p>
+                                <p className="text-lg md:text-2xl text-right font-bold text-orange-300">{result.analysis.pricing_strategy.cash_price}</p>
                               </div>
                             </div>
                           )}

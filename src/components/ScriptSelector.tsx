@@ -3,7 +3,7 @@
 import React from 'react'
 
 interface ScriptSelectorProps {
-  onSelectScript: (script: 'script1' | 'script2' | 'script3' | 'script4' | 'script5' | 'script6' | 'script7' | 'complist') => void
+  onSelectScript: (script: 'script1' | 'script2' | 'script3' | 'script4' | 'script5' | 'script6' | 'script7') => void
 }
 
 export default function ScriptSelector({ onSelectScript }: ScriptSelectorProps) {
@@ -54,32 +54,7 @@ export default function ScriptSelector({ onSelectScript }: ScriptSelectorProps) 
               </div>
             </div>
 
-            {/* Comp List */}
-            <div 
-              onClick={() => onSelectScript('complist')}
-              className="xl:col-span-2 bento-card rounded-3xl p-8 cursor-pointer group"
-            >
-              <div className="flex items-start justify-between mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-600 rounded-2xl flex items-center justify-center text-3xl shadow-xl group-hover:scale-110 transition-transform duration-500">
-                  📋
-                </div>
-                <div className="px-4 py-2 glass rounded-full">
-                  <span className="text-pink-300 text-sm font-medium">SAVED</span>
-                </div>
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-pink-300 transition-colors duration-300">
-                My Comp List
-              </h3>
-              <p className="text-white/70 text-lg leading-relaxed mb-8 font-light">
-                View and manage your saved card price comparisons. Export your data, track your best finds, and keep a record of profitable opportunities.
-              </p>
-              <div className="flex items-center text-pink-300 font-medium group-hover:translate-x-2 transition-transform duration-300">
-                <span>View Saved Cards</span>
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </div>
-            </div>
+
 
             {/* Script 1 - Japanese Singles */}
             <div 
