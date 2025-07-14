@@ -37,6 +37,9 @@ function correctSpelling(searchTerm: string): string {
   return correctedWords.join(' ')
 }
 
+// Special Pokemon card types that should be treated as part of the name
+const SPECIAL_CARD_TYPES = ['v', 'ex', 'gx', 'vmax', 'vstar', 'vunion', 'break', 'prism', 'star']
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')
@@ -49,25 +52,6 @@ export async function GET(request: NextRequest) {
     // Apply spelling correction first
     let searchTerm = correctSpelling(query.trim())
     
-    // Use the correct Pokemon TCG API query format (Lucene-like syntax)
-    
-    // Handle common Pokemon card naming conventions more flexibly
-    // Don't transform if there's a card number following (let the search handle both formats)
-    const hasCardNumber = /\s+[\d\/\-A-Z]+$/.test(searchTerm)
-    
-    if (!hasCardNumber) {
-      // Only transform when there's no card number (for general searches)
-      if (searchTerm.toLowerCase().endsWith(' ex')) {
-        searchTerm = searchTerm.slice(0, -3) + '-EX'
-      }
-      else if (searchTerm.toLowerCase().endsWith(' v')) {
-        searchTerm = searchTerm.slice(0, -2) + ' V'
-      }
-      else if (searchTerm.toLowerCase().endsWith(' vmax')) {
-        searchTerm = searchTerm.slice(0, -5) + ' VMAX'
-      }
-    }
-    
     // Check if search term ends with a card number (including numbers with slashes like 198/197)
     const cardNumberMatch = searchTerm.match(/^(.+?)\s+([\d\/\-A-Z]+)$/)
     let searchQuery: string
@@ -78,10 +62,20 @@ export async function GET(request: NextRequest) {
       const cardNumber = cardNumberMatch[2].trim()
       
       if (cardName.includes(' ')) {
-        // Multi-word card name with number
+        // Multi-word card name with number - check for special card types
         const words = cardName.split(' ')
-        const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-        searchQuery = `(${nameQueries}) AND number:${cardNumber}`
+        const lastWord = words[words.length - 1].toLowerCase()
+        
+        if (SPECIAL_CARD_TYPES.includes(lastWord)) {
+          // Handle special card types (e.g., "Charizard V 79")
+          const baseName = words.slice(0, -1).join(' ')
+          const cardType = words[words.length - 1]
+          searchQuery = `name:*${baseName}*${cardType}* AND number:${cardNumber}`
+        } else {
+          // Regular multi-word search
+          const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+          searchQuery = `(${nameQueries}) AND number:${cardNumber}`
+        }
       } else {
         // Single word card name with number
         searchQuery = `name:${cardName}* AND number:${cardNumber}`
@@ -89,8 +83,18 @@ export async function GET(request: NextRequest) {
     } else if (searchTerm.includes(' ')) {
       // Multi-word search without card number
       const words = searchTerm.split(' ')
-      const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-      searchQuery = nameQueries
+      const lastWord = words[words.length - 1].toLowerCase()
+      
+      if (SPECIAL_CARD_TYPES.includes(lastWord)) {
+        // Handle special card types (e.g., "Rayquaza V", "Charizard EX")
+        const baseName = words.slice(0, -1).join(' ')
+        const cardType = words[words.length - 1]
+        searchQuery = `name:*${baseName}*${cardType}*`
+      } else {
+        // Regular multi-word search
+        const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+        searchQuery = nameQueries
+      }
     } else {
       // Single word search
       searchQuery = `name:${searchTerm}*`
@@ -123,8 +127,18 @@ export async function GET(request: NextRequest) {
         
         if (cardName.includes(' ')) {
           const words = cardName.split(' ')
-          const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-          fallbackQuery = nameQueries
+          const lastWord = words[words.length - 1].toLowerCase()
+          
+          if (SPECIAL_CARD_TYPES.includes(lastWord)) {
+            // Handle special card types in fallback
+            const baseName = words.slice(0, -1).join(' ')
+            const cardType = words[words.length - 1]
+            fallbackQuery = `name:*${baseName}*${cardType}*`
+          } else {
+            // Regular multi-word fallback
+            const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+            fallbackQuery = nameQueries
+          }
         } else {
           fallbackQuery = `name:${cardName}*`
         }

@@ -631,7 +631,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                 {/* Autocomplete Dropdown */}
                 {showAutocomplete && (autocompleteResults.length > 0 || autocompleteLoading) && (
                   <div 
-                    className={`absolute left-0 right-0 bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl z-[9999] overflow-y-auto overflow-x-hidden ${
+                    className={`absolute left-0 right-0 bg-black/50 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl z-[9999] overflow-y-auto overflow-x-hidden ${
                       dropdownPosition === 'below' 
                         ? 'top-full mt-2' 
                         : 'bottom-full mb-2'
