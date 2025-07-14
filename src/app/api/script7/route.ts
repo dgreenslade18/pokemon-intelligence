@@ -335,9 +335,17 @@ async function analyzeCard(
   // Calculate Whatnot pricing strategy
   const whatnotPricing = finalAverage > 0 ? {
     // Net proceeds after Whatnot fees if selling at market average
-    net_proceeds_at_market: `£${(finalAverage * (1 - userPreferences.whatnot_fees / 100)).toFixed(2)}`,
+    net_proceeds_at_market: (() => {
+      const exactAmount = finalAverage * (1 - userPreferences.whatnot_fees / 100)
+      const roundedUp = Math.ceil(exactAmount)
+      return `£${roundedUp} (£${exactAmount.toFixed(2)})`
+    })(),
     // Price to charge to receive market average after fees
-    price_to_charge_for_market: `£${(finalAverage / (1 - userPreferences.whatnot_fees / 100)).toFixed(2)}`,
+    price_to_charge_for_market: (() => {
+      const exactAmount = finalAverage / (1 - userPreferences.whatnot_fees / 100)
+      const roundedUp = Math.ceil(exactAmount)
+      return `£${roundedUp} (£${exactAmount.toFixed(2)})`
+    })(),
     fees_percentage: userPreferences.whatnot_fees
   } : undefined
 
