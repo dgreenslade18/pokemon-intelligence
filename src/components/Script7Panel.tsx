@@ -1018,7 +1018,6 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                     )}
                   </div>
                 )}
-
                 {/* Comprehensive Card Details */}
                 {result.card_details && (result.card_details.images || result.card_details.tcgplayer_pricing || result.card_details.cardmarket_pricing || result.card_details.name) && (
                   <div className="mt-8 bg-white/5 rounded-2xl p-6">
