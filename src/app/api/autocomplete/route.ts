@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     let searchTerm = query.trim()
     
     // Handle common Pokemon card naming conventions more flexibly
-    // Don't transform if there's a number following (let the search handle both formats)
-    const hasCardNumber = /\s+\d+$/.test(searchTerm)
+    // Don't transform if there's a card number following (let the search handle both formats)
+    const hasCardNumber = /\s+[\d\/\-A-Z]+$/.test(searchTerm)
     
     if (!hasCardNumber) {
       // Only transform when there's no card number (for general searches)
@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Check if search term ends with a number (card number)
-    const cardNumberMatch = searchTerm.match(/^(.+?)\s+(\d+)$/)
+    // Check if search term ends with a card number (including numbers with slashes like 198/197)
+    const cardNumberMatch = searchTerm.match(/^(.+?)\s+([\d\/\-A-Z]+)$/)
     let searchQuery: string
     
     if (cardNumberMatch) {
