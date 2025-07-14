@@ -902,6 +902,47 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                   </div>
                 </div>
 
+                {/* Whatnot Pricing Strategy */}
+                {result?.analysis?.whatnot_pricing && (
+                  <div className="mt-8 bg-white/5 rounded-2xl p-6">
+                    <h4 className="text-lg font-semibold text-white mb-4">📱 Whatnot Pricing Strategy</h4>
+                    
+                    <div className="space-y-4">
+                      <div className="grid gap-4">
+                        {/* Price to charge to receive market average - NOW FIRST */}
+                        <div className="bg-cyan-500/20 border border-cyan-500/30 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h5 className="text-cyan-300 font-medium">🎯 Price to Charge for Market Value</h5>
+                              <p className="text-cyan-200 text-sm">List price to receive £{(result?.analysis?.final_average || 0).toFixed(2)} after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees</p>
+                            </div>
+                            <p className="text-2xl font-bold text-cyan-300">{result?.analysis?.whatnot_pricing?.price_to_charge_for_market}</p>
+                          </div>
+                        </div>
+
+                        {/* Net proceeds if selling at market average - NOW SECOND */}
+                        <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h5 className="text-purple-300 font-medium">💰 Net Proceeds at Market Price</h5>
+                              <p className="text-purple-200 text-sm">What you'll receive selling at £{(result?.analysis?.final_average || 0).toFixed(2)} (after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees)</p>
+                            </div>
+                            <p className="text-2xl font-bold text-purple-300">{result?.analysis?.whatnot_pricing?.net_proceeds_at_market}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Whatnot fee info */}
+                      <div className="pt-4 border-t border-white/10">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-white/50">Whatnot Fee Rate:</span>
+                          <span className="text-white font-medium">{result?.analysis?.whatnot_pricing?.fees_percentage}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Comprehensive Card Details */}
                 {result.card_details && (result.card_details.images || result.card_details.tcgplayer_pricing || result.card_details.cardmarket_pricing || result.card_details.name) && (
                   <div className="mt-8 bg-white/5 rounded-2xl p-6">
@@ -1299,46 +1340,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
             </div>
           )}
 
-          {/* Whatnot Pricing Strategy */}
-          {result?.analysis?.whatnot_pricing && (
-            <div className="mt-8 bg-white/5 rounded-2xl p-6">
-              <h4 className="text-lg font-semibold text-white mb-4">📱 Whatnot Pricing Strategy</h4>
-              
-              <div className="space-y-4">
-                <div className="grid gap-4">
-                  {/* Net proceeds if selling at market average */}
-                  <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h5 className="text-purple-300 font-medium">💰 Net Proceeds at Market Price</h5>
-                        <p className="text-purple-200 text-sm">What you'll receive selling at £{(result?.analysis?.final_average || 0).toFixed(2)} (after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees)</p>
-                      </div>
-                      <p className="text-2xl font-bold text-purple-300">{result?.analysis?.whatnot_pricing?.net_proceeds_at_market}</p>
-                    </div>
-                  </div>
 
-                  {/* Price to charge to receive market average */}
-                  <div className="bg-cyan-500/20 border border-cyan-500/30 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h5 className="text-cyan-300 font-medium">🎯 Price to Charge for Market Value</h5>
-                        <p className="text-cyan-200 text-sm">List price to receive £{(result?.analysis?.final_average || 0).toFixed(2)} after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees</p>
-                      </div>
-                      <p className="text-2xl font-bold text-cyan-300">{result?.analysis?.whatnot_pricing?.price_to_charge_for_market}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Whatnot fee info */}
-                <div className="pt-4 border-t border-white/10">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-white/50">Whatnot Fee Rate:</span>
-                    <span className="text-white font-medium">{result?.analysis?.whatnot_pricing?.fees_percentage}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
