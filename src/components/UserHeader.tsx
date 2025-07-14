@@ -2,10 +2,12 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function UserHeader() {
   const { data: session, status } = useSession()
   const [showDropdown, setShowDropdown] = useState(false)
+  const router = useRouter()
 
   const handleSignOut = async () => {
     try {
@@ -13,6 +15,11 @@ export default function UserHeader() {
     } catch (error) {
       console.error('Sign out error:', error)
     }
+  }
+
+  const handleProfileClick = () => {
+    setShowDropdown(false)
+    router.push('/account')
   }
 
   if (status === 'loading') {
@@ -44,7 +51,7 @@ export default function UserHeader() {
               {session.user.email?.split('@')[0] || 'User'}
             </div>
             <div className="text-white/60 text-sm capitalize">
-              {session.user.subscriptionStatus || 'free'} plan
+              {(session.user.subscriptionStatus === 'free' ? 'TESTING' : session.user.subscriptionStatus) || 'TESTING'} plan
             </div>
           </div>
           <svg 
@@ -59,26 +66,23 @@ export default function UserHeader() {
 
         {/* Dropdown Menu */}
         {showDropdown && (
-          <div className="absolute top-full right-0 mt-2 w-64 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl overflow-hidden">
+          <div className="absolute top-full right-0 mt-2 w-64 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl overflow-hidden z-50">
             <div className="p-4 border-b border-white/10">
               <div className="text-white font-medium">{session.user.email}</div>
               <div className="text-white/60 text-sm mt-1">
-                Signed in • {session.user.subscriptionStatus || 'Free'} Plan
+                Signed in • {(session.user.subscriptionStatus === 'free' ? 'TESTING' : session.user.subscriptionStatus) || 'TESTING'} Plan
               </div>
             </div>
             
             <div className="py-2">
               <button
-                onClick={() => {
-                  setShowDropdown(false)
-                  // Could add navigation to user settings here
-                }}
+                onClick={handleProfileClick}
                 className="w-full px-4 py-3 text-left text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-200 flex items-center"
               >
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                Profile Settings
+                My Account
               </button>
               
               <button

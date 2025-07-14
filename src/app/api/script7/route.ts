@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '../../../lib/auth'
+import { getUserPreferences, UserPreferences } from '../../../lib/db'
 
 // Types for our API responses
 interface EbayItem {
@@ -101,28 +104,111 @@ interface AnalysisResult {
     cardmarket_price: number
     final_average: number
     price_range: string
+    // Multi-value pricing
+    buy_value?: number
+    trade_value?: number
+    cash_value?: number
+    // Legacy recommendation for backward compatibility
     recommendation: string
+    // New multi-value recommendations
+    pricing_strategy?: {
+      show_buy_value: boolean
+      show_trade_value: boolean
+      show_cash_value: boolean
+      buy_price?: string
+      trade_price?: string
+      cash_price?: string
+    }
+    // Whatnot pricing strategy
+    whatnot_pricing?: {
+      net_proceeds_at_market: string
+      price_to_charge_for_market: string
+      fees_percentage: number
+    }
   }
+}
+
+// Simple in-memory cache (resets when server restarts)
+const cache = new Map<string, { data: AnalysisResult; timestamp: number }>()
+const CACHE_DURATION = 30 * 60 * 1000 // 30 minutes
+
+function getCachedResult(cardName: string): AnalysisResult | null {
+  const key = cardName.toLowerCase().trim()
+  const cached = cache.get(key)
+  
+  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    console.log(`📋 Cache hit for: ${cardName}`)
+    return cached.data
+  }
+  
+  return null
+}
+
+function setCachedResult(cardName: string, data: AnalysisResult): void {
+  const key = cardName.toLowerCase().trim()
+  cache.set(key, { data, timestamp: Date.now() })
+  console.log(`💾 Cached result for: ${cardName}`)
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { searchTerm, streamProgress } = body
-
-    if (!searchTerm || searchTerm.trim() === '') {
-      return NextResponse.json({
-        success: false,
-        message: 'Please provide a search term'
-      }, { status: 400 })
+    const { searchTerm, streamProgress = false } = await request.json()
+    
+    if (!searchTerm) {
+      return NextResponse.json({ error: 'Search term is required' }, { status: 400 })
     }
 
-    // If streaming is requested, use Server-Sent Events
+    // Get user session and preferences
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userPreferences = await getUserPreferences(session.user.id)
+
+    // Check cache first
+    const cachedResult = getCachedResult(searchTerm)
+    if (cachedResult) {
+      return NextResponse.json({
+        success: true,
+        data: cachedResult,
+        message: `Analysis completed for ${searchTerm} (cached)`,
+        timestamp: new Date().toISOString()
+      })
+    }
+
     if (streamProgress) {
+      // Check cache first for streaming too
+      const cachedResult = getCachedResult(searchTerm)
+      if (cachedResult) {
+        const stream = new ReadableStream({
+          start(controller) {
+            const encoder = new TextEncoder()
+            
+            const completeData = {
+              type: 'complete',
+              data: cachedResult
+            }
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(completeData)}\n\n`))
+            controller.close()
+          }
+        })
+        
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          }
+        })
+      }
+
+      // Streaming response
       const stream = new ReadableStream({
         start(controller) {
           const encoder = new TextEncoder()
-          
+
           const sendProgress = (stage: string, message: string) => {
             const progressData = {
               type: 'progress',
@@ -134,6 +220,9 @@ export async function POST(request: NextRequest) {
           }
 
           const sendComplete = (data: AnalysisResult) => {
+            // Cache the result
+            setCachedResult(searchTerm, data)
+            
             const completeData = {
               type: 'complete',
               data
@@ -152,7 +241,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Start the analysis
-          analyzeCard(searchTerm.trim(), sendProgress)
+          analyzeCard(searchTerm, userPreferences, sendProgress)
             .then(sendComplete)
             .catch(error => sendError(error.message))
         }
@@ -163,32 +252,32 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
           'Connection': 'keep-alive',
-        },
+        }
+      })
+    } else {
+      // Non-streaming response
+      const result = await analyzeCard(searchTerm, userPreferences)
+      
+      // Cache the result
+      setCachedResult(searchTerm, result)
+      
+      return NextResponse.json({
+        success: true,
+        data: result,
+        message: `Analysis completed for ${searchTerm}`,
+        timestamp: new Date().toISOString()
       })
     }
 
-    // Non-streaming fallback
-    const results = await analyzeCard(searchTerm.trim())
-    
-    return NextResponse.json({
-      success: true,
-      data: results,
-      message: `Analysis completed for ${searchTerm}`,
-      timestamp: new Date().toISOString()
-    })
-
   } catch (error) {
-    console.error('Script7 API Error:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to analyze card prices'
-    }, { status: 500 })
+    console.error('Error in script7 API:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 async function analyzeCard(
   cardName: string,
+  userPreferences: UserPreferences,
   sendProgress?: (stage: string, message: string) => void
 ): Promise<AnalysisResult> {
   
@@ -228,6 +317,30 @@ async function analyzeCard(
   const minPrice = allPrices.length > 0 ? Math.min(...allPrices) : 0
   const maxPrice = allPrices.length > 0 ? Math.max(...allPrices) : 0
 
+  // Calculate multi-value pricing based on user preferences
+  const buyValue = finalAverage
+  const tradeValue = finalAverage * (userPreferences.trade_percentage / 100)
+  const cashValue = finalAverage * (userPreferences.cash_percentage / 100)
+
+  // Create pricing strategy display
+  const pricingStrategy = {
+    show_buy_value: userPreferences.show_buy_value,
+    show_trade_value: userPreferences.show_trade_value,
+    show_cash_value: userPreferences.show_cash_value,
+    buy_price: buyValue > 0 ? `£${buyValue.toFixed(2)}` : undefined,
+    trade_price: tradeValue > 0 ? `£${tradeValue.toFixed(2)} (${userPreferences.trade_percentage}%)` : undefined,
+    cash_price: cashValue > 0 ? `£${cashValue.toFixed(2)} (${userPreferences.cash_percentage}%)` : undefined
+  }
+
+  // Calculate Whatnot pricing strategy
+  const whatnotPricing = finalAverage > 0 ? {
+    // Net proceeds after Whatnot fees if selling at market average
+    net_proceeds_at_market: `£${(finalAverage * (1 - userPreferences.whatnot_fees / 100)).toFixed(2)}`,
+    // Price to charge to receive market average after fees
+    price_to_charge_for_market: `£${(finalAverage / (1 - userPreferences.whatnot_fees / 100)).toFixed(2)}`,
+    fees_percentage: userPreferences.whatnot_fees
+  } : undefined
+
   const result: AnalysisResult = {
     card_name: cardName,
     timestamp: new Date().toISOString(),
@@ -239,11 +352,19 @@ async function analyzeCard(
       cardmarket_price: pokemonTcgData?.price || 0,
       final_average: parseFloat(finalAverage.toFixed(2)),
       price_range: allPrices.length > 0 ? `£${minPrice.toFixed(2)} - £${maxPrice.toFixed(2)}` : '£0.00 - £0.00',
-      recommendation: finalAverage > 0 ? `£${(finalAverage * 0.8).toFixed(2)} - £${(finalAverage * 0.9).toFixed(2)}` : 'No data available'
+      // Multi-value pricing
+      buy_value: buyValue > 0 ? parseFloat(buyValue.toFixed(2)) : undefined,
+      trade_value: tradeValue > 0 ? parseFloat(tradeValue.toFixed(2)) : undefined,
+      cash_value: cashValue > 0 ? parseFloat(cashValue.toFixed(2)) : undefined,
+      // Legacy recommendation for backward compatibility
+      recommendation: finalAverage > 0 ? `£${(finalAverage * 0.8).toFixed(2)} - £${(finalAverage * 0.9).toFixed(2)}` : 'No data available',
+      // New pricing strategy
+      pricing_strategy: pricingStrategy,
+      // Whatnot pricing strategy
+      whatnot_pricing: whatnotPricing
     }
   }
 
-  progress('complete', 'Analysis complete!')
   return result
 }
 
@@ -258,7 +379,13 @@ async function searchEbaySoldItems(
     const rapidApiKey = process.env.RAPID_API_KEY
     
     if (rapidApiKey) {
-      return await searchEbayWithApi(cardName, '', rapidApiKey)
+      const apiResults = await searchEbayWithApi(cardName, '', rapidApiKey)
+      // If API returns empty results, try web scraping as fallback
+      if (apiResults.length === 0) {
+        console.log('⚠️  No results from RapidAPI, falling back to web scraping')
+        return await searchEbayWithScraping(cardName)
+      }
+      return apiResults
     } else {
       console.log('⚠️  No RAPID_API_KEY found, falling back to web scraping')
       // Fallback to web scraping as before
@@ -266,7 +393,9 @@ async function searchEbaySoldItems(
     }
   } catch (error) {
     console.error('eBay search failed:', error)
-    return []
+    // If RapidAPI fails, try web scraping as fallback
+    console.log('⚠️  RapidAPI failed, falling back to web scraping')
+    return await searchEbayWithScraping(cardName)
   }
 }
 
@@ -413,7 +542,14 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
     if (!response.ok) {
       const errorText = await response.text()
       console.log(`❌ eBay Sold Items API Error: ${response.status} - ${errorText}`)
-      return [] // Return empty array instead of throwing
+      
+      // Check if it's a quota exceeded error
+      if (errorText.includes('exceeded the MONTHLY quota') || errorText.includes('exceeded the quota')) {
+        console.log('⚠️  RapidAPI quota exceeded, throwing error to trigger fallback')
+        throw new Error('RapidAPI quota exceeded')
+      }
+      
+      return [] // Return empty array for other errors
     }
     
     const data = await response.json()
@@ -447,68 +583,123 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
     
   } catch (error) {
     console.error('❌ eBay API search error:', error)
-    return []
+    throw error // Re-throw to trigger fallback in calling function
   }
 }
 
 async function searchEbayWithScraping(cardName: string): Promise<EbayItem[]> {
   try {
-    // Fallback to basic scraping - simplified version
-    const searchQuery = encodeURIComponent(`${cardName} pokemon card`)
-    const url = `https://www.ebay.co.uk/sch/i.html?_nkw=${searchQuery}&_sacat=0&LH_Sold=1&LH_Complete=1&rt=nc&_ipg=50`
+    console.log('🕷️  eBay Web Scraping: Starting scraping for:', cardName)
     
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`eBay scraping failed: ${response.status}`)
-    }
-
-    const html = await response.text()
+    // Try multiple search variations
+    const searchVariations = [
+      `${cardName} pokemon card`,
+      `${cardName} pokemon`,
+      cardName
+    ]
     
-    // Simple regex to extract prices - this is a basic fallback
-    const priceRegex = /£([\d,]+\.?\d*)/g
-    const titleRegex = /<h3[^>]*class="[^"]*s-item__title[^"]*"[^>]*>([^<]+)</g
-    
-    const prices: RegExpExecArray[] = []
-    const titles: RegExpExecArray[] = []
-    
-    let priceMatch: RegExpExecArray | null
-    let titleMatch: RegExpExecArray | null
-    
-    // Extract prices
-    while ((priceMatch = priceRegex.exec(html)) !== null && prices.length < 3) {
-      prices.push(priceMatch)
-    }
-    
-    // Extract titles
-    while ((titleMatch = titleRegex.exec(html)) !== null && titles.length < 3) {
-      titles.push(titleMatch)
-    }
-    
-    const items: EbayItem[] = []
-    
-    for (let i = 0; i < Math.min(prices.length, titles.length); i++) {
-      const price = parseFloat(prices[i][1].replace(',', ''))
-      const title = titles[i][1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    for (const searchTerm of searchVariations) {
+      const encodedSearch = encodeURIComponent(searchTerm)
       
-      if (price > 0 && price < 10000) {
-        items.push({
-          title: title || `${cardName} - eBay Listing`,
-          price,
-          url: 'https://www.ebay.co.uk',
-          source: 'eBay UK (Sold Auctions)'
-        })
+      // UK eBay sold items search
+      const url = `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&rt=nc&_ipg=25&_sop=13` // Sort by ended recently
+      
+      console.log(`🌐 Scraping eBay URL: ${url}`)
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+        }
+      })
+
+      if (!response.ok) {
+        console.log(`❌ Scraping failed for ${searchTerm}: ${response.status}`)
+        continue
+      }
+
+      const html = await response.text()
+      
+      // More robust patterns for modern eBay structure
+      const pricePatterns = [
+        /(?:£|GBP\s?)([0-9,]+\.?[0-9]*)/gi,
+        /(?:Price|Sold for|Final bid)[^£]*£([0-9,]+\.?[0-9]*)/gi,
+        /([0-9,]+\.?[0-9]*)\s*(?:GBP|£)/gi
+      ]
+      
+      const titlePatterns = [
+        /<h3[^>]*class="[^"]*s-item__title[^"]*"[^>]*>([^<]+)/gi,
+        /<span[^>]*class="[^"]*clipped[^"]*"[^>]*>([^<]+)/gi,
+        /<a[^>]*class="[^"]*s-item__link[^"]*"[^>]*title="([^"]+)"/gi
+      ]
+      
+      const prices: number[] = []
+      const titles: string[] = []
+      
+      // Extract prices using multiple patterns
+      for (const pattern of pricePatterns) {
+        let match
+        while ((match = pattern.exec(html)) !== null && prices.length < 10) {
+          const price = parseFloat(match[1].replace(/,/g, ''))
+          if (price > 0 && price < 10000) {
+            prices.push(price)
+          }
+        }
+        if (prices.length > 0) break
+      }
+      
+      // Extract titles using multiple patterns
+      for (const pattern of titlePatterns) {
+        let match
+        while ((match = pattern.exec(html)) !== null && titles.length < 10) {
+          const title = match[1]
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&#39;/g, "'")
+            .replace(/&quot;/g, '"')
+            .trim()
+          
+          if (title && title.length > 5) {
+            titles.push(title)
+          }
+        }
+        if (titles.length > 0) break
+      }
+      
+      console.log(`📊 Scraping results for "${searchTerm}": ${prices.length} prices, ${titles.length} titles`)
+      
+      if (prices.length > 0) {
+        const items: EbayItem[] = []
+        
+        // Create items from scraped data
+        for (let i = 0; i < Math.min(prices.length, 5); i++) {
+          const title = titles[i] || `${cardName} - eBay Sold Item`
+          const price = prices[i]
+          
+          items.push({
+            title,
+            price,
+            url: 'https://www.ebay.co.uk',
+            source: 'eBay UK (Sold Items - Scraped)',
+            condition: 'Various'
+          })
+        }
+        
+        console.log(`✅ Web scraping found ${items.length} items for "${searchTerm}"`)
+        return items
       }
     }
     
-    return items
+    console.log('❌ No items found through web scraping')
+    return []
     
   } catch (error) {
-    console.error('eBay scraping failed:', error)
+    console.error('❌ eBay scraping failed:', error)
     return []
   }
 }
@@ -548,9 +739,16 @@ async function searchPokemonTcgApi(
       const baseCardName = promoCodeMatch[1].trim()
       const promoCode = promoCodeMatch[2].trim()
       
-      // For promo cards, try the exact search first, then fall back to base name
-      // This handles cases like "mew gg10" which might not exist as exact matches
-      searchQuery = `name:*${baseCardName}*`
+      // For promo cards, properly handle multi-word names
+      if (baseCardName.includes(' ')) {
+        // Multi-word card name with promo code
+        const words = baseCardName.split(' ')
+        const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+        searchQuery = `(${nameQueries}) AND number:${promoCode}`
+      } else {
+        // Single word card name with promo code
+        searchQuery = `name:${baseCardName}* AND number:${promoCode}`
+      }
     } else {
       // Apply transformations for general searches (no specific card number)
       if (searchTerm.toLowerCase().includes(' ex ') || searchTerm.toLowerCase().endsWith(' ex')) {
@@ -569,12 +767,15 @@ async function searchPokemonTcgApi(
       }
     }
     
-    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=10`
+    let response: Response
+    
+    // Try the primary search query first
+    let url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=10`
     
     console.log(`🔍 Pokemon TCG API Search: "${cardName}" -> "${searchQuery}"`)
     console.log(`📡 Pokemon TCG API URL: ${url}`)
     
-    const response = await fetch(url, {
+    response = await fetch(url, {
       headers: {
         'User-Agent': 'PokemonIntelligence/1.0'
       }
@@ -584,7 +785,38 @@ async function searchPokemonTcgApi(
 
     if (!response.ok) {
       console.error(`❌ Pokemon TCG API Error: ${response.status}`)
-      throw new Error(`Pokemon TCG API returned ${response.status}`)
+      
+      // If the primary search failed and it was a promo code search, try fallback
+      if (promoCodeMatch) {
+        const baseCardName = promoCodeMatch[1].trim()
+        console.log(`🔄 Trying fallback search for promo card: "${baseCardName}"`)
+        
+        let fallbackQuery: string
+        if (baseCardName.includes(' ')) {
+          const words = baseCardName.split(' ')
+          const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+          fallbackQuery = nameQueries
+        } else {
+          fallbackQuery = `name:${baseCardName}*`
+        }
+        
+        url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(fallbackQuery)}&pageSize=10`
+        console.log(`🔄 Fallback Pokemon TCG API URL: ${url}`)
+        
+        response = await fetch(url, {
+          headers: {
+            'User-Agent': 'PokemonIntelligence/1.0'
+          }
+        })
+        
+        console.log(`🌐 Fallback Pokemon TCG API Response Status: ${response.status}`)
+        
+        if (!response.ok) {
+          throw new Error(`Pokemon TCG API returned ${response.status}`)
+        }
+      } else {
+        throw new Error(`Pokemon TCG API returned ${response.status}`)
+      }
     }
 
     const data = await response.json()

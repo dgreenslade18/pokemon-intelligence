@@ -113,4 +113,4 @@ declare module 'next-auth/jwt' {
   }
 }
 
-export default NextAuth(authOptions) 
+// Export only authOptions for Next.js 13+ App Router 

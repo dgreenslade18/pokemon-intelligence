@@ -31,6 +31,24 @@ interface AnalysisResult {
     final_average?: number
     price_range?: string
     recommendation?: string
+    // Multi-value pricing
+    buy_value?: number
+    trade_value?: number
+    cash_value?: number
+    pricing_strategy?: {
+      show_buy_value: boolean
+      show_trade_value: boolean
+      show_cash_value: boolean
+      buy_price?: string
+      trade_price?: string
+      cash_price?: string
+    }
+    // Whatnot pricing strategy
+    whatnot_pricing?: {
+      net_proceeds_at_market: string
+      price_to_charge_for_market: string
+      fees_percentage: number
+    }
   }
 }
 
@@ -1202,22 +1220,122 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                   </div>
                 )}
 
-                {/* Market Analysis */}
-                {result.analysis.price_range && (
+                {/* Multi-Value Pricing Analysis */}
+                {(result.analysis.pricing_strategy || result.analysis.price_range) && (
                   <div className="mt-8 bg-white/5 rounded-2xl p-6">
-                    <h4 className="text-lg font-semibold text-white mb-4">📈 Market Analysis</h4>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <p className="text-white/50 mb-2">Price Range</p>
-                        <p className="text-xl font-semibold text-white">{result.analysis.price_range}</p>
+                    <h4 className="text-lg font-semibold text-white mb-4">💰 Pricing Strategy</h4>
+                    
+                    {result.analysis.pricing_strategy ? (
+                      <div className="space-y-4">
+                        {/* Multi-value pricing grid */}
+                        <div className="grid gap-4">
+                          {result.analysis.pricing_strategy.show_buy_value && result.analysis.pricing_strategy.buy_price && (
+                            <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h5 className="text-green-300 font-medium">💵 Buy Value</h5>
+                                  <p className="text-green-200 text-sm">Market price for buying/selling</p>
+                                </div>
+                                <p className="text-2xl font-bold text-green-300">{result.analysis.pricing_strategy.buy_price}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {result.analysis.pricing_strategy.show_trade_value && result.analysis.pricing_strategy.trade_price && (
+                            <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h5 className="text-blue-300 font-medium">🔄 Trade Value</h5>
+                                  <p className="text-blue-200 text-sm">Price to pay for store credit/trade</p>
+                                </div>
+                                <p className="text-2xl font-bold text-blue-300">{result.analysis.pricing_strategy.trade_price}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {result.analysis.pricing_strategy.show_cash_value && result.analysis.pricing_strategy.cash_price && (
+                            <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h5 className="text-orange-300 font-medium">💸 Cash Value</h5>
+                                  <p className="text-orange-200 text-sm">Price to pay with cash</p>
+                                </div>
+                                <p className="text-2xl font-bold text-orange-300">{result.analysis.pricing_strategy.cash_price}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Market info */}
+                        <div className="pt-4 border-t border-white/10">
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-white/50 text-sm mb-1">Price Range</p>
+                              <p className="text-white font-medium">{result.analysis.price_range}</p>
+                            </div>
+                            <div>
+                              <p className="text-white/50 text-sm mb-1">Market Average</p>
+                              <p className="text-white font-medium">£{formatPrice(result.analysis.final_average || 0)}</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-white/50 mb-2">Market Average</p>
-                        <p className="text-xl font-semibold text-white">£{formatPrice(result.analysis.final_average || 0)}</p>
+                    ) : (
+                      /* Fallback for legacy format */
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <p className="text-white/50 mb-2">Price Range</p>
+                          <p className="text-xl font-semibold text-white">{result.analysis.price_range}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/50 mb-2">Market Average</p>
+                          <p className="text-xl font-semibold text-white">£{formatPrice(result.analysis.final_average || 0)}</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Whatnot Pricing Strategy */}
+          {result?.analysis?.whatnot_pricing && (
+            <div className="mt-8 bg-white/5 rounded-2xl p-6">
+              <h4 className="text-lg font-semibold text-white mb-4">📱 Whatnot Pricing Strategy</h4>
+              
+              <div className="space-y-4">
+                <div className="grid gap-4">
+                  {/* Net proceeds if selling at market average */}
+                  <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-purple-300 font-medium">💰 Net Proceeds at Market Price</h5>
+                        <p className="text-purple-200 text-sm">What you'll receive selling at £{(result?.analysis?.final_average || 0).toFixed(2)} (after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees)</p>
+                      </div>
+                      <p className="text-2xl font-bold text-purple-300">{result?.analysis?.whatnot_pricing?.net_proceeds_at_market}</p>
+                    </div>
+                  </div>
+
+                  {/* Price to charge to receive market average */}
+                  <div className="bg-cyan-500/20 border border-cyan-500/30 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-cyan-300 font-medium">🎯 Price to Charge for Market Value</h5>
+                        <p className="text-cyan-200 text-sm">List price to receive £{(result?.analysis?.final_average || 0).toFixed(2)} after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees</p>
+                      </div>
+                      <p className="text-2xl font-bold text-cyan-300">{result?.analysis?.whatnot_pricing?.price_to_charge_for_market}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Whatnot fee info */}
+                <div className="pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/50">Whatnot Fee Rate:</span>
+                    <span className="text-white font-medium">{result?.analysis?.whatnot_pricing?.fees_percentage}%</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
