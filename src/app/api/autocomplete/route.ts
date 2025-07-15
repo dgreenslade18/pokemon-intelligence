@@ -40,6 +40,31 @@ function correctSpelling(searchTerm: string): string {
 // Special Pokemon card types that should be treated as part of the name
 const SPECIAL_CARD_TYPES = ['v', 'ex', 'gx', 'vmax', 'vstar', 'vunion', 'break', 'prism', 'star']
 
+// Cache to store recent results temporarily
+const cache = new Map<string, any>()
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+async function makeApiRequest(url: string, timeoutMs: number = 3000): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'PokemonIntelligence/1.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal
+    })
+    clearTimeout(timeoutId)
+    return response
+  } catch (error) {
+    clearTimeout(timeoutId)
+    throw error
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')
@@ -49,6 +74,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Check cache first
+    const cacheKey = query.toLowerCase().trim()
+    const cachedResult = cache.get(cacheKey)
+    if (cachedResult && Date.now() - cachedResult.timestamp < CACHE_DURATION) {
+      return NextResponse.json({ suggestions: cachedResult.data })
+    }
+
     // Apply spelling correction first
     let searchTerm = correctSpelling(query.trim())
     
@@ -90,7 +122,15 @@ export async function GET(request: NextRequest) {
         // Handle special card types (e.g., "Rayquaza V", "Charizard EX")
         const baseName = words.slice(0, -1).join(' ')
         const cardType = words[words.length - 1]
-        searchQuery = `name:*${baseName}*${cardType}*`
+        // Fixed: Pokemon TCG API expects hyphenated names for some card types
+        if (cardType.toLowerCase() === 'ex') {
+          searchQuery = `name:${baseName}-EX`
+        } else if (cardType.toLowerCase() === 'gx') {
+          searchQuery = `name:${baseName}-GX`
+        } else {
+          // For V, VMAX, VSTAR etc., use space format
+          searchQuery = `name:*${baseName}* name:*${cardType}*`
+        }
       } else {
         // Regular multi-word search
         const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
@@ -103,25 +143,13 @@ export async function GET(request: NextRequest) {
     
     const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
 
-    // Add timeout and better error handling for deployment environment
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
-
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'PokemonIntelligence/1.0',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      signal: controller.signal
-    })
-
-    clearTimeout(timeoutId)
+    // Reduced timeout from 8s to 3s for better UX
+    const response = await makeApiRequest(url, 3000)
 
     if (!response.ok) {
       console.error(`Pokemon TCG API returned ${response.status} for query: "${query}". Response: ${await response.text()}`)
       
-      // If the specific number search failed, try multiple fallback strategies
+      // If the specific search failed, try simplified fallback strategies
       if (cardNumberMatch) {
         const cardName = cardNumberMatch[1].trim()
         const cardNumber = cardNumberMatch[2].trim()
@@ -130,27 +158,25 @@ export async function GET(request: NextRequest) {
         const commonCardTypes = ['ex', 'v', 'vmax', 'vstar', 'gx']
         for (const cardType of commonCardTypes) {
           try {
-            const typeSearchQuery = `name:*${cardName}*${cardType}* AND number:${cardNumber}`
+            let typeSearchQuery: string
+            if (cardType === 'ex') {
+              typeSearchQuery = `name:${cardName}-EX number:${cardNumber}`
+            } else if (cardType === 'gx') {
+              typeSearchQuery = `name:${cardName}-GX number:${cardNumber}`
+            } else {
+              typeSearchQuery = `name:*${cardName}* name:*${cardType}* number:${cardNumber}`
+            }
             const typeSearchUrl = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(typeSearchQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
             
-            const fallbackController = new AbortController()
-            const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 6000)
-            
-            const typeResponse = await fetch(typeSearchUrl, {
-              headers: {
-                'User-Agent': 'PokemonIntelligence/1.0',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-              },
-              signal: fallbackController.signal
-            })
-            
-            clearTimeout(fallbackTimeoutId)
+            const typeResponse = await makeApiRequest(typeSearchUrl, 2000)
             
             if (typeResponse.ok) {
               const typeData = await typeResponse.json()
               if (typeData.data && typeData.data.length > 0) {
-                return formatSuggestions(typeData)
+                const suggestions = formatSuggestionsData(typeData)
+                // Cache the result
+                cache.set(cacheKey, { data: suggestions, timestamp: Date.now() })
+                return NextResponse.json({ suggestions })
               }
             }
           } catch (error) {
@@ -160,28 +186,19 @@ export async function GET(request: NextRequest) {
         }
         
         // Strategy 2: Try broader search with just the name and number (no specific type)
-        const broadQuery = `name:*${cardName}* AND number:${cardNumber}`
-        const broadUrl = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(broadQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
-        
         try {
-          const fallbackController = new AbortController()
-          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 6000)
+          const broadQuery = `name:*${cardName}* number:${cardNumber}`
+          const broadUrl = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(broadQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
           
-          const broadResponse = await fetch(broadUrl, {
-            headers: {
-              'User-Agent': 'PokemonIntelligence/1.0',
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            signal: fallbackController.signal
-          })
-          
-          clearTimeout(fallbackTimeoutId)
+          const broadResponse = await makeApiRequest(broadUrl, 2000)
           
           if (broadResponse.ok) {
             const broadData = await broadResponse.json()
             if (broadData.data && broadData.data.length > 0) {
-              return formatSuggestions(broadData)
+              const suggestions = formatSuggestionsData(broadData)
+              // Cache the result
+              cache.set(cacheKey, { data: suggestions, timestamp: Date.now() })
+              return NextResponse.json({ suggestions })
             }
           }
         } catch (error) {
@@ -189,46 +206,45 @@ export async function GET(request: NextRequest) {
         }
         
         // Strategy 3: Final fallback - search without the number
-        let fallbackQuery: string
-        
-        if (cardName.includes(' ')) {
-          const words = cardName.split(' ')
-          const lastWord = words[words.length - 1].toLowerCase()
-          
-          if (SPECIAL_CARD_TYPES.includes(lastWord)) {
-            // Handle special card types in fallback
-            const baseName = words.slice(0, -1).join(' ')
-            const cardType = words[words.length - 1]
-            fallbackQuery = `name:*${baseName}*${cardType}*`
-          } else {
-            // Regular multi-word fallback
-            const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-            fallbackQuery = nameQueries
-          }
-        } else {
-          fallbackQuery = `name:${cardName}*`
-        }
-        
-        const fallbackUrl = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(fallbackQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
-        
         try {
-          const fallbackController = new AbortController()
-          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 8000)
+          let fallbackQuery: string
           
-          const fallbackResponse = await fetch(fallbackUrl, {
-            headers: {
-              'User-Agent': 'PokemonIntelligence/1.0',
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            signal: fallbackController.signal
-          })
+          if (cardName.includes(' ')) {
+            const words = cardName.split(' ')
+            const lastWord = words[words.length - 1].toLowerCase()
+            
+            if (SPECIAL_CARD_TYPES.includes(lastWord)) {
+              // Handle special card types in fallback
+              const baseName = words.slice(0, -1).join(' ')
+              const cardType = words[words.length - 1]
+              if (cardType.toLowerCase() === 'ex') {
+                fallbackQuery = `name:${baseName}-EX`
+              } else if (cardType.toLowerCase() === 'gx') {
+                fallbackQuery = `name:${baseName}-GX`
+              } else {
+                fallbackQuery = `name:*${baseName}* name:*${cardType}*`
+              }
+            } else {
+              // Regular multi-word fallback
+              const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+              fallbackQuery = nameQueries
+            }
+          } else {
+            fallbackQuery = `name:${cardName}*`
+          }
           
-          clearTimeout(fallbackTimeoutId)
+          const fallbackUrl = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(fallbackQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
+          
+          const fallbackResponse = await makeApiRequest(fallbackUrl, 2000)
           
           if (fallbackResponse.ok) {
             const fallbackData = await fallbackResponse.json()
-            return formatSuggestions(fallbackData)
+            if (fallbackData.data && fallbackData.data.length > 0) {
+              const suggestions = formatSuggestionsData(fallbackData)
+              // Cache the result
+              cache.set(cacheKey, { data: suggestions, timestamp: Date.now() })
+              return NextResponse.json({ suggestions })
+            }
           }
         } catch (fallbackError) {
           console.error('Fallback autocomplete API error:', fallbackError)
@@ -239,7 +255,12 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    return formatSuggestions(data)
+    const suggestions = formatSuggestionsData(data)
+    
+    // Cache the successful result
+    cache.set(cacheKey, { data: suggestions, timestamp: Date.now() })
+    
+    return NextResponse.json({ suggestions })
     
   } catch (error) {
     console.error('Autocomplete API error:', error)
@@ -252,10 +273,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function formatSuggestions(data: any) {
+function formatSuggestionsData(data: any) {
   try {
     if (!data || !data.data || !Array.isArray(data.data)) {
-      return NextResponse.json({ suggestions: [] })
+      return []
     }
 
     // Format suggestions for autocomplete
@@ -280,9 +301,9 @@ function formatSuggestions(data: any) {
       }
     })
 
-    return NextResponse.json({ suggestions })
+    return suggestions
   } catch (error) {
     console.error('Error formatting suggestions:', error)
-    return NextResponse.json({ suggestions: [] })
+    return []
   }
 } 
