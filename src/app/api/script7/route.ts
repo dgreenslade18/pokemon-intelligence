@@ -275,6 +275,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export { analyzeCard }
+
 async function analyzeCard(
   cardName: string,
   userPreferences: UserPreferences,

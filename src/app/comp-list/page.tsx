@@ -24,6 +24,7 @@ export default function CompListPage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -74,6 +75,26 @@ export default function CompListPage() {
       }
     } catch (error) {
       setError('An error occurred while removing card')
+    }
+  }
+
+  const handleRefreshPrices = async () => {
+    setRefreshing(true)
+    setError('')
+    try {
+      const response = await fetch('/api/comp-list/refresh-prices', { method: 'POST' })
+      const data = await response.json()
+      if (data.success) {
+        setCompList(data.items)
+        setMessage('Prices refreshed!')
+        setTimeout(() => setMessage(''), 3000)
+      } else {
+        setError(data.error || 'Failed to refresh prices')
+      }
+    } catch (err) {
+      setError('Failed to refresh prices')
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -134,17 +155,37 @@ export default function CompListPage() {
               <h1 className="text-4xl font-bold text-white mb-2">My Comp List</h1>
               <p className="text-gray-300">Your saved card price comparisons</p>
             </div>
-            {compList.length > 0 && (
-              <button
-                onClick={exportToCSV}
-                className="flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export CSV
-              </button>
-            )}
+            <div className="flex gap-4">
+              {compList.length > 0 && (
+                <button
+                  onClick={exportToCSV}
+                  className="flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export CSV
+                </button>
+              )}
+              {compList.length > 0 && (
+                <button
+                  onClick={handleRefreshPrices}
+                  disabled={refreshing}
+                  className="flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+                >
+                  {refreshing ? (
+                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  )}
+                  {refreshing ? 'Refreshing...' : 'Refresh Prices'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

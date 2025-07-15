@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Script7Panel from '../components/Script7Panel'
 import UserHeader from '../components/UserHeader'
+import ApiStatus from '../components/ApiStatus'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -58,6 +59,7 @@ export default function Home() {
         <UserHeader />
         <div className="container mx-auto px-4 py-8">
           <Script7Panel onBack={() => {}} hideBackButton={true} />
+          <ApiStatus />
         </div>
       </div>
     </main>
