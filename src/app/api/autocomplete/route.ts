@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
           searchQuery = `(${nameQueries}) AND number:${cardNumber}`
         }
       } else {
-        // Single word card name with number
+        // Single word card name with number - try multiple search strategies
+        // First try: exact name match
         searchQuery = `name:${cardName}* AND number:${cardNumber}`
       }
     } else if (searchTerm.includes(' ')) {
@@ -120,9 +121,74 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       console.error(`Pokemon TCG API returned ${response.status} for query: "${query}". Response: ${await response.text()}`)
       
-      // If the specific number search failed, try without the number
+      // If the specific number search failed, try multiple fallback strategies
       if (cardNumberMatch) {
         const cardName = cardNumberMatch[1].trim()
+        const cardNumber = cardNumberMatch[2].trim()
+        
+        // Strategy 1: Try common card types with the number
+        const commonCardTypes = ['ex', 'v', 'vmax', 'vstar', 'gx']
+        for (const cardType of commonCardTypes) {
+          try {
+            const typeSearchQuery = `name:*${cardName}*${cardType}* AND number:${cardNumber}`
+            const typeSearchUrl = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(typeSearchQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
+            
+            const fallbackController = new AbortController()
+            const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 6000)
+            
+            const typeResponse = await fetch(typeSearchUrl, {
+              headers: {
+                'User-Agent': 'PokemonIntelligence/1.0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              signal: fallbackController.signal
+            })
+            
+            clearTimeout(fallbackTimeoutId)
+            
+            if (typeResponse.ok) {
+              const typeData = await typeResponse.json()
+              if (typeData.data && typeData.data.length > 0) {
+                return formatSuggestions(typeData)
+              }
+            }
+          } catch (error) {
+            // Continue to next strategy
+            continue
+          }
+        }
+        
+        // Strategy 2: Try broader search with just the name and number (no specific type)
+        const broadQuery = `name:*${cardName}* AND number:${cardNumber}`
+        const broadUrl = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(broadQuery)}&pageSize=8&select=id,name,set,number,images,rarity`
+        
+        try {
+          const fallbackController = new AbortController()
+          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 6000)
+          
+          const broadResponse = await fetch(broadUrl, {
+            headers: {
+              'User-Agent': 'PokemonIntelligence/1.0',
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            signal: fallbackController.signal
+          })
+          
+          clearTimeout(fallbackTimeoutId)
+          
+          if (broadResponse.ok) {
+            const broadData = await broadResponse.json()
+            if (broadData.data && broadData.data.length > 0) {
+              return formatSuggestions(broadData)
+            }
+          }
+        } catch (error) {
+          // Continue to final fallback
+        }
+        
+        // Strategy 3: Final fallback - search without the number
         let fallbackQuery: string
         
         if (cardName.includes(' ')) {
