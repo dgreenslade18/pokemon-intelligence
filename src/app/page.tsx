@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Script7Panel from '../components/Script7Panel'
-import UserHeader from '../components/UserHeader'
+import Header from '../components/Header'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -44,19 +44,24 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-white dark:bg-[#0a0a0a] relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-noise opacity-30" />
+    <main className="min-h-screen relative overflow-hidden">
+      {/* Background Images - Theme Specific */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat block dark:hidden"
+        style={{ backgroundImage: 'url(/lightBg2.png)' }}
+      />
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat dark:block hidden"
+        style={{ backgroundImage: 'url(/bg.jpg)' }}
+      />
       
-      {/* Floating Background Elements */}
-      <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-xl floating" />
-      <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full blur-xl floating-delayed" />
-      <div className="absolute bottom-20 left-1/2 w-40 h-40 bg-gradient-to-br from-green-500/20 to-teal-500/20 rounded-full blur-xl floating-slow" />
+      {/* Subtle Noise Texture */}
+      {/* <div className="absolute inset-0 bg-noise opacity-5" /> */}
       
       {/* Content */}
       <div className="relative z-10">
-        <UserHeader />
-        <div className="container mx-auto px-4 py-8">
+        <Header />
+        <div className="max-w-[1280px] mx-auto px-4 py-8 pt-24">
           <Script7Panel onBack={() => {}} hideBackButton={true} />
         </div>
       </div>

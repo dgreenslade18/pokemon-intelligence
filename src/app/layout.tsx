@@ -2,6 +2,7 @@ import React from 'react'
 import './globals.css'
 import AuthSessionProvider from '../components/SessionProvider'
 import { ThemeProvider } from '../components/ThemeProvider'
+import { layGrotesk, layGroteskHeading } from './fonts'
 
 export const metadata = {
   title: 'Pokemon Arbitrage Intelligence',
@@ -14,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${layGrotesk.variable} ${layGroteskHeading.variable}`}>
       <body>
         <ThemeProvider>
           <AuthSessionProvider>

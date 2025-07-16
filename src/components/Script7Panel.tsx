@@ -168,6 +168,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState<ProgressUpdate | null>(null)
   const [showProgressOverlay, setShowProgressOverlay] = useState(false)
+  const [progressStages, setProgressStages] = useState<Set<string>>(new Set())
   const [isEbayAccordionOpen, setIsEbayAccordionOpen] = useState(false)
   const [autocompleteResults, setAutocompleteResults] = useState<any[]>([])
   const [showAutocomplete, setShowAutocomplete] = useState(false)
@@ -334,6 +335,16 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     }
   }
 
+  const getProgressPercentage = (stage: string) => {
+    // Calculate progress based on completed stages
+    const completedStages = Array.from(progressStages)
+    const totalStages = ['starting', 'ebay', 'cardmarket', 'analysis']
+    const completedCount = totalStages.filter(s => completedStages.includes(s)).length
+    
+    // Base progress on completed stages rather than current stage
+    return Math.min(90, (completedCount / totalStages.length) * 90)
+  }
+
   const handleAnalyze = async () => {
     if (!searchTerm.trim()) {
       setError('Please enter a Pokemon card name')
@@ -344,6 +355,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     setError(null)
     setResult(null)
     setProgress(null)
+    setProgressStages(new Set())
     setShowProgressOverlay(true)
 
     try {
@@ -385,6 +397,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                 const data = JSON.parse(line.substring(6))
                 
                 if (data.type === 'progress') {
+                  console.log('Progress update:', data.stage, data.message)
+                  setProgressStages(prev => new Set(Array.from(prev).concat(data.stage)))
                   setProgress({
                     stage: data.stage,
                     message: data.message,
@@ -582,8 +596,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
               <div className="mt-8">
                 <div className="w-full bg-white/20 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full animate-pulse" 
-                       style={{ width: '75%' }}></div>
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out" 
+                    style={{ width: `${progress ? getProgressPercentage(progress.stage) : 0}%` }}
+                  ></div>
                 </div>
                 <p className="text-white/50 text-xs mt-2">
                   This usually takes 3-6 seconds
@@ -596,7 +612,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
       <div className="container mx-auto md:px-6 py-6 md:py-12 relative z-10 overflow-visible">
         {/* Header */}
-        <div className="mb-12 text-center md:text-left">
+        <div className="mb-12 mx-auto w-full max-w-[700px] text-center">
           {!hideBackButton && (
             <button
               onClick={onBack}
@@ -608,16 +624,15 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
               Back to Scripts
             </button>
           )}
-          <h1 className="text-3xl md:text-5xl font-bold gradient-text mb-4">
-            Card Comp
-          </h1>
-          <p className="text-black/60 dark:text-white/60 text-l md:text-xl font-light md:mx-0 mx-auto max-w-[75%]">Analyze raw card prices across eBay and Pokemon TCG API</p>
+          <h1 className="text-[48px] md:text-[68px] font-medium leading-[1.05] text-center max-w-[882px] mx-auto tracking-[-0.63px] gradient-text mb-4">
+          Made for sellers. Updated for today. </h1>
+          <p className="text-black/60 dark:text-white/60 block text-l md:text-xl font-regular md:mx-0 mx-auto">Analyse English raw card prices across eBay and Pokemon TCG API</p>
         </div>
 
         <div className="max-w-5xl mx-auto overflow-visible">
           {/* Search Section */}
           <div className="bento-card rounded-3xl p-6 md:p-10 mb-8 relative z-10 !overflow-visible">
-            <h2 className="text-xl md:text-3xl font-semibold text-black dark:text-white mb-8 text-center md:text-left">Enter Pokemon Card Name</h2>
+            <h2 className="text-xl md:text-3xl font-regular text-black dark:text-white mb-8 text-center md:text-left">Enter Pokemon Card Name</h2>
             
             <div className="flex gap-4 mb-6 flex-col md:flex-row">
               <div className="flex-1 relative" ref={autocompleteRef}>
@@ -716,14 +731,14 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                     <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Analyzing...
+                    Analysing...
                   </div>
                 ) : (
                   <div className="flex items-center justify-center md:justify-start">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    Analyze
+                    Analyse
                   </div>
                 )}
               </button>
