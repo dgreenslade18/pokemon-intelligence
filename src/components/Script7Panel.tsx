@@ -342,7 +342,14 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     const completedCount = totalStages.filter(s => completedStages.includes(s)).length
     
     // Base progress on completed stages rather than current stage
-    return Math.min(90, (completedCount / totalStages.length) * 90)
+    const baseProgress = Math.min(90, (completedCount / totalStages.length) * 90)
+    
+    // Add some progress for the current stage to make it feel more responsive
+    if (progress && progress.stage === stage) {
+      return Math.min(baseProgress + 10, 90)
+    }
+    
+    return baseProgress
   }
 
   const handleAnalyze = async () => {
@@ -357,6 +364,15 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     setProgress(null)
     setProgressStages(new Set())
     setShowProgressOverlay(true)
+
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setError('Request timed out. Please try again.')
+        setLoading(false)
+        setShowProgressOverlay(false)
+      }
+    }, 30000) // 30 second timeout
 
     try {
       // Use EventSource for real-time progress updates
@@ -426,6 +442,9 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     } catch (err) {
       console.error('Streaming error, falling back to synchronous request:', err)
       
+      // Clear the timeout since we're switching to fallback
+      clearTimeout(timeoutId)
+      
       // Fallback to synchronous request
       try {
         const response = await fetch('/api/script7', {
@@ -455,6 +474,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
         setShowProgressOverlay(false)
       }
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }
@@ -574,20 +594,26 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                   <div className="grid grid-cols-2 gap-3 mt-6">
                     <div className={`p-3 rounded-xl transition-all duration-300 ${
                       progress.stage === 'ebay' ? 'bg-blue-500/30 scale-105' : 
-                      ['cardmarket', 'analysis'].includes(progress.stage) ? 'bg-blue-500/50' : 'bg-white/10'
+                      progressStages.has('ebay') ? 'bg-blue-500/50' : 'bg-white/10'
                     }`}>
                       <div className="text-center">
                         <div className="text-xl mb-1">🏪</div>
                         <div className="text-xs text-white/80">eBay UK</div>
+                        {progressStages.has('ebay') && (
+                          <div className="text-xs text-green-400 mt-1">✓ Complete</div>
+                        )}
                       </div>
                     </div>
                     <div className={`p-3 rounded-xl transition-all duration-300 ${
                       progress.stage === 'cardmarket' ? 'bg-purple-500/30 scale-105' : 
-                      progress.stage === 'analysis' ? 'bg-purple-500/50' : 'bg-white/10'
+                      progressStages.has('cardmarket') ? 'bg-purple-500/50' : 'bg-white/10'
                     }`}>
                       <div className="text-center">
                         <div className="text-xl mb-1">🎮</div>
                         <div className="text-xs text-white/80">Pokemon TCG API</div>
+                        {progressStages.has('cardmarket') && (
+                          <div className="text-xs text-green-400 mt-1">✓ Complete</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -624,7 +650,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
               Back to Scripts
             </button>
           )}
-          <h1 className="text-[48px] md:text-[68px] font-medium leading-[1.05] text-center max-w-[882px] mx-auto tracking-[-0.63px] gradient-text mb-4">
+          <h1 className="text-[34px] md:text-[68px] font-medium leading-[1.05] text-center max-w-[882px] mx-auto tracking-[-0.63px] gradient-text mb-4">
           Made for sellers. Updated for today. </h1>
           <p className="text-black/60 dark:text-white/60 block text-l md:text-xl font-regular md:mx-0 mx-auto">Analyse English raw card prices across eBay and Pokemon TCG API</p>
         </div>
@@ -632,7 +658,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
         <div className="max-w-5xl mx-auto overflow-visible">
           {/* Search Section */}
           <div className="bento-card rounded-3xl p-6 md:p-10 mb-8 relative z-10 !overflow-visible">
-            <h2 className="text-xl md:text-3xl font-regular text-black dark:text-white mb-8 text-center md:text-left">Enter Pokemon Card Name</h2>
+            <h2 className="text-xl md:text-2xl font-regular text-black dark:text-white mb-8 text-center md:text-left">Enter Pokemon Card Name</h2>
             
             <div className="flex gap-4 mb-6 flex-col md:flex-row">
               <div className="flex-1 relative" ref={autocompleteRef}>
