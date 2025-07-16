@@ -148,7 +148,7 @@ export default function CompListPanel({ onBack }: CompListPanelProps) {
                 Your saved card comparisons and prices
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-4 md:flex-row flex-col">
               {compList.length > 0 && (
                 <button
                   onClick={exportToCSV}

@@ -25,6 +25,19 @@ export default function CompListPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  // Filter comp list based on search term
+  const filteredCompList = compList.filter(item => {
+    if (!searchTerm) return true
+    
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      item.card_name.toLowerCase().includes(searchLower) ||
+      (item.card_number && item.card_number.toLowerCase().includes(searchLower)) ||
+      (item.set_name && item.set_name.toLowerCase().includes(searchLower))
+    )
+  })
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -150,16 +163,16 @@ export default function CompListPage() {
           >
             ← Back to Home
           </button>
-          <div className="flex items-center justify-between">
+          <div className="flex items-start md:items-center justify-between flex-col md:flex-row">
             <div>
-              <h1 className="text-4xl font-bold text-white mb-2">My Comp List</h1>
+              <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">My Comp List</h1>
               <p className="text-gray-300">Your saved card price comparisons</p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-4 mt-4 md:mt-0">
               {compList.length > 0 && (
                 <button
                   onClick={exportToCSV}
-                  className="flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105"
+                  className="flex items-center text-[14px] px-4 md:px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -171,7 +184,7 @@ export default function CompListPage() {
                 <button
                   onClick={handleRefreshPrices}
                   disabled={refreshing}
-                  className="flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+                  className="flex items-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
                 >
                   {refreshing ? (
                     <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,6 +237,42 @@ export default function CompListPage() {
           </div>
         )}
 
+        {/* Search Bar */}
+        {compList.length > 0 && (
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search cards by name, number, or set..."
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300 pr-10"
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50">
+                {searchTerm ? (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="text-white/50 hover:text-white transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            {searchTerm && (
+              <div className="mt-2 text-sm text-gray-400">
+                Showing {filteredCompList.length} of {compList.length} cards
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Comp List Content */}
         <div className="backdrop-blur-md bg-white/10 rounded-xl border border-white/20 p-6">
           <h2 className="text-xl font-semibold text-white mb-4">Saved Cards</h2>
@@ -245,9 +294,21 @@ export default function CompListPage() {
                 Start Finding Cards
               </button>
             </div>
+          ) : filteredCompList.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-semibold text-white mb-2">No Cards Found</h3>
+              <p className="text-gray-400 mb-6">Try adjusting your search terms</p>
+              <button
+                onClick={() => setSearchTerm('')}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200"
+              >
+                Clear Search
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {compList.map((item) => (
+              {filteredCompList.map((item) => (
                 <div key={item.id} className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all duration-200">
                   {/* Card Image */}
                   {item.card_image_url && (
