@@ -76,10 +76,47 @@ export async function initDb() {
         saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         card_image_url TEXT,
-        set_name VARCHAR(255),
-        UNIQUE(user_id, card_name, card_number)
+        set_name VARCHAR(255)
       );
     `
+
+    // Add updated_at column if it doesn't exist (migration)
+    try {
+      await sql`
+        ALTER TABLE comp_list 
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+      `
+      console.log('✅ updated_at column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  updated_at column migration failed (might already exist):', migrationError.message)
+    }
+
+    // Handle existing duplicates before adding unique constraint
+    try {
+      // Remove duplicates keeping the most recent entry
+      await sql`
+        DELETE FROM comp_list 
+        WHERE id NOT IN (
+          SELECT DISTINCT ON (user_id, card_name, card_number) id
+          FROM comp_list
+          ORDER BY user_id, card_name, card_number, saved_at DESC
+        );
+      `
+      console.log('✅ Duplicate removal completed')
+    } catch (duplicateError) {
+      console.log('⚠️  Duplicate removal failed (might not be needed):', duplicateError.message)
+    }
+
+    // Add unique constraint if it doesn't exist
+    try {
+      await sql`
+        ALTER TABLE comp_list 
+        ADD CONSTRAINT comp_list_unique_user_card UNIQUE(user_id, card_name, card_number);
+      `
+      console.log('✅ Unique constraint added successfully')
+    } catch (constraintError) {
+      console.log('⚠️  Unique constraint already exists or failed:', constraintError.message)
+    }
 
     // Create index on user_id for faster queries
     await sql`
@@ -263,26 +300,41 @@ export async function saveToCompList(
   cardImageUrl?: string,
   setName?: string
 ): Promise<CompListItem> {
-  const result = await sql`
-    INSERT INTO comp_list (
-      user_id, card_name, card_number, recommended_price, 
-      tcg_price, ebay_average, card_image_url, set_name
-    )
-    VALUES (
-      ${userId}, ${cardName}, ${cardNumber}, ${recommendedPrice},
-      ${tcgPrice}, ${ebayAverage}, ${cardImageUrl || null}, ${setName || null}
-    )
-    ON CONFLICT (user_id, card_name, card_number) DO UPDATE SET
-      recommended_price = EXCLUDED.recommended_price,
-      tcg_price = EXCLUDED.tcg_price,
-      ebay_average = EXCLUDED.ebay_average,
-      card_image_url = EXCLUDED.card_image_url,
-      set_name = EXCLUDED.set_name,
-      updated_at = CURRENT_TIMESTAMP
-    RETURNING *
-  `
-  
-  return result.rows[0] as CompListItem
+  try {
+    const result = await sql`
+      INSERT INTO comp_list (
+        user_id, card_name, card_number, recommended_price, 
+        tcg_price, ebay_average, card_image_url, set_name
+      )
+      VALUES (
+        ${userId}, ${cardName}, ${cardNumber}, ${recommendedPrice},
+        ${tcgPrice}, ${ebayAverage}, ${cardImageUrl || null}, ${setName || null}
+      )
+      ON CONFLICT (user_id, card_name, card_number) DO UPDATE SET
+        recommended_price = EXCLUDED.recommended_price,
+        tcg_price = EXCLUDED.tcg_price,
+        ebay_average = EXCLUDED.ebay_average,
+        card_image_url = EXCLUDED.card_image_url,
+        set_name = EXCLUDED.set_name,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `
+    
+    return result.rows[0] as CompListItem
+  } catch (error) {
+    console.error('Error in saveToCompList:', error)
+    
+    // Handle specific database errors
+    if (error.message?.includes('comp_list_unique_user_card')) {
+      throw new Error('Card already exists in your comp list')
+    } else if (error.message?.includes('user_id')) {
+      throw new Error('Invalid user ID')
+    } else if (error.message?.includes('card_name')) {
+      throw new Error('Card name is required')
+    } else {
+      throw new Error(`Database error: ${error.message}`)
+    }
+  }
 }
 
 export async function getCompList(userId: string): Promise<CompListItem[]> {

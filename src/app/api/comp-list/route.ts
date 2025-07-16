@@ -55,10 +55,29 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Error saving to comp list:', error)
-    return NextResponse.json(
-      { error: 'Failed to save card to comp list' },
-      { status: 500 }
-    )
+    
+    // Handle specific errors
+    if (error.message?.includes('Card already exists')) {
+      return NextResponse.json(
+        { error: 'This card is already in your comp list' },
+        { status: 409 }
+      )
+    } else if (error.message?.includes('Invalid user ID')) {
+      return NextResponse.json(
+        { error: 'Invalid user session' },
+        { status: 401 }
+      )
+    } else if (error.message?.includes('Card name is required')) {
+      return NextResponse.json(
+        { error: 'Card name is required' },
+        { status: 400 }
+      )
+    } else {
+      return NextResponse.json(
+        { error: 'Failed to save card to comp list' },
+        { status: 500 }
+      )
+    }
   }
 }
 
