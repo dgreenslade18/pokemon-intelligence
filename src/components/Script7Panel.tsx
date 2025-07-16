@@ -502,7 +502,11 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
       const data = await response.json()
 
       if (data.success) {
-        setSaveMessage('✅ Card saved to your comp list!')
+        if (data.isUpdate) {
+          setSaveMessage('🔄 Card updated in your comp list!')
+        } else {
+          setSaveMessage('✅ Card saved to your comp list!')
+        }
       } else {
         setSaveMessage('❌ Failed to save card. Please try again.')
       }

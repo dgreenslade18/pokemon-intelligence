@@ -1,5 +1,7 @@
 import { sql } from '@vercel/postgres'
 
+export { sql }
+
 export interface User {
   id: string
   email: string
@@ -28,6 +30,7 @@ export interface CompListItem {
   tcg_price: number
   ebay_average: number
   saved_at: Date
+  updated_at: Date
   card_image_url?: string
   set_name?: string
 }
@@ -71,8 +74,10 @@ export async function initDb() {
         tcg_price DECIMAL(10,2),
         ebay_average DECIMAL(10,2),
         saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         card_image_url TEXT,
-        set_name VARCHAR(255)
+        set_name VARCHAR(255),
+        UNIQUE(user_id, card_name, card_number)
       );
     `
 
@@ -267,6 +272,13 @@ export async function saveToCompList(
       ${userId}, ${cardName}, ${cardNumber}, ${recommendedPrice},
       ${tcgPrice}, ${ebayAverage}, ${cardImageUrl || null}, ${setName || null}
     )
+    ON CONFLICT (user_id, card_name, card_number) DO UPDATE SET
+      recommended_price = EXCLUDED.recommended_price,
+      tcg_price = EXCLUDED.tcg_price,
+      ebay_average = EXCLUDED.ebay_average,
+      card_image_url = EXCLUDED.card_image_url,
+      set_name = EXCLUDED.set_name,
+      updated_at = CURRENT_TIMESTAMP
     RETURNING *
   `
   

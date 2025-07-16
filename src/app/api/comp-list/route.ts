@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../lib/auth'
-import { saveToCompList, getCompList, removeFromCompList } from '../../../lib/db'
+import { saveToCompList, getCompList, removeFromCompList, sql } from '../../../lib/db'
 
 export async function POST(request: Request) {
   try {
@@ -26,6 +26,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // Check if card already exists
+    const existingCard = await sql`
+      SELECT id, saved_at, updated_at FROM comp_list 
+      WHERE user_id = ${session.user.id} 
+      AND card_name = ${cardName} 
+      AND card_number = ${cardNumber || ''}
+    `
+
     const compListItem = await saveToCompList(
       session.user.id,
       cardName,
@@ -37,10 +45,13 @@ export async function POST(request: Request) {
       setName
     )
 
+    const isUpdate = existingCard.rows.length > 0
+
     return NextResponse.json({ 
       success: true, 
       item: compListItem,
-      message: 'Card saved to comp list' 
+      isUpdate,
+      message: isUpdate ? 'Card updated in your comp list!' : 'Card saved to your comp list!'
     })
   } catch (error) {
     console.error('Error saving to comp list:', error)
