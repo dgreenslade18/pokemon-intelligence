@@ -1124,7 +1124,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                                 <h6 className="text-sm font-medium dark:text-white/70 text-black/70 mb-2">Weaknesses</h6>
                                 <div className="flex flex-wrap gap-2">
                                   {result.card_details.weaknesses.map((weakness, index) => (
-                                    <div key={index} className="bg-red-500/20 dark:bg-red-300 text-red-700 px-2 py-1 rounded text-xs">
+                                    <div key={index} className="bg-red-500/20 dark:bg-red-300 text-red-700   px-2 py-1 rounded text-xs">
                                       {weakness.type} {weakness.value}
                                     </div>
                                   ))}

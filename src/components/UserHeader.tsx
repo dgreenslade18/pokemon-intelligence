@@ -4,12 +4,16 @@ import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from './ThemeProvider'
+import { useApiStatus } from '../hooks/useApiStatus'
+import ApiStatusModal from './ApiStatusModal'
 
 export default function UserHeader() {
   const { data: session, status } = useSession()
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showApiStatusModal, setShowApiStatusModal] = useState(false)
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
+  const { healthStatus, getStatusIcon, getStatusText } = useApiStatus()
 
   const handleSignOut = async () => {
     try {
@@ -22,6 +26,11 @@ export default function UserHeader() {
   const handleProfileClick = () => {
     setShowDropdown(false)
     router.push('/account')
+  }
+
+  const handleApiStatusClick = () => {
+    setShowDropdown(false)
+    setShowApiStatusModal(true)
   }
 
   if (status === 'loading') {
@@ -106,6 +115,8 @@ export default function UserHeader() {
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </button>
               
+
+              
               <button
                 onClick={() => {
                   setShowDropdown(false)
@@ -134,6 +145,29 @@ export default function UserHeader() {
               
               <div className="border-t mt-2 pt-2 border-gray-200 dark:border-white/10">
                 <button
+                  onClick={handleApiStatusClick}
+                  className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+                >
+                  <div className="w-5 h-5 mr-3 flex items-center justify-center">
+                    {healthStatus ? (
+                      <span className="text-sm">{getStatusIcon(healthStatus.overall_status)}</span>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">API Status</div>
+                    {healthStatus && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {getStatusText(healthStatus.overall_status)}
+                      </div>
+                    )}
+                  </div>
+                </button>
+                
+                <button
                   onClick={handleSignOut}
                   className="w-full px-4 py-3 text-left text-red-300 hover:text-red-200 hover:bg-red-500/20 transition-colors duration-200 flex items-center"
                 >
@@ -155,6 +189,12 @@ export default function UserHeader() {
           onClick={() => setShowDropdown(false)}
         />
       )}
+
+      {/* API Status Modal */}
+      <ApiStatusModal 
+        isOpen={showApiStatusModal} 
+        onClose={() => setShowApiStatusModal(false)} 
+      />
     </div>
   )
 } 
