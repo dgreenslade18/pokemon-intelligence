@@ -594,9 +594,9 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
         </div>
       )}
 
-      <div className="container mx-auto px-6 py-6 md:py-12 relative z-10 overflow-visible">
+      <div className="container mx-auto md:px-6 py-6 md:py-12 relative z-10 overflow-visible">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-12 text-center md:text-left">
           {!hideBackButton && (
             <button
               onClick={onBack}
@@ -611,13 +611,13 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
           <h1 className="text-3xl md:text-5xl font-bold gradient-text mb-4">
             Card Comp
           </h1>
-          <p className="text-white/60 text-l md:text-xl font-light max-w-[75%]">Analyze raw card prices across eBay and Pokemon TCG API</p>
+          <p className="text-white/60 text-l md:text-xl font-light md:mx-0 mx-auto max-w-[75%]">Analyze raw card prices across eBay and Pokemon TCG API</p>
         </div>
 
         <div className="max-w-5xl mx-auto overflow-visible">
           {/* Search Section */}
           <div className="bento-card rounded-3xl p-6 md:p-10 mb-8 relative z-10 !overflow-visible">
-            <h2 className="text-xl md:text-3xl font-semibold text-white mb-8">Enter Pokemon Card Name</h2>
+            <h2 className="text-xl md:text-3xl font-semibold text-white mb-8 text-center md:text-left">Enter Pokemon Card Name</h2>
             
             <div className="flex gap-4 mb-6 flex-col md:flex-row">
               <div className="flex-1 relative" ref={autocompleteRef}>
@@ -709,17 +709,17 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
               <button
                 onClick={handleAnalyze}
                 disabled={loading || !searchTerm.trim()}
-                className="px-4 md:px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-semibold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-blue-500/30"
+                className="px-4 md:px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 md:text-left text-center hover:from-blue-400 hover:to-purple-400 text-white font-semibold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-blue-500/30"
               >
                 {loading ? (
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-center md:justify-start">
                     <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     Analyzing...
                   </div>
                 ) : (
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-center md:justify-start">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>

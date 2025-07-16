@@ -114,14 +114,14 @@ export default function CompListPage() {
   const exportToCSV = () => {
     if (compList.length === 0) return
 
-    const headers = ['Card Name', 'Card Number', 'Set', 'TCG Price (£)', 'eBay Average (£)', 'Recommended Price (£)', 'Saved Date']
+    const headers = ['Card Name', 'Card Number', 'Set', 'TCG Price (£)', 'eBay Average (£)', 'Recommended Price', 'Saved Date']
     const csvData = compList.map(item => [
       item.card_name,
       item.card_number || '',
       item.set_name || '',
       Number(item.tcg_price).toFixed(2) || '0.00',
       Number(item.ebay_average).toFixed(2) || '0.00',
-      Number(item.recommended_price).toFixed(2) || '0.00',
+      item.recommended_price || '',
       new Date(item.saved_at).toLocaleDateString()
     ])
 

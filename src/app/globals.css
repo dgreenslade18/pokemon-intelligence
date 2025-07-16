@@ -5,7 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --background: #0a0a0a;
+  --background: #1A1A1A;
   --foreground: #ffffff;
   --card-background: rgba(255, 255, 255, 0.03);
   --card-border: rgba(255, 255, 255, 0.08);
@@ -23,6 +23,10 @@
 
 * {
   box-sizing: border-box;
+}
+
+@theme{
+  --color-black: #1A1A1A;
 }
 
 body {
