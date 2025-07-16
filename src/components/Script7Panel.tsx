@@ -611,13 +611,13 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
           <h1 className="text-3xl md:text-5xl font-bold gradient-text mb-4">
             Card Comp
           </h1>
-          <p className="text-white/60 text-l md:text-xl font-light md:mx-0 mx-auto max-w-[75%]">Analyze raw card prices across eBay and Pokemon TCG API</p>
+          <p className="text-black/60 dark:text-white/60 text-l md:text-xl font-light md:mx-0 mx-auto max-w-[75%]">Analyze raw card prices across eBay and Pokemon TCG API</p>
         </div>
 
         <div className="max-w-5xl mx-auto overflow-visible">
           {/* Search Section */}
           <div className="bento-card rounded-3xl p-6 md:p-10 mb-8 relative z-10 !overflow-visible">
-            <h2 className="text-xl md:text-3xl font-semibold text-white mb-8 text-center md:text-left">Enter Pokemon Card Name</h2>
+            <h2 className="text-xl md:text-3xl font-semibold text-black dark:text-white mb-8 text-center md:text-left">Enter Pokemon Card Name</h2>
             
             <div className="flex gap-4 mb-6 flex-col md:flex-row">
               <div className="flex-1 relative" ref={autocompleteRef}>
@@ -628,7 +628,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="e.g., Charizard V, Special Delivery Charizard"
-                  className="w-full px-4 md:px-6 py-4 relative z-10 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+                  className="w-full px-4 md:px-6 py-4 relative z-10 bg-black/10 dark:bg-white/10 border border-black/20 dark:border-white/20 rounded-2xl text-black dark:text-white dark:placeholder-white/50 placeholder-black/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
                   disabled={loading}
                 />
                 
@@ -749,21 +749,21 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
             <div ref={resultsRef} className="space-y-8">
               {/* Summary Card */}
               <div className="bento-card rounded-3xl p-6 md:p-10">
-                <h2 className="text-xl md:text-3xl font-semibold text-white mb-8">Analysis Results: {result.card_name}</h2>
+                <h2 className="text-xl md:text-3xl font-semibold dark:text-white text-black mb-8">Analysis Results: {result.card_name}</h2>
                 
                 {result.analysis.final_average ? (
                   <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-2xl p-4 md:p-8 mb-8">
                     <div className="text-center">
-                      <h3 className="text-lg md:text-2xl font-bold text-white mb-4">💰 Recommended Price Range</h3>
-                      <div className="text-xl md:text-4xl font-bold text-green-300 mb-2">{result.analysis.recommendation}</div>
-                      <p className="text-sm md:text-base text-white/60">Based on current market average of £{formatPrice(result.analysis.final_average || 0)}</p>
+                      <h3 className="text-lg md:text-2xl font-bold dark:text-white text-black mb-4">💰 Recommended Price Range</h3>
+                      <div className="text-xl md:text-4xl font-bold dark:text-green-300 text-green-700 mb-2">{result.analysis.recommendation}</div>
+                      <p className="text-sm md:text-base dark:text-white/60 text-black/60">Based on current market average of £{formatPrice(result.analysis.final_average || 0)}</p>
                     </div>
                   </div>
                 ) : (
                   <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-2xl p-4 md:p-8 mb-8">
                     <div className="text-center">
-                      <h3 className="text-xl font-bold text-white mb-4">⚠️ Insufficient Data</h3>
-                      <p className="text-white/60">Not enough price data found to make a recommendation</p>
+                      <h3 className="text-xl font-bold dark:text-white text-black mb-4">⚠️ Insufficient Data</h3>
+                      <p className="dark:text-white/60 text-black/60">Not enough price data found to make a recommendation</p>
                     </div>
                   </div>
                 )}
@@ -807,30 +807,30 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                 {/* Price Sources */}
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* eBay UK */}
-                  <div className="bg-white/5 rounded-2xl p-6">
+                  <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-6">
                     <div className="flex items-center mb-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                      <div className="w-10 h-10 dark:bg-blue-100 bg-blue-300 rounded-lg flex items-center justify-center mr-3">
                         <span className="text-xl">🏪</span>
                       </div>
-                      <h4 className="text-lg font-semibold text-white">eBay UK</h4>
+                      <h4 className="text-lg font-semibold dark:text-white text-black">eBay UK</h4>
                     </div>
                     
                     {result.ebay_prices.length > 0 ? (
                       <div>
-                        <div className="text-2xl font-bold text-blue-300 mb-3">
+                        <div className="text-2xl font-bold dark:text-blue-300 text-blue-700 mb-3">
                           £{formatPrice(result.analysis.ebay_average || 0)}
                         </div>
-                        <p className="text-white/50 text-sm mb-4">Average of {result.ebay_prices.length} recent sales</p>
+                        <p className="dark:text-white/50 text-black/50 text-sm mb-4">Average of {result.ebay_prices.length} recent sales</p>
                         
                         {/* Accordion for eBay listings */}
-                        <div className="border border-white/10 rounded-lg">
+                        <div className="border border-black/10 dark:border-white/10 rounded-lg">
                           <button
                             onClick={() => setIsEbayAccordionOpen(!isEbayAccordionOpen)}
-                            className="w-full flex items-center justify-between p-3 text-left hover:bg-white/5 transition-colors duration-200"
+                            className="w-full flex items-center justify-between p-3 text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200"
                           >
-                            <span className="text-white/70 text-sm">View Individual Listings</span>
+                            <span className="dark:text-white/70 text-black/70 text-sm">View Individual Listings</span>
                             <svg 
-                              className={`w-4 h-4 text-white/50 transition-transform duration-200 ${isEbayAccordionOpen ? 'rotate-180' : ''}`}
+                              className={`w-4 h-4 dark:text-white/50 text-black/50 transition-transform duration-200 ${isEbayAccordionOpen ? 'rotate-180' : ''}`}
                               fill="none" 
                               stroke="currentColor" 
                               viewBox="0 0 24 24"
@@ -840,10 +840,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                           </button>
                           
                           {isEbayAccordionOpen && (
-                            <div className="border-t border-white/10 p-3">
+                            <div className="border-t border-black/10 dark:border-white/10 p-3">
                               <div className="space-y-2">
                                 {result.ebay_prices.map((item, index) => (
-                                  <div key={index} className="text-xs text-white/40 bg-white/5 rounded p-2">
+                                  <div key={index} className="text-xs dark:text-white/40 text-black/40 bg-black/5 dark:bg-white/5 rounded p-2">
                                     <div className="font-medium">£{formatPrice(item.price)}</div>
                                     <div className="truncate mb-1">{item.title}</div>
                                     {item.url && (
@@ -867,25 +867,25 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         </div>
                       </div>
                     ) : (
-                      <div className="text-white/50">No recent sales found</div>
+                      <div className="dark:text-white/50 text-black/50">No recent sales found</div>
                     )}
                   </div>
 
                   {/* Pokemon TCG API */}
-                  <div className="bg-white/5 rounded-2xl p-6">
+                  <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-6">
                     <div className="flex items-center mb-4">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                      <div className="w-10 h-10 dark:bg-purple-100 bg-purple-300 rounded-lg flex items-center justify-center mr-3">
                         <span className="text-xl">🎮</span>
                       </div>
-                      <h4 className="text-lg font-semibold text-white">Pokemon TCG API</h4>
+                      <h4 className="text-lg font-semibold dark:text-white text-black">Pokemon TCG API</h4>
                     </div>
                     
                     {result.cardmarket ? (
                       <div>
-                        <div className="text-2xl font-bold text-purple-300 mb-3">
+                        <div className="text-2xl font-bold dark:text-purple-300 text-purple-700 mb-3">
                           £{formatPrice(result.cardmarket.price)}
                         </div>
-                        <p className="text-white/50 text-sm mb-2">Best available market price</p>
+                        <p className="dark:text-white/50 text-black/50 text-sm mb-2">Best available market price</p>
                         {result.cardmarket.url && (
                           <a 
                             href={result.cardmarket.url} 
@@ -901,15 +901,15 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         )}
                       </div>
                     ) : (
-                      <div className="text-white/50">No pricing data found</div>
+                      <div className="dark:text-white/50 text-black/50">No pricing data found</div>
                     )}
                   </div>
                 </div>
 
                 {/* Whatnot Pricing Strategy */}
                 {result?.analysis?.whatnot_pricing && (
-                  <div className="mt-8 bg-white/5 rounded-2xl p-6">
-                    <h4 className="text-lg font-semibold text-white mb-4">📱 Whatnot Pricing Strategy</h4>
+                  <div className="mt-8 bg-black/5 dark:bg-white/5 rounded-2xl p-6">
+                    <h4 className="text-lg font-semibold dark:text-white text-black mb-4">📱 Whatnot Pricing Strategy</h4>
                     
                     <div className="space-y-4">
                       <div className="grid gap-4">
@@ -917,10 +917,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         <div className="bg-cyan-500/20 border border-cyan-500/30 rounded-lg p-4">
                           <div className="flex text-center md:text-left items-center justify-between flex-col md:flex-row">
                             <div>
-                              <h5 className="text-cyan-300 font-medium">🎯 Price to Charge for Market Value</h5>
-                              <p className="text-cyan-200 text-sm">List price to receive £{(result?.analysis?.final_average || 0).toFixed(2)} after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees</p>
+                              <h5 className="dark:text-cyan-300 text-cyan-700 font-medium">🎯 Price to Charge for Market Value</h5>
+                              <p className="dark:text-cyan-200 text-cyan-700 text-sm">List price to receive £{(result?.analysis?.final_average || 0).toFixed(2)} after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees</p>
                             </div>
-                            <p className="text-2xl font-bold text-cyan-300 mt-4 md:mt-0">{result?.analysis?.whatnot_pricing?.price_to_charge_for_market}</p>
+                            <p className="text-2xl font-bold dark:text-cyan-300 text-cyan-700 mt-4 md:mt-0">{result?.analysis?.whatnot_pricing?.price_to_charge_for_market}</p>
                           </div>
                         </div>
 
@@ -928,10 +928,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
                         <div className="flex text-center md:text-left items-center justify-between flex-col md:flex-row">
                         <div>
-                              <h5 className="text-purple-300 font-medium">💰 Net Proceeds at Market Price</h5>
-                              <p className="text-purple-200 text-sm">What you'll receive selling at £{(result?.analysis?.final_average || 0).toFixed(2)} (after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees)</p>
+                              <h5 className="dark:text-purple-300 text-purple-700 font-medium">💰 Net Proceeds at Market Price</h5>
+                              <p className="dark:text-purple-200 text-purple-700 text-sm">What you'll receive selling at £{(result?.analysis?.final_average || 0).toFixed(2)} (after {result?.analysis?.whatnot_pricing?.fees_percentage}% fees)</p>
                             </div>
-                            <p className="text-2xl font-bold text-purple-300 mt-4 md:mt-0">{result?.analysis?.whatnot_pricing?.net_proceeds_at_market}</p>
+                            <p className="text-2xl font-bold dark:text-purple-300 text-purple-700 mt-4 md:mt-0">{result?.analysis?.whatnot_pricing?.net_proceeds_at_market}</p>
                           </div>
                         </div>
                       </div>
@@ -939,8 +939,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       {/* Whatnot fee info */}
                       <div className="pt-4 border-t border-white/10">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-white/50">Whatnot Fee Rate:</span>
-                          <span className="text-white font-medium">{result?.analysis?.whatnot_pricing?.fees_percentage}%</span>
+                          <span className="dark:text-white/50 text-black/50">Whatnot Fee Rate:</span>
+                          <span className="dark:text-white font-medium">{result?.analysis?.whatnot_pricing?.fees_percentage}%</span>
                         </div>
                       </div>
                     </div>
@@ -949,8 +949,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
                 {/* Trade Pricing Strategy */}
                 {(result.analysis.pricing_strategy || result.analysis.price_range) && (
-                  <div className="mt-8 bg-white/5 rounded-2xl p-6">
-                    <h4 className="text-lg font-semibold text-white mb-4">💰 Trade Pricing Strategy</h4>
+                  <div className="mt-8 bg-black/5 dark:bg-white/5 rounded-2xl p-6">
+                    <h4 className="text-lg font-semibold dark:text-white text-black mb-4">💰 Trade Pricing Strategy</h4>
                     
                     {result.analysis.pricing_strategy ? (
                       <div className="space-y-4">
@@ -960,10 +960,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <h5 className="text-green-300 font-medium">💵 Buy Value</h5>
-                                  <p className="text-green-200 text-sm">Market price for buying/selling</p>
+                                  <h5 className="dark:text-green-300 text-green-700 font-medium">💵 Buy Value</h5>
+                                  <p className="dark:text-green-200 text-green-700 text-sm">Market price for buying/selling</p>
                                 </div>
-                                <p className="text-lg md:text-2xl text-right font-bold text-green-300">{result.analysis.pricing_strategy.buy_price}</p>
+                                <p className="text-lg md:text-2xl text-right font-bold dark:text-green-300 text-green-700">{result.analysis.pricing_strategy.buy_price}</p>
                               </div>
                             </div>
                           )}
@@ -972,10 +972,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <h5 className="text-blue-300 font-medium">🔄 Trade Value</h5>
-                                  <p className="text-blue-200 text-sm">Price to pay for store credit/trade</p>
+                                  <h5 className="dark:text-blue-300 text-blue-700 font-medium">🔄 Trade Value</h5>
+                                  <p className="dark:text-blue-200 text-blue-700 text-sm">Price to pay for store credit/trade</p>
                                 </div>
-                                <p className="text-lg md:text-2xl text-right font-bold text-blue-300">{result.analysis.pricing_strategy.trade_price}</p>
+                                <p className="text-lg md:text-2xl text-right font-bold dark:text-blue-300 text-blue-700">{result.analysis.pricing_strategy.trade_price}</p>
                               </div>
                             </div>
                           )}
@@ -984,10 +984,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-4">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <h5 className="text-orange-300 font-medium">💸 Cash Value</h5>
-                                  <p className="text-orange-200 text-sm">Price to pay with cash</p>
+                                  <h5 className="dark:text-orange-300 text-orange-700 font-medium">💸 Cash Value</h5>
+                                  <p className="dark:text-orange-200 text-orange-700 text-sm">Price to pay with cash</p>
                                 </div>
-                                <p className="text-lg md:text-2xl text-right font-bold text-orange-300">{result.analysis.pricing_strategy.cash_price}</p>
+                                <p className="text-lg md:text-2xl text-right font-bold dark:text-orange-300 text-orange-700">{result.analysis.pricing_strategy.cash_price}</p>
                               </div>
                             </div>
                           )}
@@ -997,12 +997,12 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         <div className="pt-4 border-t border-white/10">
                           <div className="grid md:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-white/50 text-sm mb-1">Price Range</p>
-                              <p className="text-white font-medium">{result.analysis.price_range}</p>
+                              <p className="dark:text-white/50 text-black/50 text-sm mb-1">Price Range</p>
+                              <p className="dark:text-white font-medium">{result.analysis.price_range}</p>
                             </div>
                             <div>
-                              <p className="text-white/50 text-sm mb-1">Market Average</p>
-                              <p className="text-white font-medium">£{formatPrice(result.analysis.final_average || 0)}</p>
+                              <p className="dark:text-white/50 text-black/50 text-sm mb-1">Market Average</p>
+                              <p className="dark:text-white font-medium">£{formatPrice(result.analysis.final_average || 0)}</p>
                             </div>
                           </div>
                         </div>
@@ -1011,8 +1011,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       /* Fallback for legacy format */
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                          <p className="text-white/50 mb-2">Price Range</p>
-                          <p className="text-xl font-semibold text-white">{result.analysis.price_range}</p>
+                          <p className="dark:text-white/50 text-black/50 mb-2">Price Range</p>
+                          <p className="text-xl font-semibold dark:text-white text-black">{result.analysis.price_range}</p>
                         </div>
                         <div>
                           <p className="text-white/50 mb-2">Market Average</p>
@@ -1024,14 +1024,14 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                 )}
                 {/* Comprehensive Card Details */}
                 {result.card_details && (result.card_details.images || result.card_details.tcgplayer_pricing || result.card_details.cardmarket_pricing || result.card_details.name) && (
-                  <div className="mt-8 bg-white/5 rounded-2xl p-6">
-                    <h4 className="text-lg font-semibold text-white mb-6">🎴 Complete Card Information</h4>
+                  <div className="mt-8 bg-black/5 dark:bg-white/5 rounded-2xl p-6">
+                    <h4 className="text-lg font-semibold dark:text-white text-black mb-6">🎴 Complete Card Information</h4>
                     
                     <div className="grid lg:grid-cols-3 gap-8">
                       {/* Card Image & Basic Info */}
                       
                         {result.card_details.images?.large && (
-                          <div className="bg-white/10 rounded-xl p-4">
+                          <div className="bg-black/10 dark:bg-white/10 rounded-xl p-4">
                             <img 
                               src={result.card_details.images.large} 
                               alt={result.card_details.name || 'Pokemon Card'}
@@ -1046,46 +1046,46 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         
                         {result.card_details.name && (
                           <div className="space-y-3">
-                            <h5 className="text-md font-semibold text-white">Card Details</h5>
+                            <h5 className="text-md font-semibold dark:text-white text-black">Card Details</h5>
                             <div className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-white/50">Name:</span>
-                                <span className="text-white">{result.card_details.name}</span>
+                                <span className="dark:text-white/50 text-black/50">Name:</span>
+                                <span className="dark:text-white text-black">{result.card_details.name}</span>
                               </div>
                               {result.card_details.set?.name && (
                                 <div className="flex justify-between">
-                                  <span className="text-white/50">Set:</span>
-                                  <span className="text-white">{result.card_details.set.name}</span>
+                                  <span className="dark:text-white/50 text-black/50">Set:</span>
+                                  <span className="dark:text-white text-black">{result.card_details.set.name}</span>
                                 </div>
                               )}
                               <div className="flex justify-between">
-                                <span className="text-white/50">Number:</span>
-                                <span className="text-white">{result.card_details.number}</span>
+                                <span className="dark:text-white/50 text-black/50">Number:</span>
+                                <span className="dark:text-white text-black">{result.card_details.number}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-white/50">Rarity:</span>
-                                <span className="text-white">{result.card_details.rarity}</span>
+                                <span className="dark:text-white/50 text-black/50">Rarity:</span>
+                                <span className="dark:text-white text-black">{result.card_details.rarity}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-white/50">Artist:</span>
-                                <span className="text-white">{result.card_details.artist}</span>
+                                <span className="dark:text-white/50 text-black/50">Artist:</span>
+                                <span className="dark:text-white text-black">{result.card_details.artist}</span>
                               </div>
                               {result.card_details.hp && (
                                 <div className="flex justify-between">
-                                  <span className="text-white/50">HP:</span>
-                                  <span className="text-white">{result.card_details.hp}</span>
+                                  <span className="dark:text-white/50 text-black/50">HP:</span>
+                                  <span className="dark:text-white text-black">{result.card_details.hp}</span>
                                 </div>
                               )}
                               {result.card_details.types.length > 0 && (
                                 <div className="flex justify-between">
-                                  <span className="text-white/50">Types:</span>
-                                  <span className="text-white">{result.card_details.types.join(', ')}</span>
+                                  <span className="dark:text-white/50 text-black/50">Types:</span>
+                                  <span className="dark:text-white text-black">{result.card_details.types.join(', ')}</span>
                                 </div>
                               )}
                               {result.card_details.supertype && (
                                 <div className="flex justify-between">
-                                  <span className="text-white/50">Supertype:</span>
-                                  <span className="text-white">{result.card_details.supertype}</span>
+                                  <span className="dark:text-white/50 text-black/50">Supertype:</span>
+                                  <span className="dark:text-white text-black">{result.card_details.supertype}</span>
                                 </div>
                               )}
                             </div>
@@ -1095,23 +1095,23 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         {/* Game Statistics */}
                         {(result.card_details.attacks || result.card_details.weaknesses || result.card_details.resistances || result.card_details.retreatCost) && (
                           <div className="space-y-3">
-                            <h5 className="text-md font-semibold text-white">Game Statistics</h5>
+                            <h5 className="text-md font-semibold dark:text-white text-black">Game Statistics</h5>
                             
                             {/* Attacks */}
                             {result.card_details.attacks && result.card_details.attacks.length > 0 && (
                               <div className="space-y-2">
-                                <h6 className="text-sm font-medium text-white/70">Attacks</h6>
+                                <h6 className="text-sm font-medium dark:text-white/70 text-black/70">Attacks</h6>
                                 {result.card_details.attacks.map((attack, index) => (
-                                  <div key={index} className="bg-white/5 rounded-lg p-3">
+                                  <div key={index} className="bg-black/5 dark:bg-white/5 rounded-lg p-3">
                                     <div className="flex justify-between items-start mb-1">
-                                      <span className="text-white font-medium">{attack.name}</span>
-                                      <span className="text-orange-300 font-bold">{attack.damage}</span>
+                                      <span className="dark:text-white text-black font-medium">{attack.name}</span>
+                                      <span className="dark:text-orange-300 text-orange-700 font-bold">{attack.damage}</span>
                                     </div>
-                                    <div className="text-xs text-white/50 mb-1">
+                                    <div className="text-xs dark:text-white/50 text-black/50 mb-1">
                                       Energy Cost: {attack.cost.length > 0 ? attack.cost.join(', ') : 'None'}
                                     </div>
                                     {attack.text && (
-                                      <div className="text-xs text-white/70">{attack.text}</div>
+                                      <div className="text-xs dark:text-white/70 text-black/70">{attack.text}</div>
                                     )}
                                   </div>
                                 ))}
@@ -1121,10 +1121,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             {/* Weaknesses */}
                             {result.card_details.weaknesses && result.card_details.weaknesses.length > 0 && (
                               <div>
-                                <h6 className="text-sm font-medium text-white/70 mb-2">Weaknesses</h6>
+                                <h6 className="text-sm font-medium dark:text-white/70 text-black/70 mb-2">Weaknesses</h6>
                                 <div className="flex flex-wrap gap-2">
                                   {result.card_details.weaknesses.map((weakness, index) => (
-                                    <div key={index} className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs">
+                                    <div key={index} className="bg-red-500/20 dark:bg-red-300 text-red-700 px-2 py-1 rounded text-xs">
                                       {weakness.type} {weakness.value}
                                     </div>
                                   ))}
@@ -1135,10 +1135,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             {/* Resistances */}
                             {result.card_details.resistances && result.card_details.resistances.length > 0 && (
                               <div>
-                                <h6 className="text-sm font-medium text-white/70 mb-2">Resistances</h6>
+                                <h6 className="text-sm font-medium dark:text-white/70 text-black/70 mb-2">Resistances</h6>
                                 <div className="flex flex-wrap gap-2">
                                   {result.card_details.resistances.map((resistance, index) => (
-                                    <div key={index} className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs">
+                                    <div key={index} className="bg-blue-500/20 dark:bg-blue-300 text-blue-300 px-2 py-1 rounded text-xs">
                                       {resistance.type} {resistance.value}
                                     </div>
                                   ))}
@@ -1149,8 +1149,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             {/* Retreat Cost */}
                             {result.card_details.retreatCost && result.card_details.retreatCost.length > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-white/50">Retreat Cost:</span>
-                                <span className="text-white">{result.card_details.retreatCost.join(', ')}</span>
+                                <span className="dark:text-white/50 text-black/50">Retreat Cost:</span>
+                                <span className="dark:text-white text-black">{result.card_details.retreatCost.join(', ')}</span>
                               </div>
                             )}
                           </div>
@@ -1159,23 +1159,23 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         {/* Legalities */}
                         {result.card_details.legalities && (
                           <div className="space-y-3">
-                            <h5 className="text-md font-semibold text-white">Format Legalities</h5>
+                            <h5 className="text-md font-semibold dark:text-white text-black">Format Legalities</h5>
                             <div className="grid grid-cols-1 gap-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-white/50">Standard:</span>
-                                <span className={`${result.card_details.legalities.standard === 'Legal' ? 'text-green-300' : 'text-red-300'}`}>
+                                <span className="dark:text-white/50 text-black/50">Standard:</span>
+                                <span className={`${result.card_details.legalities.standard === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
                                   {result.card_details.legalities.standard}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-white/50">Expanded:</span>
-                                <span className={`${result.card_details.legalities.expanded === 'Legal' ? 'text-green-300' : 'text-red-300'}`}>
+                                <span className="dark:text-white/50 text-black/50">Expanded:</span>
+                                <span className={`${result.card_details.legalities.expanded === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
                                   {result.card_details.legalities.expanded}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-white/50">Unlimited:</span>
-                                <span className={`${result.card_details.legalities.unlimited === 'Legal' ? 'text-green-300' : 'text-red-300'}`}>
+                                <span className="dark:text-white/50 text-black/50">Unlimited:</span>
+                                <span className={`${result.card_details.legalities.unlimited === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
                                   {result.card_details.legalities.unlimited}
                                 </span>
                               </div>
@@ -1186,19 +1186,19 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         {/* Set Information */}
                         {result.card_details.set && (
                           <div className="space-y-3">
-                            <h5 className="text-md font-semibold text-white">Set Information</h5>
+                            <h5 className="text-md font-semibold dark:text-white text-black">Set Information</h5>
                             <div className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-white/50">Series:</span>
-                                <span className="text-white">{result.card_details.set.series}</span>
+                                <span className="dark:text-white/50 text-black/50">Series:</span>
+                                <span className="dark:text-white text-black">{result.card_details.set.series}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-white/50">Release Date:</span>
-                                <span className="text-white">{result.card_details.set.releaseDate}</span>
+                                <span className="dark:text-white/50 text-black/50">Release Date:</span>
+                                <span className="dark:text-white text-black">{result.card_details.set.releaseDate}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-white/50">Total Cards:</span>
-                                <span className="text-white">{result.card_details.set.total}</span>
+                                <span className="dark:text-white/50 text-black/50">Total Cards:</span>
+                                <span className="dark:text-white text-black">{result.card_details.set.total}</span>
                               </div>
                             </div>
                           </div>
@@ -1208,37 +1208,37 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       {/* TCGPlayer Pricing */}
                       {result.card_details.tcgplayer_pricing?.prices && Object.keys(result.card_details.tcgplayer_pricing.prices).length > 0 && (
                         <div>
-                          <h5 className="text-md font-semibold text-white mb-4 flex items-center">
+                          <h5 className="text-md font-semibold dark:text-white text-black mb-4 flex items-center">
                             <span className="mr-2">🇺🇸</span>
                             TCGPlayer Pricing (USD)
                           </h5>
                           <div className="space-y-3">
                             {Object.entries(result.card_details.tcgplayer_pricing.prices).map(([category, prices]) => (
-                              <div key={category} className="bg-white/5 rounded-lg p-3">
-                                <div className="font-medium text-white capitalize mb-2">{category.replace(/([A-Z])/g, ' $1').trim()}</div>
+                              <div key={category} className="bg-black/5 dark:bg-white/5 rounded-lg p-3">
+                                <div className="font-medium dark:text-white text-black capitalize mb-2">{category.replace(/([A-Z])/g, ' $1').trim()}</div>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                   {prices.market && (
                                     <div className="flex justify-between">
-                                      <span className="text-white/50">Market:</span>
-                                      <span className="text-green-300 font-medium">${formatPrice(prices.market)}</span>
+                                      <span className="dark:text-white/50 text-black/50">Market:</span>
+                                      <span className="dark:text-green-300 text-green-700 font-medium">${formatPrice(prices.market)}</span>
                                     </div>
                                   )}
                                   {prices.low && (
                                     <div className="flex justify-between">
-                                      <span className="text-white/50">Low:</span>
-                                      <span className="text-white">${formatPrice(prices.low)}</span>
+                                      <span className="dark:text-white/50 text-black/50">Low:</span>
+                                      <span className="dark:text-white text-black">${formatPrice(prices.low)}</span>
                                     </div>
                                   )}
                                   {prices.mid && (
                                     <div className="flex justify-between">
-                                      <span className="text-white/50">Mid:</span>
-                                      <span className="text-white">${formatPrice(prices.mid)}</span>
+                                      <span className="dark:text-white/50 text-black/50">Mid:</span>
+                                      <span className="dark:text-white text-black">${formatPrice(prices.mid)}</span>
                                     </div>
                                   )}
                                   {prices.high && (
                                     <div className="flex justify-between">
-                                      <span className="text-white/50">High:</span>
-                                      <span className="text-white">${formatPrice(prices.high)}</span>
+                                      <span className="dark:text-white/50 text-black/50">High:</span>
+                                      <span className="dark:text-white text-black">${formatPrice(prices.high)}</span>
                                     </div>
                                   )}
                                 </div>
@@ -1250,7 +1250,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                               href={result.card_details.tcgplayer_pricing.url} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors duration-200"
+                              className="inline-flex items-center dark:text-blue-400 text-blue-700 hover:text-blue-300 text-sm mt-3 transition-colors duration-200"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -1264,31 +1264,31 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       {/* CardMarket Pricing */}
                       {result.card_details.cardmarket_pricing?.prices && (
                         <div>
-                          <h5 className="text-md font-semibold text-white mb-4 flex items-center">
+                          <h5 className="text-md font-semibold dark:text-white text-black mb-4 flex items-center">
                             <span className="mr-2">🇪🇺</span>
                             CardMarket Pricing (EUR)
                           </h5>
                           <div className="space-y-3">
                             {/* Current Market Prices */}
-                            <div className="bg-white/5 rounded-lg p-3">
-                              <div className="font-medium text-white mb-2">Current Market</div>
+                            <div className="bg-black/5 dark:bg-white/5 rounded-lg p-3">
+                              <div className="font-medium dark:text-white text-black mb-2">Current Market</div>
                               <div className="space-y-1 text-xs">
                                 {result.card_details.cardmarket_pricing.prices.trendPrice && (
                                   <div className="flex justify-between">
-                                    <span className="text-white/50">Trend Price:</span>
-                                    <span className="text-green-300 font-medium">€{formatPrice(result.card_details.cardmarket_pricing.prices.trendPrice)}</span>
+                                    <span className="dark:text-white/50 text-black/50">Trend Price:</span>
+                                    <span className="dark:text-green-300 text-green-700 font-medium">€{formatPrice(result.card_details.cardmarket_pricing.prices.trendPrice)}</span>
                                   </div>
                                 )}
                                 {result.card_details.cardmarket_pricing.prices.averageSellPrice && (
                                   <div className="flex justify-between">
-                                    <span className="text-white/50">Avg Sell:</span>
-                                    <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.averageSellPrice)}</span>
+                                    <span className="dark:text-white/50 text-black/50">Avg Sell:</span>
+                                    <span className="dark:text-white text-black">€{formatPrice(result.card_details.cardmarket_pricing.prices.averageSellPrice)}</span>
                                   </div>
                                 )}
                                 {result.card_details.cardmarket_pricing.prices.lowPrice && (
                                   <div className="flex justify-between">
-                                    <span className="text-white/50">Low Price:</span>
-                                    <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.lowPrice)}</span>
+                                    <span className="dark:text-white/50 text-black/50">Low Price:</span>
+                                    <span className="dark:text-white text-black">€{formatPrice(result.card_details.cardmarket_pricing.prices.lowPrice)}</span>
                                   </div>
                                 )}
                               </div>
@@ -1296,25 +1296,25 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
                             {/* Recent Averages */}
                             {(result.card_details.cardmarket_pricing.prices.avg1 || result.card_details.cardmarket_pricing.prices.avg7 || result.card_details.cardmarket_pricing.prices.avg30) && (
-                              <div className="bg-white/5 rounded-lg p-3">
-                                <div className="font-medium text-white mb-2">Recent Averages</div>
+                              <div className="bg-black/5 dark:bg-white/5 rounded-lg p-3">
+                                <div className="font-medium dark:text-white text-black mb-2">Recent Averages</div>
                                 <div className="space-y-1 text-xs">
                                   {result.card_details.cardmarket_pricing.prices.avg1 && (
                                     <div className="flex justify-between">
-                                      <span className="text-white/50">1-day:</span>
-                                      <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg1)}</span>
+                                      <span className="dark:text-white/50 text-black/50">1-day:</span>
+                                      <span className="dark:text-white text-black">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg1)}</span>
                                     </div>
                                   )}
                                   {result.card_details.cardmarket_pricing.prices.avg7 && (
                                     <div className="flex justify-between">
-                                      <span className="text-white/50">7-day:</span>
-                                      <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg7)}</span>
+                                      <span className="dark:text-white/50 text-black/50">7-day:</span>
+                                      <span className="dark:text-white text-black">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg7)}</span>
                                     </div>
                                   )}
                                   {result.card_details.cardmarket_pricing.prices.avg30 && (
                                     <div className="flex justify-between">
-                                      <span className="text-white/50">30-day:</span>
-                                      <span className="text-white">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg30)}</span>
+                                      <span className="dark:text-white/50 text-black/50">30-day:</span>
+                                      <span className="dark:text-white text-black">€{formatPrice(result.card_details.cardmarket_pricing.prices.avg30)}</span>
                                     </div>
                                   )}
                                 </div>
@@ -1326,7 +1326,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                               href={result.card_details.cardmarket_pricing.url} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors duration-200"
+                              className="inline-flex items-center dark:text-blue-400 text-blue-700 hover:text-blue-300 text-sm mt-3 transition-colors duration-200"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

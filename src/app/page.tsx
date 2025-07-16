@@ -45,7 +45,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] relative overflow-hidden">
+    <main className="min-h-screen bg-white dark:bg-[#0a0a0a] relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 bg-noise opacity-30" />
       

@@ -1,6 +1,7 @@
 import React from 'react'
 import './globals.css'
 import AuthSessionProvider from '../components/SessionProvider'
+import { ThemeProvider } from '../components/ThemeProvider'
 
 export const metadata = {
   title: 'Pokemon Arbitrage Intelligence',
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthSessionProvider>
-          {children}
-        </AuthSessionProvider>
+        <ThemeProvider>
+          <AuthSessionProvider>
+            {children}
+          </AuthSessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

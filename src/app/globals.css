@@ -5,6 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
+  /* Dark theme (default) */
   --background: #1A1A1A;
   --foreground: #ffffff;
   --card-background: rgba(255, 255, 255, 0.03);
@@ -12,6 +13,7 @@
   --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
+  --border-color: rgba(255, 255, 255, 0.1);
   --accent-blue: #0084ff;
   --accent-purple: #8b5cf6;
   --accent-green: #10b981;
@@ -19,6 +21,30 @@
   --accent-red: #ef4444;
   --blur-primary: 40px;
   --blur-secondary: 20px;
+}
+
+/* Light theme */
+.light {
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --card-background: rgba(0, 0, 0, 0.03);
+  --card-border: rgba(0, 0, 0, 0.08);
+  --text-primary: #1a1a1a;
+  --text-secondary: #525252;
+  --text-muted: #737373;
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme */
+.dark {
+  --background: #1A1A1A;
+  --foreground: #ffffff;
+  --card-background: rgba(255, 255, 255, 0.03);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-color: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -45,10 +71,20 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.light .glass {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 .glass-strong {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(var(--blur-primary));
   border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.light .glass-strong {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 /* Bento card styles */
@@ -71,6 +107,10 @@ body {
   pointer-events: none; /* Fix: Allow clicks to pass through */
 }
 
+.light .bento-card::before {
+  background: linear-gradient(45deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+}
+
 .bento-card:hover::before {
   opacity: 1;
 }
@@ -79,6 +119,11 @@ body {
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.2);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.light .bento-card:hover {
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
 /* Floating animations */
@@ -160,13 +205,25 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.light ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 }
 
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 @layer utilities {
