@@ -245,20 +245,28 @@ export default function CompListPage() {
   }
 
   const getProgressPercentage = (stage: string) => {
-    // Calculate progress based on completed stages
-    const completedStages = Array.from(progressStages)
-    const totalStages = ['starting', 'ebay', 'cardmarket', 'analysis']
-    const completedCount = totalStages.filter(s => completedStages.includes(s)).length
-    
-    // Base progress on completed stages rather than current stage
-    const baseProgress = Math.min(90, (completedCount / totalStages.length) * 90)
-    
-    // Add some progress for the current stage to make it feel more responsive
-    if (progress && progress.stage === stage) {
-      return Math.min(baseProgress + 10, 90)
+    // Use the actual progress data from the API if available
+    if (progress && progress.percentage !== undefined) {
+      return Math.min(progress.percentage, 90)
     }
     
-    return baseProgress
+    // Fallback calculation based on current stage
+    if (progress && progress.current && progress.total) {
+      return Math.min((progress.current / progress.total) * 90, 90)
+    }
+    
+    // Default progress based on stage
+    switch (stage) {
+      case 'starting':
+        return 10
+      case 'analyzing':
+        return progress?.current && progress?.total ? 
+          Math.min((progress.current / progress.total) * 80 + 10, 90) : 50
+      case 'complete':
+        return 100
+      default:
+        return 30
+    }
   }
 
   // Generate CSV data for download
@@ -551,6 +559,11 @@ export default function CompListPage() {
                         </div>
                         <div className="text-white/80 text-sm">
                           {progress.message}
+                          {progress.stage === 'analyzing' && progress.current && progress.total && (
+                            <div className="text-white/60 text-xs mt-1">
+                              Progress: {progress.current}/{progress.total} cards
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -559,25 +572,25 @@ export default function CompListPage() {
                   {/* Progress Steps */}
                   <div className="grid grid-cols-2 gap-3 mt-6">
                     <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      progress.stage === 'ebay' ? 'bg-blue-500/30 scale-105' : 
-                      progressStages.has('ebay') ? 'bg-blue-500/50' : 'bg-white/10'
+                      progress.stage === 'analyzing' ? 'bg-orange-500/30 scale-105' : 
+                      progressStages.has('analyzing') ? 'bg-orange-500/50' : 'bg-white/10'
                     }`}>
                       <div className="text-center">
-                        <div className="text-xl mb-1">🏪</div>
-                        <div className="text-xs text-white/80">eBay UK</div>
-                        {progressStages.has('ebay') && (
+                        <div className="text-xl mb-1">🔍</div>
+                        <div className="text-xs text-white/80">Analyzing Cards</div>
+                        {progressStages.has('analyzing') && (
                           <div className="text-xs text-green-400 mt-1">✓ Complete</div>
                         )}
                       </div>
                     </div>
                     <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      progress.stage === 'cardmarket' ? 'bg-purple-500/30 scale-105' : 
-                      progressStages.has('cardmarket') ? 'bg-purple-500/50' : 'bg-white/10'
+                      progress.stage === 'complete' ? 'bg-green-500/30 scale-105' : 
+                      progressStages.has('complete') ? 'bg-green-500/50' : 'bg-white/10'
                     }`}>
                       <div className="text-center">
-                        <div className="text-xl mb-1">🎮</div>
-                        <div className="text-xs text-white/80">Pokemon TCG API</div>
-                        {progressStages.has('cardmarket') && (
+                        <div className="text-xl mb-1">✅</div>
+                        <div className="text-xs text-white/80">Saving Data</div>
+                        {progressStages.has('complete') && (
                           <div className="text-xs text-green-400 mt-1">✓ Complete</div>
                         )}
                       </div>
@@ -593,7 +606,18 @@ export default function CompListPage() {
                     style={{ width: `${progress ? getProgressPercentage(progress.stage) : 0}%` }}
                   ></div>
                 </div>
-                <p className="text-white/50 text-xs mt-2">
+                <div className="flex justify-between text-white/50 text-xs mt-2">
+                  <span>
+                    {progress?.current && progress?.total ? 
+                      `Card ${progress.current} of ${progress.total}` : 
+                      'Processing cards...'
+                    }
+                  </span>
+                  <span>
+                    {progress?.percentage ? `${progress.percentage}%` : 'Calculating...'}
+                  </span>
+                </div>
+                <p className="text-white/50 text-xs mt-1">
                   This usually takes 3-6 seconds per card
                 </p>
               </div>
