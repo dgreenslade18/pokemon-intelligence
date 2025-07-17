@@ -18,6 +18,54 @@ interface WhatsNewModalProps {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'v2.2.0',
+    date: '2024-01-15',
+    title: 'Card Name Capitalization',
+    description: 'Added automatic card name capitalization for consistent display. Pokemon names are properly capitalized, special terms (EX, GX, V, VMAX) are uppercase, and other words use title case.',
+    type: 'improvement',
+    icon: '✨'
+  },
+  {
+    version: 'v2.1.5',
+    date: '2024-01-15',
+    title: 'Enhanced Dropdown Experience',
+    description: 'Extended the "My Comp List" dropdown width by 35% for better readability and improved list name display.',
+    type: 'improvement',
+    icon: '📋'
+  },
+  {
+    version: 'v2.1.4',
+    date: '2024-01-15',
+    title: 'Smooth Grid Animations',
+    description: 'Added enhanced CSS animations for grid transitions between 3x and 4x layouts with staggered card animations and GPU acceleration.',
+    type: 'improvement',
+    icon: '🎬'
+  },
+  {
+    version: 'v2.1.3',
+    date: '2024-01-15',
+    title: 'Layout Improvements',
+    description: 'Reorganized comp list page layout: moved data explanations to bottom, repositioned search bar under statistics, and aligned view toggle with search bar.',
+    type: 'improvement',
+    icon: '🎨'
+  },
+  {
+    version: 'v2.1.2',
+    date: '2024-01-15',
+    title: 'Multiple Lists Feature',
+    description: 'Complete multiple lists system with unlimited private lists, list management modal, card counts, and smart card addition flow.',
+    type: 'feature',
+    icon: '📚'
+  },
+  {
+    version: 'v2.1.1',
+    date: '2024-01-15',
+    title: 'What\'s New Feature',
+    description: 'Added "What\'s New" modal accessible from user dropdown with detailed changelog and feature highlights.',
+    type: 'feature',
+    icon: '🎉'
+  },
+  {
     version: 'v2.1.0',
     date: '2024-01-15',
     title: 'Real-Time Progress Updates',
