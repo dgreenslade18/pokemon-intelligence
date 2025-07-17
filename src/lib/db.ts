@@ -474,11 +474,29 @@ export async function saveToCompList(
   tcgPrice: number | null,
   ebayAverage: number | null,
   cardImageUrl?: string,
-  setName?: string
+  setName?: string,
+  confidenceData?: {
+    savedTcgPrice?: number | null
+    savedEbayAverage?: number | null
+    priceChangePercentage?: number | null
+    priceVolatility?: number | null
+    marketTrend?: 'increasing' | 'decreasing' | 'stable' | null
+    confidenceScore?: number | null
+  }
 ): Promise<CompListItem> {
   const result = await sql`
-    INSERT INTO comp_list (user_id, card_name, card_number, recommended_price, tcg_price, ebay_average, card_image_url, set_name)
-    VALUES (${userId}, ${cardName}, ${cardNumber}, ${recommendedPrice}, ${tcgPrice}, ${ebayAverage}, ${cardImageUrl || null}, ${setName || null})
+    INSERT INTO comp_list (
+      user_id, card_name, card_number, recommended_price, tcg_price, ebay_average, 
+      card_image_url, set_name, saved_tcg_price, saved_ebay_average, 
+      price_change_percentage, price_volatility, market_trend, confidence_score
+    )
+    VALUES (
+      ${userId}, ${cardName}, ${cardNumber}, ${recommendedPrice}, ${tcgPrice}, ${ebayAverage}, 
+      ${cardImageUrl || null}, ${setName || null}, ${confidenceData?.savedTcgPrice || null}, 
+      ${confidenceData?.savedEbayAverage || null}, ${confidenceData?.priceChangePercentage || null}, 
+      ${confidenceData?.priceVolatility || null}, ${confidenceData?.marketTrend || null}, 
+      ${confidenceData?.confidenceScore || null}
+    )
     ON CONFLICT (user_id, card_name, card_number) 
     DO UPDATE SET 
       recommended_price = EXCLUDED.recommended_price,
@@ -486,6 +504,12 @@ export async function saveToCompList(
       ebay_average = EXCLUDED.ebay_average,
       card_image_url = EXCLUDED.card_image_url,
       set_name = EXCLUDED.set_name,
+      saved_tcg_price = EXCLUDED.saved_tcg_price,
+      saved_ebay_average = EXCLUDED.saved_ebay_average,
+      price_change_percentage = EXCLUDED.price_change_percentage,
+      price_volatility = EXCLUDED.price_volatility,
+      market_trend = EXCLUDED.market_trend,
+      confidence_score = EXCLUDED.confidence_score,
       updated_at = CURRENT_TIMESTAMP
     RETURNING *
   `

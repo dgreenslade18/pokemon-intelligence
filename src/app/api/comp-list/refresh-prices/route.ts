@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../../lib/auth'
-import { getCompList, saveToCompList } from '../../../../lib/db'
+import { getCompList, saveToCompList, getUserPreferences } from '../../../../lib/db'
 import { analyzeCard } from '../../script7/route'
 
 export const dynamic = 'force-dynamic'
@@ -78,28 +78,72 @@ export async function POST(request: Request) {
                 sendProgress('analyzing', `Analyzing ${item.card_name}...`, currentIndex, compList.length)
                 
                 try {
-                  // Use analyzeCard to get latest prices
-                  const analysis = await analyzeCard(item.card_name, {
-                    trade_percentage: 80,
-                    cash_percentage: 70,
-                    show_buy_value: true,
-                    show_trade_value: false,
-                    show_cash_value: false,
-                    whatnot_fees: 12.5,
-                    user_id: session.user.id,
-                    updated_at: new Date()
-                  })
+                  // Get user preferences for analysis
+                  const userPreferences = await getUserPreferences(session.user.id)
                   
-                  // Save updated prices - use null instead of 0 for missing prices
+                  // Use analyzeCard to get latest prices
+                  const analysis = await analyzeCard(item.card_name, userPreferences)
+                  
+                  // Calculate confidence metrics
+                  const savedTcgPrice = item.saved_tcg_price
+                  const savedEbayAverage = item.saved_ebay_average
+                  const newTcgPrice = analysis.analysis.cardmarket_price > 0 ? analysis.analysis.cardmarket_price : null
+                  const newEbayAverage = analysis.analysis.ebay_average > 0 ? analysis.analysis.ebay_average : null
+                  
+                  // Calculate price change percentage
+                  let priceChangePercentage = null
+                  if (savedTcgPrice && newTcgPrice) {
+                    priceChangePercentage = ((newTcgPrice - savedTcgPrice) / savedTcgPrice) * 100
+                  }
+                  
+                  // Calculate volatility (simplified - could be enhanced)
+                  let priceVolatility = null
+                  if (analysis.ebay_prices.length > 1) {
+                    const prices = analysis.ebay_prices.map(p => p.price)
+                    const mean = prices.reduce((sum, price) => sum + price, 0) / prices.length
+                    const variance = prices.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / prices.length
+                    priceVolatility = Math.sqrt(variance)
+                  }
+                  
+                  // Determine market trend
+                  let marketTrend = null
+                  if (priceChangePercentage !== null) {
+                    if (priceChangePercentage > 5) marketTrend = 'increasing'
+                    else if (priceChangePercentage < -5) marketTrend = 'decreasing'
+                    else marketTrend = 'stable'
+                  }
+                  
+                  // Calculate confidence score (0-10)
+                  let confidenceScore = null
+                  if (analysis.ebay_prices.length > 0 || newTcgPrice) {
+                    let score = 0
+                    if (analysis.ebay_prices.length >= 3) score += 4 // Good eBay data
+                    else if (analysis.ebay_prices.length > 0) score += 2 // Some eBay data
+                    if (newTcgPrice) score += 3 // TCG price available
+                    if (priceVolatility !== null && priceVolatility < 5) score += 2 // Low volatility
+                    else if (priceVolatility !== null) score += 1 // Some volatility data
+                    if (marketTrend) score += 1 // Trend data available
+                    confidenceScore = Math.min(10, score)
+                  }
+                  
+                  // Save updated prices with confidence metrics
                   const updated = await saveToCompList(
                     session.user.id,
                     item.card_name,
                     item.card_number,
                     analysis.analysis.recommendation || '',
-                    analysis.analysis.cardmarket_price > 0 ? analysis.analysis.cardmarket_price : null,
-                    analysis.analysis.ebay_average > 0 ? analysis.analysis.ebay_average : null,
+                    newTcgPrice,
+                    newEbayAverage,
                     item.card_image_url,
-                    item.set_name
+                    item.set_name,
+                    {
+                      savedTcgPrice: savedTcgPrice,
+                      savedEbayAverage: savedEbayAverage,
+                      priceChangePercentage: priceChangePercentage,
+                      priceVolatility: priceVolatility,
+                      marketTrend: marketTrend,
+                      confidenceScore: confidenceScore
+                    }
                   )
                   
                   sendProgress('analyzing', `Completed ${item.card_name}`, currentIndex + 1, compList.length)
@@ -137,28 +181,72 @@ export async function POST(request: Request) {
       const compList = await getCompList(session.user.id)
       const updatedItems = []
       
+      // Get user preferences for analysis
+      const userPreferences = await getUserPreferences(session.user.id)
+      
       for (const item of compList) {
         // Use analyzeCard to get latest prices
-        const analysis = await analyzeCard(item.card_name, {
-          trade_percentage: 80,
-          cash_percentage: 70,
-          show_buy_value: true,
-          show_trade_value: false,
-          show_cash_value: false,
-          whatnot_fees: 12.5,
-          user_id: session.user.id,
-          updated_at: new Date()
-        })
-        // Save updated prices - use null instead of 0 for missing prices
+        const analysis = await analyzeCard(item.card_name, userPreferences)
+        // Calculate confidence metrics for synchronous version
+        const savedTcgPrice = item.saved_tcg_price
+        const savedEbayAverage = item.saved_ebay_average
+        const newTcgPrice = analysis.analysis.cardmarket_price > 0 ? analysis.analysis.cardmarket_price : null
+        const newEbayAverage = analysis.analysis.ebay_average > 0 ? analysis.analysis.ebay_average : null
+        
+        // Calculate price change percentage
+        let priceChangePercentage = null
+        if (savedTcgPrice && newTcgPrice) {
+          priceChangePercentage = ((newTcgPrice - savedTcgPrice) / savedTcgPrice) * 100
+        }
+        
+        // Calculate volatility
+        let priceVolatility = null
+        if (analysis.ebay_prices.length > 1) {
+          const prices = analysis.ebay_prices.map(p => p.price)
+          const mean = prices.reduce((sum, price) => sum + price, 0) / prices.length
+          const variance = prices.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / prices.length
+          priceVolatility = Math.sqrt(variance)
+        }
+        
+        // Determine market trend
+        let marketTrend = null
+        if (priceChangePercentage !== null) {
+          if (priceChangePercentage > 5) marketTrend = 'increasing'
+          else if (priceChangePercentage < -5) marketTrend = 'decreasing'
+          else marketTrend = 'stable'
+        }
+        
+        // Calculate confidence score
+        let confidenceScore = null
+        if (analysis.ebay_prices.length > 0 || newTcgPrice) {
+          let score = 0
+          if (analysis.ebay_prices.length >= 3) score += 4
+          else if (analysis.ebay_prices.length > 0) score += 2
+          if (newTcgPrice) score += 3
+          if (priceVolatility !== null && priceVolatility < 5) score += 2
+          else if (priceVolatility !== null) score += 1
+          if (marketTrend) score += 1
+          confidenceScore = Math.min(10, score)
+        }
+        
+        // Save updated prices with confidence metrics
         const updated = await saveToCompList(
           session.user.id,
           item.card_name,
           item.card_number,
           analysis.analysis.recommendation || '',
-          analysis.analysis.cardmarket_price > 0 ? analysis.analysis.cardmarket_price : null,
-          analysis.analysis.ebay_average > 0 ? analysis.analysis.ebay_average : null,
+          newTcgPrice,
+          newEbayAverage,
           item.card_image_url,
-          item.set_name
+          item.set_name,
+          {
+            savedTcgPrice: savedTcgPrice,
+            savedEbayAverage: savedEbayAverage,
+            priceChangePercentage: priceChangePercentage,
+            priceVolatility: priceVolatility,
+            marketTrend: marketTrend,
+            confidenceScore: confidenceScore
+          }
         )
         updatedItems.push(updated)
       }
