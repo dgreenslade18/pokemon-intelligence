@@ -178,7 +178,6 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   const [maxDropdownHeight, setMaxDropdownHeight] = useState(320)
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [lists, setLists] = useState<any[]>([])
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [showListSelector, setShowListSelector] = useState(false)
@@ -585,43 +584,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     }
   }
 
-  // Generate CSV data for download
-  const generateCSVData = () => {
-    if (!result) return null
 
-    const csvData = [
-      ['Card Name', 'Card Number', 'Set Name', 'eBay Average', 'Pokemon TCG Price', 'Final Average', 'Price Range', 'Recommendation', 'Timestamp'],
-      [
-        result.card_name,
-        result.card_details?.number || '',
-        result.card_details?.set?.name || '',
-        result.analysis.ebay_average?.toFixed(2) || '0.00',
-        result.cardmarket?.price?.toFixed(2) || '0.00',
-        result.analysis.final_average?.toFixed(2) || '0.00',
-        result.analysis.price_range || '',
-        result.analysis.recommendation || '',
-        result.timestamp
-      ]
-    ]
-
-    return csvData.map(row => row.join(',')).join('\n')
-  }
-
-  // Handle CSV download
-  const handleDownload = () => {
-    const csvData = generateCSVData()
-    if (!csvData) return
-
-    const blob = new Blob([csvData], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `card_analysis_${result?.card_name?.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-  }
 
   return (
     <div className="min-h-screen relative">
@@ -860,19 +823,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
             <div ref={resultsRef} className="space-y-8">
               {/* Summary Card */}
               <div className="bento-card rounded-3xl p-6 md:p-10">
-                <div className="flex items-center justify-between mb-8">
+                <div className="mb-8">
                   <h2 className="text-xl md:text-3xl font-semibold dark:text-white text-black">Analysis Results: {result.card_name}</h2>
-                  <button
-                    onClick={handleDownload}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 group"
-                  >
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 mr-2 group-hover:translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span>Download CSV</span>
-                    </div>
-                  </button>
                 </div>
                 
                 {result.analysis.final_average ? (
