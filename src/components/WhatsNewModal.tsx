@@ -167,9 +167,9 @@ export default function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-white/10 text-center">
             <p className="text-white/60 text-sm">
-              Want to suggest a feature? Contact us at{' '}
-              <a href="mailto:support@cardintelligence.com" className="text-blue-400 hover:text-blue-300 transition-colors">
-                support@cardintelligence.com
+              Want to suggest a feature? Contact me at{' '}
+              <a href="mailto:domgreenslade@me.com" className="text-blue-400 hover:text-blue-300 transition-colors">
+              domgreenslade@me.com
               </a>
             </p>
           </div>
