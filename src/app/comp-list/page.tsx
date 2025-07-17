@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import Header from '../../components/Header'
+
 
 interface CompListItem {
   id: string
@@ -413,7 +413,6 @@ export default function CompListPage() {
   if (!session) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
-        <Header />
         <div className="container mx-auto px-6 py-12">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white mb-4">Please sign in to view your comp list</h1>
@@ -431,7 +430,6 @@ export default function CompListPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
-      <Header />
       
       {/* Progress Overlay */}
       {showProgressOverlay && (
