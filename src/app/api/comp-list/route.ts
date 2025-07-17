@@ -39,8 +39,8 @@ export async function POST(request: Request) {
       cardName,
       cardNumber || '',
       recommendedPrice,
-      tcgPrice || 0,
-      ebayAverage || 0,
+      tcgPrice > 0 ? tcgPrice : null,
+      ebayAverage > 0 ? ebayAverage : null,
       cardImageUrl,
       setName
     )

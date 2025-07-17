@@ -27,8 +27,8 @@ export interface CompListItem {
   card_name: string
   card_number: string
   recommended_price: string
-  tcg_price: number
-  ebay_average: number
+  tcg_price: number | null
+  ebay_average: number | null
   saved_at: Date
   updated_at: Date
   card_image_url?: string
@@ -295,8 +295,8 @@ export async function saveToCompList(
   cardName: string,
   cardNumber: string,
   recommendedPrice: string,
-  tcgPrice: number,
-  ebayAverage: number,
+  tcgPrice: number | null,
+  ebayAverage: number | null,
   cardImageUrl?: string,
   setName?: string
 ): Promise<CompListItem> {
@@ -320,7 +320,13 @@ export async function saveToCompList(
       RETURNING *
     `
     
-    return result.rows[0] as CompListItem
+    // Convert DECIMAL values to numbers and handle nulls
+    const row = result.rows[0]
+    return {
+      ...row,
+      tcg_price: row.tcg_price ? Number(row.tcg_price) : null,
+      ebay_average: row.ebay_average ? Number(row.ebay_average) : null
+    } as CompListItem
   } catch (error) {
     console.error('Error in saveToCompList:', error)
     
@@ -344,7 +350,14 @@ export async function getCompList(userId: string): Promise<CompListItem[]> {
     ORDER BY saved_at DESC
   `
   
-  return result.rows as CompListItem[]
+  // Convert DECIMAL values to numbers and handle nulls
+  const convertedRows = result.rows.map(row => ({
+    ...row,
+    tcg_price: row.tcg_price ? Number(row.tcg_price) : null,
+    ebay_average: row.ebay_average ? Number(row.ebay_average) : null
+  })) as CompListItem[]
+  
+  return convertedRows
 }
 
 export async function removeFromCompList(userId: string, itemId: string): Promise<void> {
