@@ -124,6 +124,9 @@ export default function CompListPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          streamProgress: true
+        }),
       })
 
       if (!response.ok) {
@@ -147,12 +150,14 @@ export default function CompListPage() {
           const lines = chunk.split('\n')
 
           for (const line of lines) {
+            console.log('Raw SSE line:', line)
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.substring(6))
+                console.log('Parsed SSE data:', data)
                 
                 if (data.type === 'progress') {
-                  console.log('Progress update:', data.stage, data.message)
+                  console.log('Progress update:', data.stage, data.message, data.current, data.total)
                   setProgressStages(prev => new Set(Array.from(prev).concat(data.stage)))
                   setProgress({
                     stage: data.stage,
@@ -172,7 +177,7 @@ export default function CompListPage() {
                   setShowProgressOverlay(false)
                 }
               } catch (e) {
-                console.warn('Failed to parse SSE data:', line)
+                console.warn('Failed to parse SSE data:', line, e)
               }
             }
           }
