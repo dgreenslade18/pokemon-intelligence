@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import ListSelector from '../../components/ListSelector'
 import ViewToggle, { ViewMode } from '../../components/ViewToggle'
+import UserHeader from '../../components/UserHeader'
 
 
 interface CompListItem {
@@ -563,6 +564,7 @@ export default function CompListPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      <UserHeader />
       
       {/* Progress Overlay */}
       {showProgressOverlay && (
