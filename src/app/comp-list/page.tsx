@@ -842,8 +842,7 @@ export default function CompListPage() {
                   animationFillMode: 'both',
                   ...(isViewChanging && (viewMode === 'grid-3' || viewMode === 'grid-4') && (previousViewMode === 'grid-3' || previousViewMode === 'grid-4') && {
                     animation: 'grid-reflow 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                    animationDelay: `${index * 30}ms`,
-                    transform: `translateY(${index * 2}px)`
+                    animationDelay: `${index * 30}ms`
                   })
                 }}
               >
