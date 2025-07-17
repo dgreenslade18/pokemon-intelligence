@@ -275,9 +275,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export { analyzeCard }
-
-async function analyzeCard(
+export async function analyzeCard(
   cardName: string,
   userPreferences: UserPreferences,
   sendProgress?: (stage: string, message: string) => void
