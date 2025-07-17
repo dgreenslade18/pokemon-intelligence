@@ -24,7 +24,6 @@ export interface UserPreferences {
 export interface CompListItem {
   id: string
   user_id: string
-  list_id: string
   card_name: string
   card_number: string
   recommended_price: string
@@ -34,6 +33,13 @@ export interface CompListItem {
   updated_at: Date
   card_image_url?: string
   set_name?: string
+  // Price tracking fields for confidence meter
+  saved_tcg_price: number | null
+  saved_ebay_average: number | null
+  price_change_percentage: number | null
+  price_volatility: number | null
+  market_trend: 'increasing' | 'decreasing' | 'stable' | null
+  confidence_score: number | null
 }
 
 export interface UserList {
@@ -88,12 +94,11 @@ export async function initDb() {
       );
     `
 
-    // Create comp_list table with list_id
+    // Create comp_list table
     await sql`
       CREATE TABLE IF NOT EXISTS comp_list (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        list_id UUID NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
         card_name VARCHAR(255) NOT NULL,
         card_number VARCHAR(50),
         recommended_price VARCHAR(100),
@@ -102,58 +107,75 @@ export async function initDb() {
         saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         card_image_url TEXT,
-        set_name VARCHAR(255)
+        set_name VARCHAR(255),
+        saved_tcg_price DECIMAL(10,2),
+        saved_ebay_average DECIMAL(10,2),
+        price_change_percentage DECIMAL(5,2),
+        price_volatility DECIMAL(5,2),
+        market_trend VARCHAR(20),
+        confidence_score DECIMAL(3,1)
       );
     `
 
-    // Add list_id column to existing comp_list table if it doesn't exist
+    // Add confidence meter fields to existing comp_list table if they don't exist
     try {
       await sql`
         ALTER TABLE comp_list 
-        ADD COLUMN IF NOT EXISTS list_id UUID REFERENCES lists(id) ON DELETE CASCADE;
+        ADD COLUMN IF NOT EXISTS saved_tcg_price DECIMAL(10,2);
       `
-      console.log('✅ list_id column migration completed')
+      console.log('✅ saved_tcg_price column migration completed')
     } catch (migrationError) {
-      console.log('⚠️  list_id column migration failed (might already exist):', migrationError.message)
+      console.log('⚠️  saved_tcg_price column migration failed (might already exist):', migrationError.message)
     }
 
-    // Create default list for existing users and migrate existing data
     try {
-      // Create default lists for all users who don't have one
       await sql`
-        INSERT INTO lists (user_id, name, description, is_default)
-        SELECT DISTINCT user_id, 'My Comp List', 'Default comparison list', true
-        FROM comp_list
-        WHERE user_id NOT IN (
-          SELECT DISTINCT user_id FROM lists
-        );
+        ALTER TABLE comp_list 
+        ADD COLUMN IF NOT EXISTS saved_ebay_average DECIMAL(10,2);
       `
-      console.log('✅ Default lists created for existing users')
-
-      // Also create default list for users who have no cards yet
-      await sql`
-        INSERT INTO lists (user_id, name, description, is_default)
-        SELECT id, 'My Comp List', 'Default comparison list', true
-        FROM users
-        WHERE id NOT IN (
-          SELECT DISTINCT user_id FROM lists
-        );
-      `
-      console.log('✅ Default lists created for new users')
-
-      // Update existing comp_list items to use the default list
-      await sql`
-        UPDATE comp_list 
-        SET list_id = (
-          SELECT id FROM lists 
-          WHERE lists.user_id = comp_list.user_id 
-          AND lists.is_default = true
-        )
-        WHERE list_id IS NULL;
-      `
-      console.log('✅ Existing comp_list items migrated to default lists')
+      console.log('✅ saved_ebay_average column migration completed')
     } catch (migrationError) {
-      console.log('⚠️  List migration failed:', migrationError.message)
+      console.log('⚠️  saved_ebay_average column migration failed (might already exist):', migrationError.message)
+    }
+
+    try {
+      await sql`
+        ALTER TABLE comp_list 
+        ADD COLUMN IF NOT EXISTS price_change_percentage DECIMAL(5,2);
+      `
+      console.log('✅ price_change_percentage column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  price_change_percentage column migration failed (might already exist):', migrationError.message)
+    }
+
+    try {
+      await sql`
+        ALTER TABLE comp_list 
+        ADD COLUMN IF NOT EXISTS price_volatility DECIMAL(5,2);
+      `
+      console.log('✅ price_volatility column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  price_volatility column migration failed (might already exist):', migrationError.message)
+    }
+
+    try {
+      await sql`
+        ALTER TABLE comp_list 
+        ADD COLUMN IF NOT EXISTS market_trend VARCHAR(20);
+      `
+      console.log('✅ market_trend column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  market_trend column migration failed (might already exist):', migrationError.message)
+    }
+
+    try {
+      await sql`
+        ALTER TABLE comp_list 
+        ADD COLUMN IF NOT EXISTS confidence_score DECIMAL(3,1);
+      `
+      console.log('✅ confidence_score column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  confidence_score column migration failed (might already exist):', migrationError.message)
     }
 
     // Add updated_at column if it doesn't exist (migration)
@@ -187,7 +209,7 @@ export async function initDb() {
     try {
       await sql`
         ALTER TABLE comp_list 
-        ADD CONSTRAINT comp_list_unique_user_list_card UNIQUE(user_id, list_id, card_name, card_number);
+        ADD CONSTRAINT comp_list_unique_user_card UNIQUE(user_id, card_name, card_number);
       `
       console.log('✅ Unique constraint added successfully')
     } catch (constraintError) {
@@ -443,7 +465,7 @@ export async function getDefaultUserList(userId: string): Promise<UserList | nul
   return result.rows[0] as UserList || null
 }
 
-// Comp list operations (updated to work with lists)
+// Comp list operations (simplified without lists)
 export async function saveToCompList(
   userId: string,
   cardName: string,
@@ -452,25 +474,12 @@ export async function saveToCompList(
   tcgPrice: number | null,
   ebayAverage: number | null,
   cardImageUrl?: string,
-  setName?: string,
-  listId?: string
+  setName?: string
 ): Promise<CompListItem> {
-  // Always use the default list if no listId provided (maintains backward compatibility)
-  if (!listId) {
-    const defaultList = await getDefaultUserList(userId)
-    if (!defaultList) {
-      // Create default list if it doesn't exist
-      const newDefaultList = await createUserList(userId, 'My Comp List', 'Default comparison list', true)
-      listId = newDefaultList.id
-    } else {
-      listId = defaultList.id
-    }
-  }
-
   const result = await sql`
-    INSERT INTO comp_list (user_id, list_id, card_name, card_number, recommended_price, tcg_price, ebay_average, card_image_url, set_name)
-    VALUES (${userId}, ${listId}, ${cardName}, ${cardNumber}, ${recommendedPrice}, ${tcgPrice}, ${ebayAverage}, ${cardImageUrl || null}, ${setName || null})
-    ON CONFLICT (user_id, list_id, card_name, card_number) 
+    INSERT INTO comp_list (user_id, card_name, card_number, recommended_price, tcg_price, ebay_average, card_image_url, set_name)
+    VALUES (${userId}, ${cardName}, ${cardNumber}, ${recommendedPrice}, ${tcgPrice}, ${ebayAverage}, ${cardImageUrl || null}, ${setName || null})
+    ON CONFLICT (user_id, card_name, card_number) 
     DO UPDATE SET 
       recommended_price = EXCLUDED.recommended_price,
       tcg_price = EXCLUDED.tcg_price,
@@ -484,30 +493,13 @@ export async function saveToCompList(
   return result.rows[0] as CompListItem
 }
 
-export async function getCompList(userId: string, listId?: string): Promise<CompListItem[]> {
-  let query: any
+export async function getCompList(userId: string): Promise<CompListItem[]> {
+  const result = await sql`
+    SELECT * FROM comp_list
+    WHERE user_id = ${userId}
+    ORDER BY saved_at DESC
+  `
   
-  if (listId) {
-    // Get cards from specific list
-    query = sql`
-      SELECT cl.*, l.name as list_name
-      FROM comp_list cl
-      JOIN lists l ON cl.list_id = l.id
-      WHERE cl.user_id = ${userId} AND cl.list_id = ${listId}
-      ORDER BY cl.saved_at DESC
-    `
-  } else {
-    // Get all cards from all lists
-    query = sql`
-      SELECT cl.*, l.name as list_name
-      FROM comp_list cl
-      JOIN lists l ON cl.list_id = l.id
-      WHERE cl.user_id = ${userId}
-      ORDER BY cl.saved_at DESC
-    `
-  }
-  
-  const result = await query
   return result.rows as CompListItem[]
 }
 

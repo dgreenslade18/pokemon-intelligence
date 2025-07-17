@@ -4,13 +4,7 @@ import { authOptions } from '../../../lib/auth'
 import { 
   saveToCompList, 
   getCompList, 
-  removeFromCompList,
-  createUserList,
-  getUserLists,
-  getUserList,
-  updateUserList,
-  deleteUserList,
-  getDefaultUserList
+  removeFromCompList
 } from '../../../lib/db'
 
 export async function GET(request: NextRequest) {
@@ -21,32 +15,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const listId = searchParams.get('listId')
-    const includeLists = searchParams.get('includeLists') === 'true'
-
-    // Get comp list items
-    const items = await getCompList(session.user.id, listId || undefined)
+    // Get comp list items (no list filtering needed)
+    const items = await getCompList(session.user.id)
     
     // Convert DECIMAL values to numbers and handle nulls
     const convertedItems = items.map(item => ({
       ...item,
       tcg_price: item.tcg_price ? Number(item.tcg_price) : null,
-      ebay_average: item.ebay_average ? Number(item.ebay_average) : null
+      ebay_average: item.ebay_average ? Number(item.ebay_average) : null,
+      saved_tcg_price: item.saved_tcg_price ? Number(item.saved_tcg_price) : null,
+      saved_ebay_average: item.saved_ebay_average ? Number(item.saved_ebay_average) : null,
+      price_change_percentage: item.price_change_percentage ? Number(item.price_change_percentage) : null,
+      price_volatility: item.price_volatility ? Number(item.price_volatility) : null,
+      confidence_score: item.confidence_score ? Number(item.confidence_score) : null
     }))
 
-    const response: any = {
+    return NextResponse.json({
       success: true,
-      items: convertedItems
-    }
-
-    // Include lists if requested
-    if (includeLists) {
-      const lists = await getUserLists(session.user.id)
-      response.lists = lists
-    }
-
-    return NextResponse.json(response)
+      compList: convertedItems
+    })
   } catch (error) {
     console.error('Error fetching comp list:', error)
     return NextResponse.json({ error: 'Failed to fetch comp list' }, { status: 500 })
@@ -69,56 +56,10 @@ export async function POST(request: NextRequest) {
       tcgPrice, 
       ebayAverage, 
       cardImageUrl, 
-      setName,
-      listId,
-      action,
-      listName,
-      listDescription,
-      isDefault
+      setName
     } = body
 
-    // Handle list management actions
-    if (action === 'createList') {
-      if (!listName) {
-        return NextResponse.json({ error: 'List name is required' }, { status: 400 })
-      }
-
-      const newList = await createUserList(session.user.id, listName, listDescription, isDefault)
-      return NextResponse.json({ 
-        success: true, 
-        list: newList,
-        message: 'List created successfully' 
-      })
-    }
-
-    if (action === 'updateList') {
-      const { listId: updateListId, updates } = body
-      if (!updateListId) {
-        return NextResponse.json({ error: 'List ID is required' }, { status: 400 })
-      }
-
-      const updatedList = await updateUserList(updateListId, session.user.id, updates)
-      return NextResponse.json({ 
-        success: true, 
-        list: updatedList,
-        message: 'List updated successfully' 
-      })
-    }
-
-    if (action === 'deleteList') {
-      const { listId: deleteListId } = body
-      if (!deleteListId) {
-        return NextResponse.json({ error: 'List ID is required' }, { status: 400 })
-      }
-
-      await deleteUserList(deleteListId, session.user.id)
-      return NextResponse.json({ 
-        success: true,
-        message: 'List deleted successfully' 
-      })
-    }
-
-    // Handle saving card to comp list (existing functionality)
+    // Handle saving card to comp list
     if (!cardName) {
       return NextResponse.json({ error: 'Card name is required' }, { status: 400 })
     }
@@ -131,8 +72,7 @@ export async function POST(request: NextRequest) {
       tcgPrice,
       ebayAverage,
       cardImageUrl,
-      setName,
-      listId
+      setName
     )
 
     // Check if this was an update to an existing card
@@ -157,7 +97,7 @@ export async function POST(request: NextRequest) {
       if (error.message.includes('already exists')) {
         return NextResponse.json({ 
           success: false, 
-          message: 'Card already exists in this list' 
+          message: 'Card already exists in your comp list' 
         }, { status: 409 })
       }
     }
@@ -177,8 +117,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const itemId = searchParams.get('id')
+    const body = await request.json()
+    const { itemId } = body
 
     if (!itemId) {
       return NextResponse.json({ error: 'Item ID is required' }, { status: 400 })
