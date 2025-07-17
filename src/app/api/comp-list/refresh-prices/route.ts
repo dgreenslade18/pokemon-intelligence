@@ -69,8 +69,14 @@ export async function POST(request: Request) {
 
             sendProgress('analyzing', `Found ${compList.length} cards to refresh`, 0, compList.length)
 
-            // Process cards in batches of 3 for better performance
-            const batchSize = 3
+            // Get user preferences once for all cards
+            const userPreferences = await getUserPreferences(session.user.id)
+            
+            // Create a cache to avoid re-analyzing the same cards
+            const analysisCache = new Map()
+
+            // Process cards in batches of 6 for better performance
+            const batchSize = 6
             const updatedItems = []
             
             for (let i = 0; i < compList.length; i += batchSize) {
@@ -84,11 +90,17 @@ export async function POST(request: Request) {
                 sendProgress('analyzing', `Analyzing ${item.card_name}...`, currentIndex, compList.length)
                 
                 try {
-                  // Get user preferences for analysis
-                  const userPreferences = await getUserPreferences(session.user.id)
-                  
-                  // Use analyzeCard to get latest prices
-                  const analysis = await analyzeCard(item.card_name, userPreferences)
+                  // Check cache first
+                  let analysis
+                  if (analysisCache.has(item.card_name)) {
+                    analysis = analysisCache.get(item.card_name)
+                    sendProgress('analyzing', `Using cached data for ${item.card_name}`, currentIndex, compList.length)
+                  } else {
+                    // Use analyzeCard to get latest prices
+                    analysis = await analyzeCard(item.card_name, userPreferences)
+                    // Cache the result for potential reuse
+                    analysisCache.set(item.card_name, analysis)
+                  }
                   
                   // Calculate confidence metrics
                   const savedTcgPrice = item.saved_tcg_price
@@ -198,10 +210,21 @@ export async function POST(request: Request) {
       // Get user preferences for analysis
       const userPreferences = await getUserPreferences(session.user.id)
       
+      // Create a cache to avoid re-analyzing the same cards
+      const analysisCache = new Map()
+      
       for (const item of compList) {
         try {
-          // Use analyzeCard to get latest prices
-          const analysis = await analyzeCard(item.card_name, userPreferences)
+          // Check cache first
+          let analysis
+          if (analysisCache.has(item.card_name)) {
+            analysis = analysisCache.get(item.card_name)
+          } else {
+            // Use analyzeCard to get latest prices
+            analysis = await analyzeCard(item.card_name, userPreferences)
+            // Cache the result for potential reuse
+            analysisCache.set(item.card_name, analysis)
+          }
           
           // Calculate confidence metrics for synchronous version
           const savedTcgPrice = item.saved_tcg_price

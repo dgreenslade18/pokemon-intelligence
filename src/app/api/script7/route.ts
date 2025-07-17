@@ -431,21 +431,11 @@ function simplifyCardNameForEbay(cardName: string): string[] {
     const pokemonName = cardName.replace(/\s+\d+$/, '').trim()
     const cardNumber = cardName.match(/\d+$/)?.[0] || ''
     
-    // 1. Try with specific sets first (most likely to be accurate)
-    variations.push(`${pokemonName} ${cardNumber} stellar crown`)
-    variations.push(`${pokemonName} ${cardNumber} paldean fates`)
-    variations.push(`${pokemonName} ${cardNumber} pokemon 151`)
-    variations.push(`${pokemonName} ${cardNumber} sv`)
-    
-    // 2. Try with card number but generic terms
-    variations.push(`${cardName} pokemon card`)
-    variations.push(`${cardName} pokemon`)
-    
-    // 3. Try exact search as seller might list it
-    variations.push(cardName.trim())
-    
-    // 4. Fallback to just Pokemon name (but less preferred)
-    variations.push(pokemonName)
+    // Optimized search strategy - try most likely variations first
+    variations.push(`${cardName} pokemon card`) // Most common format
+    variations.push(`${pokemonName} ${cardNumber} stellar crown`) // Current popular set
+    variations.push(cardName.trim()) // Exact match
+    variations.push(pokemonName) // Fallback
   } else {
     // For complex names, use existing logic
     let simplified = cardName
@@ -453,24 +443,24 @@ function simplifyCardNameForEbay(cardName: string): string[] {
       .replace(/\([^)]*\)/g, '') // Remove anything in parentheses
       .trim()
     
-    // Create search variations in order of specificity
+    // Create optimized search variations
+    const words = simplified.split(' ')
     
-    // 1. Keep key descriptive words (remove common fillers)
-    const keyWords = simplified.split(' ').filter(word => 
+    // 1. Most specific: key descriptive words
+    const keyWords = words.filter(word => 
       !fillerWords.includes(word.toLowerCase()) && word.length > 2
     )
     if (keyWords.length > 1) {
       variations.push(keyWords.join(' '))
     }
     
-    // 2. Just the Pokemon name + main descriptor
-    const words = simplified.split(' ')
-    if (words.length >= 2) {
-      variations.push(`${words[0]} ${words[words.length - 1]}`) // First + Last word
-    }
-    
-    // 3. Just the Pokemon name
+    // 2. Just the Pokemon name (most common)
     variations.push(words[0])
+    
+    // 3. First + Last word if different
+    if (words.length >= 2 && words[0] !== words[words.length - 1]) {
+      variations.push(`${words[0]} ${words[words.length - 1]}`)
+    }
   }
   
   // Remove duplicates and return
@@ -521,7 +511,7 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
     
     const requestBody = {
       keywords: searchQuery,
-      max_search_results: 25, // We'll filter to 3 most recent
+      max_search_results: 10, // Reduced from 25 since we only need 3
       excluded_keywords: "graded psa bgs cgc ace sgc hga gma gem mint 10 mint 9 pristine perfect", // Exclude all graded items
       site_id: "3", // UK eBay site
       remove_outliers: true,
