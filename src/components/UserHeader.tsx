@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation'
 import { useTheme } from './ThemeProvider'
 import { useApiStatus } from '../hooks/useApiStatus'
 import ApiStatusModal from './ApiStatusModal'
+import WhatsNewModal from './WhatsNewModal'
 
 export default function UserHeader() {
   const { data: session, status } = useSession()
   const [showDropdown, setShowDropdown] = useState(false)
   const [showApiStatusModal, setShowApiStatusModal] = useState(false)
+  const [showWhatsNewModal, setShowWhatsNewModal] = useState(false)
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
   const { healthStatus, getStatusIcon, getStatusText } = useApiStatus()
@@ -31,6 +33,11 @@ export default function UserHeader() {
   const handleApiStatusClick = () => {
     setShowDropdown(false)
     setShowApiStatusModal(true)
+  }
+
+  const handleWhatsNewClick = () => {
+    setShowDropdown(false)
+    setShowWhatsNewModal(true)
   }
 
   if (status === 'loading') {
@@ -126,6 +133,21 @@ export default function UserHeader() {
             </button>
             
             <button
+              onClick={handleWhatsNewClick}
+              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center justify-between text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+            >
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                What's New
+              </div>
+              <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                New
+              </span>
+            </button>
+            
+            <button
               onClick={() => {
                 setShowDropdown(false)
                 // Could add navigation to billing here
@@ -188,6 +210,12 @@ export default function UserHeader() {
       <ApiStatusModal 
         isOpen={showApiStatusModal} 
         onClose={() => setShowApiStatusModal(false)} 
+      />
+
+      {/* What's New Modal */}
+      <WhatsNewModal 
+        isOpen={showWhatsNewModal} 
+        onClose={() => setShowWhatsNewModal(false)} 
       />
     </div>
   )
