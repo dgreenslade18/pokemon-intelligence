@@ -396,6 +396,18 @@ export default function CompListPage() {
           ></div>
         </div>
 
+        {/* Show pending message for cards without confidence data */}
+        {item.confidence_score === null && (
+          <div className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
+            <div className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Pending: Run "Refresh Prices" to get confidence data
+            </div>
+          </div>
+        )}
+
         {item.market_trend && (
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1">
@@ -702,6 +714,25 @@ export default function CompListPage() {
                 {averageConfidence.toFixed(1)}
               </div>
               <div className="text-white/60">Avg Confidence</div>
+            </div>
+          </div>
+        )}
+
+        {/* Data Explanation */}
+        {compList.length > 0 && (
+          <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-blue-200">
+                <div className="font-medium mb-1">Data Types Explained:</div>
+                <div className="space-y-1 text-blue-300">
+                  <div>• <span className="text-green-400">Confidence & Volatility:</span> Available after running "Refresh Prices" (requires historical data)</div>
+                  <div>• <span className="text-yellow-400">Price Trend:</span> Shows for cards that have been refreshed at least once</div>
+                  <div>• <span className="text-gray-400">Pending Cards:</span> Need "Refresh Prices" to get confidence metrics</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
