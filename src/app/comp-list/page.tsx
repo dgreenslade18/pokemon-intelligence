@@ -679,22 +679,8 @@ export default function CompListPage() {
           </p>
         </div>
 
-        {/* Search and Actions */}
+        {/* List Selector and Action Buttons */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
-          {/* Search Bar */}
-          <div className="flex-1 max-w-md">
-            <input
-              type="text"
-              placeholder="Search cards..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
-            />
-          </div>
-          
-          {/* View Toggle */}
-          <ViewToggle viewMode={viewMode} onViewChange={handleViewChange} />
-          
           {/* List Selector */}
           <ListSelector 
             selectedListId={selectedListId}
@@ -787,24 +773,26 @@ export default function CompListPage() {
           </div>
         )}
 
-        {/* Data Explanation */}
+        {/* Search and View Controls */}
         {compList.length > 0 && (
-          <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div className="text-sm text-blue-200">
-                <div className="font-medium mb-1">Data Types Explained:</div>
-                <div className="space-y-1 text-blue-300">
-                  <div>• <span className="text-green-400">Confidence & Volatility:</span> Available after running "Refresh Prices" (requires historical data)</div>
-                  <div>• <span className="text-yellow-400">Price Trend:</span> Shows for cards that have been refreshed at least once</div>
-                  <div>• <span className="text-gray-400">Pending Cards:</span> Need "Refresh Prices" to get confidence metrics</div>
-                </div>
-              </div>
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-8">
+            {/* Search Bar */}
+            <div className="flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="Search cards..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+              />
             </div>
+            
+            {/* View Toggle */}
+            <ViewToggle viewMode={viewMode} onViewChange={handleViewChange} />
           </div>
         )}
+
+
 
         {/* Cards Grid */}
         {loading ? (
@@ -998,6 +986,25 @@ export default function CompListPage() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Data Explanation */}
+        {compList.length > 0 && (
+          <div className="mt-12 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-blue-200">
+                <div className="font-medium mb-1">Data Types Explained:</div>
+                <div className="space-y-1 text-blue-300">
+                  <div>• <span className="text-green-400">Confidence & Volatility:</span> Available after running "Refresh Prices" (requires historical data)</div>
+                  <div>• <span className="text-yellow-400">Price Trend:</span> Shows for cards that have been refreshed at least once</div>
+                  <div>• <span className="text-gray-400">Pending Cards:</span> Need "Refresh Prices" to get confidence metrics</div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
