@@ -47,6 +47,7 @@ export default function CompListPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('grid-3')
+  const [isViewChanging, setIsViewChanging] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [showProgressOverlay, setShowProgressOverlay] = useState(false)
   const [progress, setProgress] = useState<ProgressUpdate | null>(null)
@@ -65,6 +66,18 @@ export default function CompListPage() {
   const handleManageLists = () => {
     // This will trigger a reload when lists are updated
     loadData(selectedListId || undefined)
+  }
+
+  const handleViewChange = (newViewMode: ViewMode) => {
+    if (newViewMode === viewMode) return
+    
+    setIsViewChanging(true)
+    setViewMode(newViewMode)
+    
+    // Reset the animation state after transition
+    setTimeout(() => {
+      setIsViewChanging(false)
+    }, 700) // Match the transition duration
   }
 
   const loadData = async (listId?: string) => {
@@ -680,7 +693,7 @@ export default function CompListPage() {
           </div>
           
           {/* View Toggle */}
-          <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
+          <ViewToggle viewMode={viewMode} onViewChange={handleViewChange} />
           
           {/* List Selector */}
           <ListSelector 
@@ -820,18 +833,25 @@ export default function CompListPage() {
               </button>
             )}
           </div>
-        ) : (
-          <div className={`grid gap-6 ${
+                ) : (
+          <div className={`grid gap-6 transition-all duration-700 ease-in-out ${
             viewMode === 'grid-3' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
             viewMode === 'grid-4' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
             'grid-cols-1'
-          }`}>
-            {filteredCards.map((item) => (
-              <div key={item.id} className={`${
-                viewMode === 'list' 
-                  ? 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 flex items-center gap-6'
-                  : 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300'
-              }`}>
+          } ${isViewChanging ? 'opacity-75 scale-98' : 'opacity-100 scale-100'}`}>
+            {filteredCards.map((item, index) => (
+              <div 
+                key={item.id} 
+                className={`${
+                  viewMode === 'list' 
+                    ? 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-500 ease-in-out flex items-center gap-6 list-item-animate'
+                    : 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-500 ease-in-out grid-item-animate'
+                } transform hover:scale-105`}
+                style={{
+                  animationDelay: `${index * 100}ms`,
+                  animationFillMode: 'both'
+                }}
+              >
                 {viewMode === 'list' ? (
                   // List View Layout
                   <>

@@ -158,6 +158,37 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: rotate(-360deg); }
 }
 
+/* Grid transition animations */
+@keyframes grid-fade-in {
+  0% { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(10px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+@keyframes grid-slide-in {
+  0% { 
+    opacity: 0; 
+    transform: translateX(-20px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+.grid-item-animate {
+  animation: grid-fade-in 0.5s ease-out forwards;
+}
+
+.list-item-animate {
+  animation: grid-slide-in 0.4s ease-out forwards;
+}
+
 .floating {
   animation: float 6s ease-in-out infinite;
 }
