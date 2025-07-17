@@ -154,6 +154,7 @@ export async function POST(request: Request) {
                     newEbayAverage,
                     item.card_image_url,
                     item.set_name,
+                    item.list_id,
                     {
                       savedTcgPrice: savedTcgPrice,
                       savedEbayAverage: savedEbayAverage,
@@ -278,6 +279,7 @@ export async function POST(request: Request) {
             newEbayAverage,
             item.card_image_url,
             item.set_name,
+            item.list_id,
             {
               savedTcgPrice: savedTcgPrice,
               savedEbayAverage: savedEbayAverage,
