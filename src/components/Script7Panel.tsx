@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import AddToListModal from './AddToListModal'
 
 interface Script7PanelProps {
   onBack: () => void
@@ -178,6 +179,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   const [maxDropdownHeight, setMaxDropdownHeight] = useState(320)
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [showAddToListModal, setShowAddToListModal] = useState(false)
+  const [userLists, setUserLists] = useState<any[]>([])
   const resultsRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<HTMLDivElement>(null)
@@ -515,6 +518,28 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
       return
     }
 
+    // Check if user has multiple lists
+    try {
+      const listsResponse = await fetch('/api/lists')
+      const listsData = await listsResponse.json()
+      
+      if (listsData.success && listsData.lists.length > 1) {
+        // User has multiple lists - show selection modal
+        setShowAddToListModal(true)
+        return
+      }
+    } catch (error) {
+      console.error('Error checking user lists:', error)
+    }
+
+    // Single list or error - save directly to default list
+    await saveCardToList()
+  }
+
+  // Save card to specific list
+  const saveCardToList = async (listId?: string) => {
+    if (!result || !session?.user?.id) return
+
     setSaving(true)
     setSaveMessage(null)
 
@@ -531,7 +556,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
           tcgPrice: result.analysis.cardmarket_price > 0 ? result.analysis.cardmarket_price : null,
           ebayAverage: result.analysis.ebay_average > 0 ? result.analysis.ebay_average : null,
           cardImageUrl: result.card_details?.images?.large || result.card_details?.images?.small || '',
-          setName: result.card_details?.set?.name || ''
+          setName: result.card_details?.set?.name || '',
+          listId: listId
         }),
       })
 
@@ -553,6 +579,11 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
       setSaving(false)
       setTimeout(() => setSaveMessage(null), 3000)
     }
+  }
+
+  // Handle list selection from modal
+  const handleListSelect = (listId: string) => {
+    saveCardToList(listId)
   }
 
 
@@ -1393,6 +1424,14 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
         </div>
       </div>
+
+      {/* Add to List Modal */}
+      <AddToListModal
+        isOpen={showAddToListModal}
+        onClose={() => setShowAddToListModal(false)}
+        onSelectList={handleListSelect}
+        cardName={result?.card_name || ''}
+      />
     </div>
   )
 } 

@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import ListSelector from '../../components/ListSelector'
+import ViewToggle, { ViewMode } from '../../components/ViewToggle'
 
 
 interface CompListItem {
   id: string
   user_id: string
+  list_id: string
   card_name: string
   card_number: string | null
   recommended_price: string | null
@@ -42,6 +45,8 @@ export default function CompListPage() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedListId, setSelectedListId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('grid-3')
   const [refreshing, setRefreshing] = useState(false)
   const [showProgressOverlay, setShowProgressOverlay] = useState(false)
   const [progress, setProgress] = useState<ProgressUpdate | null>(null)
@@ -49,16 +54,26 @@ export default function CompListPage() {
 
   useEffect(() => {
     if (session?.user?.id) {
-      loadData()
+      loadData(selectedListId || undefined)
     }
-  }, [session])
+  }, [session, selectedListId])
 
-  const loadData = async () => {
+  const handleListChange = (listId: string) => {
+    setSelectedListId(listId)
+  }
+
+  const handleManageLists = () => {
+    // This will trigger a reload when lists are updated
+    loadData(selectedListId || undefined)
+  }
+
+  const loadData = async (listId?: string) => {
     if (!session?.user?.id) return
 
     try {
       setLoading(true)
-      const response = await fetch('/api/comp-list')
+      const url = listId ? `/api/comp-list?listId=${listId}` : '/api/comp-list'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
@@ -652,7 +667,8 @@ export default function CompListPage() {
         </div>
 
         {/* Search and Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+          {/* Search Bar */}
           <div className="flex-1 max-w-md">
             <input
               type="text"
@@ -663,6 +679,17 @@ export default function CompListPage() {
             />
           </div>
           
+          {/* View Toggle */}
+          <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
+          
+          {/* List Selector */}
+          <ListSelector 
+            selectedListId={selectedListId}
+            onListChange={handleListChange}
+            onManageLists={handleManageLists}
+          />
+          
+          {/* Action Buttons */}
           <div className="flex gap-4 md:flex-row flex-col">
             {compList.length > 0 && (
               <>
@@ -794,75 +821,161 @@ export default function CompListPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={`grid gap-6 ${
+            viewMode === 'grid-3' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
+            viewMode === 'grid-4' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
+            'grid-cols-1'
+          }`}>
             {filteredCards.map((item) => (
-              <div key={item.id} className="bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white mb-1">{item.card_name}</h3>
-                    {item.set_name && (
-                      <p className="text-white/60 text-sm">{item.set_name}</p>
+              <div key={item.id} className={`${
+                viewMode === 'list' 
+                  ? 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 flex items-center gap-6'
+                  : 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300'
+              }`}>
+                {viewMode === 'list' ? (
+                  // List View Layout
+                  <>
+                    {/* Card Image */}
+                    {item.card_image_url && (
+                      <div className="flex-shrink-0">
+                        <img 
+                          src={item.card_image_url} 
+                          alt={item.card_name}
+                          className="w-20 h-28 object-cover rounded-lg"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                          }}
+                        />
+                      </div>
                     )}
-                    {item.card_number && (
-                      <p className="text-white/40 text-xs">#{item.card_number}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleRemoveFromCompList(item.id)}
-                    className="text-red-400 hover:text-red-300 transition-colors ml-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
+                    
+                    {/* Card Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-white mb-1 truncate">{item.card_name}</h3>
+                          {item.set_name && (
+                            <p className="text-white/60 text-sm truncate">{item.set_name}</p>
+                          )}
+                          {item.card_number && (
+                            <p className="text-white/40 text-xs">#{item.card_number}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveFromCompList(item.id)}
+                          className="text-red-400 hover:text-red-300 transition-colors ml-2 flex-shrink-0"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        {item.recommended_price && (
+                          <div>
+                            <p className="text-white/60 text-xs">Recommended</p>
+                            <p className="text-white font-semibold">{item.recommended_price}</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-white/60 text-xs">TCG Price</p>
+                          <p className="text-green-400 font-semibold">
+                            £{item.tcg_price?.toFixed(2) || '0.00'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/60 text-xs">eBay Average</p>
+                          <p className="text-blue-400 font-semibold">
+                            £{item.ebay_average?.toFixed(2) || '0.00'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/60 text-xs">Confidence</p>
+                          <p className="text-purple-400 font-semibold">
+                            {item.confidence_score ? `${item.confidence_score}/10` : 'Pending'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Confidence Meter (Compact) */}
+                    <div className="flex-shrink-0 w-32">
+                      <ConfidenceMeter item={item} />
+                    </div>
+                  </>
+                ) : (
+                  // Grid View Layout
+                  <>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-white mb-1">{item.card_name}</h3>
+                        {item.set_name && (
+                          <p className="text-white/60 text-sm">{item.set_name}</p>
+                        )}
+                        {item.card_number && (
+                          <p className="text-white/40 text-xs">#{item.card_number}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveFromCompList(item.id)}
+                        className="text-red-400 hover:text-red-300 transition-colors ml-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
 
-                {item.card_image_url && (
-                  <div className="mb-4">
-                    <img 
-                      src={item.card_image_url} 
-                      alt={item.card_name}
-                      className="w-full h-32 object-cover rounded-lg"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                      }}
-                    />
-                  </div>
+                    {item.card_image_url && (
+                      <div className="mb-4">
+                        <img 
+                          src={item.card_image_url} 
+                          alt={item.card_name}
+                          className="w-full h-32 object-cover rounded-lg"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      {item.recommended_price && (
+                        <div>
+                          <p className="text-white/60 text-sm">Recommended Price</p>
+                          <p className="text-white font-semibold">{item.recommended_price}</p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-white/60 text-sm">TCG Price</p>
+                          <p className="text-green-400 font-semibold">
+                            £{item.tcg_price?.toFixed(2) || '0.00'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/60 text-sm">eBay Average</p>
+                          <p className="text-blue-400 font-semibold">
+                            £{item.ebay_average?.toFixed(2) || '0.00'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Confidence Meter */}
+                      <div className="pt-3 border-t border-white/10">
+                        <ConfidenceMeter item={item} />
+                      </div>
+
+                      <div className="text-white/40 text-xs">
+                        Saved {new Date(item.saved_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </>
                 )}
-
-                <div className="space-y-3">
-                  {item.recommended_price && (
-                    <div>
-                      <p className="text-white/60 text-sm">Recommended Price</p>
-                      <p className="text-white font-semibold">{item.recommended_price}</p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-white/60 text-sm">TCG Price</p>
-                      <p className="text-green-400 font-semibold">
-                        £{item.tcg_price?.toFixed(2) || '0.00'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-white/60 text-sm">eBay Average</p>
-                      <p className="text-blue-400 font-semibold">
-                        £{item.ebay_average?.toFixed(2) || '0.00'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Confidence Meter */}
-                  <div className="pt-3 border-t border-white/10">
-                    <ConfidenceMeter item={item} />
-                  </div>
-
-                  <div className="text-white/40 text-xs">
-                    Saved {new Date(item.saved_at).toLocaleDateString()}
-                  </div>
-                </div>
               </div>
             ))}
           </div>

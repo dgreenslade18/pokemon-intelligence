@@ -15,8 +15,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get comp list items (no list filtering needed)
-    const items = await getCompList(session.user.id)
+    const { searchParams } = new URL(request.url)
+    const listId = searchParams.get('listId')
+
+    // Get comp list items (with optional list filtering)
+    const items = await getCompList(session.user.id, listId || undefined)
     
     // Convert DECIMAL values to numbers and handle nulls
     const convertedItems = items.map(item => ({
@@ -56,7 +59,8 @@ export async function POST(request: NextRequest) {
       tcgPrice, 
       ebayAverage, 
       cardImageUrl, 
-      setName
+      setName,
+      listId
     } = body
 
     // Handle saving card to comp list
@@ -72,7 +76,8 @@ export async function POST(request: NextRequest) {
       tcgPrice,
       ebayAverage,
       cardImageUrl,
-      setName
+      setName,
+      listId
     )
 
     // Check if this was an update to an existing card
