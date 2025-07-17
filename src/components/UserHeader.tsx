@@ -81,8 +81,8 @@ export default function UserHeader() {
 
       {/* Dropdown Menu */}
       {showDropdown && (
-        <div className="absolute top-full right-0 mt-2 w-64 backdrop-blur-lg rounded-2xl border shadow-2xl overflow-hidden z-50 bg-white/20 dark:bg-white/20 border-white/20 dark:border-white/20">
-          <div className="p-4 border-b border-gray-200 dark:border-white/10">
+        <div className="absolute top-full right-0 mt-2 w-64 backdrop-blur-lg rounded-2xl border shadow-2xl overflow-hidden z-50 bg-white/95 dark:bg-gray-900/95 border-white/30 dark:border-gray-700/50">
+          <div className="p-4 border-b border-gray-200 dark:border-white/10 ">
             <div className="font-medium text-gray-900 dark:text-white">{session.user.email}</div>
             <div className="text-sm mt-1 text-gray-600 dark:text-gray-300">
               Signed in • {(session.user.subscriptionStatus === 'free' ? 'TESTING' : session.user.subscriptionStatus) || 'TESTING'} Plan
@@ -92,7 +92,7 @@ export default function UserHeader() {
           <div className="py-2">
             <button
               onClick={handleProfileClick}
-              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -105,7 +105,7 @@ export default function UserHeader() {
                 toggleTheme()
                 setShowDropdown(false)
               }}
-              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
             >
               {theme === 'dark' ? (
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +124,7 @@ export default function UserHeader() {
                 setShowDropdown(false)
                 router.push('/comp-list')
               }}
-              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -134,7 +134,7 @@ export default function UserHeader() {
             
             <button
               onClick={handleWhatsNewClick}
-              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center justify-between text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center justify-between text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
             >
               <div className="flex items-center">
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +152,7 @@ export default function UserHeader() {
                 setShowDropdown(false)
                 // Could add navigation to billing here
               }}
-              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+              className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -163,7 +163,7 @@ export default function UserHeader() {
             <div className="border-t mt-2 pt-2 border-gray-200 dark:border-white/10">
               <button
                 onClick={handleApiStatusClick}
-                className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+                className="w-full px-4 py-3 text-left transition-colors duration-200 flex items-center text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
               >
                 <div className="w-5 h-5 mr-3 flex items-center justify-center">
                   {healthStatus ? (
@@ -177,7 +177,7 @@ export default function UserHeader() {
                 <div className="flex-1">
                   <div className="font-medium">API Status</div>
                   {healthStatus && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-gray-600 dark:text-gray-300">
                       {getStatusText(healthStatus.overall_status)}
                     </div>
                   )}

@@ -367,10 +367,10 @@ export default function CompListPage() {
 
     const score = item.confidence_score || 0
     const getConfidenceColor = (score: number) => {
-      if (score >= 8) return 'text-green-400'
-      if (score >= 6) return 'text-yellow-400'
-      if (score >= 4) return 'text-orange-400'
-      return 'text-red-400'
+      if (score >= 8) return 'dark:text-green-400 text-green-600'
+      if (score >= 6) return 'dark:text-yellow-400 text-yellow-600'
+      if (score >= 4) return 'dark:text-orange-400 text-orange-600'
+      return 'dark:text-red-400 text-red-600'
     }
 
     const getConfidenceLabel = (score: number) => {
@@ -382,10 +382,10 @@ export default function CompListPage() {
 
     const getTrendColor = (trend: string | null) => {
       switch (trend) {
-        case 'increasing': return 'text-green-400'
-        case 'decreasing': return 'text-red-400'
-        case 'stable': return 'text-blue-400'
-        default: return 'text-gray-400'
+        case 'increasing': return 'dark:text-green-400 text-green-600'
+        case 'decreasing': return 'dark:text-red-400 text-red-600'
+        case 'stable': return 'dark:text-blue-400 text-blue-600'
+        default: return 'dark:text-gray-400 text-gray-600'
       }
     }
 
@@ -410,13 +410,13 @@ export default function CompListPage() {
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                 <div className="text-center">
                   <div className="font-semibold mb-1">Confidence Score (0-10)</div>
-                  <div className="space-y-1 text-gray-300">
-                    <div>• <span className="text-green-400">8-10:</span> High confidence - Good data from multiple sources</div>
-                    <div>• <span className="text-yellow-400">6-7:</span> Medium confidence - Some reliable data</div>
-                    <div>• <span className="text-orange-400">4-5:</span> Low confidence - Limited data available</div>
-                    <div>• <span className="text-red-400">0-3:</span> Very low confidence - Minimal data</div>
+                  <div className="space-y-1 dark:text-gray-300 text-gray-600">
+                    <div>• <span className="dark:text-green-400 text-green-600">8-10:</span> High confidence - Good data from multiple sources</div>
+                    <div>• <span className="dark:text-yellow-400 text-yellow-600">6-7:</span> Medium confidence - Some reliable data</div>
+                    <div>• <span className="dark:text-orange-400 text-orange-600">4-5:</span> Low confidence - Limited data available</div>
+                    <div>• <span className="dark:text-red-400 text-red-600">0-3:</span> Very low confidence - Minimal data</div>
                   </div>
-                  <div className="mt-2 text-gray-400 text-xs">
+                  <div className="mt-2 dark:text-gray-400 text-gray-600 text-xs">
                     Based on: eBay sales (3+ = +4pts), TCG price (+3pts), low volatility (+2pts), trend data (+1pt)
                   </div>
                 </div>
@@ -490,11 +490,11 @@ export default function CompListPage() {
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                   <div className="text-center">
                     <div className="font-semibold mb-1">Price Change</div>
-                    <div className="space-y-1 text-gray-300">
+                    <div className="space-y-1 dark:text-gray-300 text-gray-600">
                       <div>Percentage change from last refresh</div>
-                      <div>• <span className="text-green-400">Green:</span> Price increased</div>
-                      <div>• <span className="text-red-400">Red:</span> Price decreased</div>
-                      <div>• <span className="text-gray-400">Gray:</span> No change</div>
+                      <div>• <span className="dark:text-green-400 text-green-600">Green:</span> Price increased</div>
+                      <div>• <span className="dark:text-red-400 text-red-600">Red:</span> Price decreased</div>
+                      <div>• <span className="dark:text-gray-400 text-gray-600">Gray:</span> No change</div>
                     </div>
                   </div>
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/90"></div>
@@ -502,8 +502,8 @@ export default function CompListPage() {
               </div>
             </div>
             <span className={`font-medium ${
-              item.price_change_percentage > 0 ? 'text-green-400' : 
-              item.price_change_percentage < 0 ? 'text-red-400' : 'text-gray-400'
+              item.price_change_percentage > 0 ? 'dark:text-green-400 text-green-600' : 
+              item.price_change_percentage < 0 ? 'dark:text-red-400 text-red-600' : 'dark:text-gray-400 text-gray-600'
             }`}>
               {item.price_change_percentage > 0 ? '+' : ''}{item.price_change_percentage.toFixed(1)}%
             </span>
@@ -521,11 +521,11 @@ export default function CompListPage() {
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                   <div className="text-center">
                     <div className="font-semibold mb-1">Price Volatility</div>
-                    <div className="space-y-1 text-gray-300">
+                    <div className="space-y-1 dark:text-gray-300 text-gray-600">
                       <div>Standard deviation of recent eBay prices</div>
-                      <div>• <span className="text-green-400">Green:</span> Low volatility {'<'}10%</div>
-                      <div>• <span className="text-yellow-400">Yellow:</span> Medium volatility 10-25%</div>
-                      <div>• <span className="text-red-400">Red:</span> High volatility {'>'}25%</div>
+                      <div>• <span className="dark:text-green-400 text-green-600">Green:</span> Low volatility {'<'}10%</div>
+                      <div>• <span className="dark:text-yellow-400 text-yellow-600">Yellow:</span> Medium volatility 10-25%</div>
+                      <div>• <span className="dark:text-red-400 text-red-600">Red:</span> High volatility {'>'}25%</div>
                     </div>
                   </div>
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/90"></div>
@@ -533,8 +533,8 @@ export default function CompListPage() {
               </div>
             </div>
             <span className={`font-medium ${
-              item.price_volatility < 10 ? 'text-green-400' : 
-              item.price_volatility < 25 ? 'text-yellow-400' : 'text-red-400'
+              item.price_volatility < 10 ? 'dark:text-green-400 text-green-600' : 
+              item.price_volatility < 25 ? 'dark:text-yellow-400 text-yellow-600' : 'dark:text-red-400 text-red-600'
             }`}>
               {item.price_volatility.toFixed(1)}%
             </span>
@@ -546,7 +546,7 @@ export default function CompListPage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      <div className="min-h-screen bg-gradient-to-br dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900 from-blue-100 via-purple-100 to-indigo-100">
         <div className="container mx-auto px-6 py-12">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white mb-4">Please sign in to view your comp list</h1>
@@ -563,22 +563,22 @@ export default function CompListPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br dark:from-blue-900 dark:via-purple-900 dark:to-indigo-900 from-blue-100 via-purple-100 to-indigo-100">
       <Header />
       
       {/* Progress Overlay */}
       {showProgressOverlay && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-12 max-w-md mx-4 border border-white/20">
+          <div className="bg-white/10 dark:bg-black/10 backdrop-blur-lg rounded-3xl p-12 max-w-md mx-4 border border-white/20 dark:border-black/20">
             <div className="text-center">
               <div className="mb-8">
                 <div className="text-6xl mb-4 animate-bounce">
                   {progress ? getProgressIcon(progress.stage) : '🚀'}
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2">
+                <h3 className="text-2xl font-bold text-white dark:text-black mb-2">
                   Refreshing Prices
                 </h3>
-                <p className="text-white/60">
+                <p className="text-white/60 dark:text-black/60">
                   Please wait while we update your card prices...
                 </p>
               </div>
@@ -591,13 +591,13 @@ export default function CompListPage() {
                         {getProgressIcon(progress.stage)}
                       </div>
                       <div className="text-left">
-                        <div className="font-semibold text-white capitalize">
+                        <div className="font-semibold text-white dark:text-black capitalize">
                           {progress.stage.replace('_', ' ')}
                         </div>
-                        <div className="text-white/80 text-sm">
+                        <div className="text-white/80 dark:text-black/80 text-sm">
                           {progress.message}
                           {progress.stage === 'analyzing' && progress.current && progress.total && (
-                            <div className="text-white/60 text-xs mt-1">
+                            <div className="text-white/60 dark:text-black/60 text-xs mt-1">
                               Progress: {progress.current}/{progress.total} cards
                             </div>
                           )}
@@ -614,7 +614,7 @@ export default function CompListPage() {
                     }`}>
                       <div className="text-center">
                         <div className="text-xl mb-1">🔍</div>
-                        <div className="text-xs text-white/80">Analyzing Cards</div>
+                        <div className="text-xs text-white/80 dark:text-black/80">Analyzing Cards</div>
                         {progressStages.has('analyzing') && (
                           <div className="text-xs text-green-400 mt-1">✓ Complete</div>
                         )}
@@ -626,7 +626,7 @@ export default function CompListPage() {
                     }`}>
                       <div className="text-center">
                         <div className="text-xl mb-1">✅</div>
-                        <div className="text-xs text-white/80">Saving Data</div>
+                        <div className="text-xs text-white/80 dark:text-black/80">Saving Data</div>
                         {progressStages.has('complete') && (
                           <div className="text-xs text-green-400 mt-1">✓ Complete</div>
                         )}
@@ -637,13 +637,13 @@ export default function CompListPage() {
               )}
 
               <div className="mt-8">
-                <div className="w-full bg-white/20 rounded-full h-2">
+                <div className="w-full bg-white/20 dark:bg-black/20 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out" 
                     style={{ width: `${progress ? getProgressPercentage(progress.stage) : 0}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between text-white/50 text-xs mt-2">
+                <div className="flex justify-between text-white/50 dark:text-black/50 text-xs mt-2">
                   <span>
                     {progress?.current && progress?.total ? 
                       `Card ${progress.current} of ${progress.total}` : 
@@ -654,7 +654,7 @@ export default function CompListPage() {
                     {progress?.percentage ? `${progress.percentage}%` : 'Calculating...'}
                   </span>
                 </div>
-                <p className="text-white/50 text-xs mt-1">
+                <p className="text-white/50 dark:text-black/50 text-xs mt-1">
                   This usually takes 3-6 seconds per card
                 </p>
               </div>
@@ -666,19 +666,11 @@ export default function CompListPage() {
       <div className="container mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white mb-8 group transition-all duration-300 font-medium"
-          >
-            <svg className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Home
-          </button>
+
           <h1 className="text-5xl font-bold gradient-text mb-4">
             My Comp List
           </h1>
-          <p className="text-white/60 text-xl font-light">
+          <p className="dark:text-white/60 text-black/60 text-xl font-light">
             Your saved card comparisons and prices
           </p>
         </div>
@@ -742,12 +734,12 @@ export default function CompListPage() {
         {/* Statistics */}
         {compList.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-white mb-2">{compList.length}</div>
-              <div className="text-white/60">Total Cards</div>
+            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-6">
+              <div className="text-3xl font-bold dark:text-white text-black mb-2">{compList.length}</div>
+              <div className="dark:text-white/60 text-black/60">Total Cards</div>
             </div>
-            <div className="bg-white/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-green-400 mb-2">
+            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-6">
+              <div className="text-3xl font-bold dark:text-green-400 text-green-600 mb-2">
                 £{(() => {
                   const validTcgPrices = compList.filter(item => item.tcg_price && item.tcg_price > 0)
                   if (validTcgPrices.length === 0) return '0.00'
@@ -755,10 +747,10 @@ export default function CompListPage() {
                   return (total / validTcgPrices.length).toFixed(2)
                 })()}
               </div>
-              <div className="text-white/60">Avg TCG Price</div>
+              <div className="dark:text-white/60 text-black/60">Avg TCG Price</div>
             </div>
-            <div className="bg-white/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-blue-400 mb-2">
+            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-6">
+              <div className="text-3xl font-bold dark:text-blue-400 text-blue-600 mb-2">
                 £{(() => {
                   const validEbayPrices = compList.filter(item => item.ebay_average && item.ebay_average > 0)
                   if (validEbayPrices.length === 0) return '0.00'
@@ -766,13 +758,13 @@ export default function CompListPage() {
                   return (total / validEbayPrices.length).toFixed(2)
                 })()}
               </div>
-              <div className="text-white/60">Avg eBay Price</div>
+              <div className="dark:text-white/60 text-black/60">Avg eBay Price</div>
             </div>
-            <div className="bg-white/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-purple-400 mb-2">
+            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-6">
+              <div className="text-3xl font-bold dark:text-purple-400 text-purple-600 mb-2">
                 {averageConfidence.toFixed(1)}
               </div>
-              <div className="text-white/60">Avg Confidence</div>
+              <div className="dark:text-white/60 text-black/60">Avg Confidence</div>
             </div>
           </div>
         )}
@@ -787,7 +779,7 @@ export default function CompListPage() {
                 placeholder="Search cards..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+                className="w-full px-4 py-3 dark:bg-white/10 bg-black/10 border dark:border-white/20 border-black/20 rounded-2xl dark:text-white text-black dark:placeholder-white/50 placeholder-black/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 dark:focus:bg-black/15 transition-all duration-300"
               />
             </div>
             
@@ -836,8 +828,8 @@ export default function CompListPage() {
                 key={item.id} 
                 className={`${
                   viewMode === 'list' 
-                    ? 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 grid-item-enhanced flex items-center gap-6 list-item-animate'
-                    : 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 grid-item-enhanced grid-resize-animate'
+                    ? 'dark:bg-white/10 bg-black/10 rounded-2xl p-6 border border-white/20 dark:border-black/20 hover:bg-white/15 grid-item-enhanced flex items-center gap-6 list-item-animate'
+                    : 'dark:bg-white/10 bg-black/10 rounded-2xl p-6 border border-white/20 dark:border-black/20 hover:bg-white/15 grid-item-enhanced grid-resize-animate'
                 } transform hover:scale-105`}
                 style={{
                   animationDelay: `${index * 50}ms`,
@@ -870,12 +862,12 @@ export default function CompListPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-white mb-1 truncate">{item.card_name}</h3>
+                          <h3 className="text-lg font-semibold dark:text-white text-black mb-1 truncate">{item.card_name}</h3>
                           {item.set_name && (
-                            <p className="text-white/60 text-sm truncate">{item.set_name}</p>
+                            <p className="dark:text-white/60 text-black/60 text-sm truncate">{item.set_name}</p>
                           )}
                           {item.card_number && (
-                            <p className="text-white/40 text-xs">#{item.card_number}</p>
+                            <p className="dark:text-white/40 text-black/40 text-xs">#{item.card_number}</p>
                           )}
                         </div>
                         <button
@@ -926,12 +918,12 @@ export default function CompListPage() {
                   <>
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white mb-1">{item.card_name}</h3>
+                        <h3 className="text-lg font-semibold dark:text-white text-black mb-1">{item.card_name}</h3>
                         {item.set_name && (
-                          <p className="text-white/60 text-sm">{item.set_name}</p>
+                          <p className="dark:text-white/60 text-black/60 text-sm">{item.set_name}</p>
                         )}
                         {item.card_number && (
-                          <p className="text-white/40 text-xs">#{item.card_number}</p>
+                          <p className="dark:text-white/40 text-black/40 text-xs">#{item.card_number}</p>
                         )}
                       </div>
                       <button
@@ -961,32 +953,32 @@ export default function CompListPage() {
                     <div className="space-y-3">
                       {item.recommended_price && (
                         <div>
-                          <p className="text-white/60 text-sm">Recommended Price</p>
-                          <p className="text-white font-semibold">{item.recommended_price}</p>
+                          <p className="dark:text-white/60 text-black/60 text-sm">Recommended Price</p>
+                          <p className="dark:text-white text-black font-semibold">{item.recommended_price}</p>
                         </div>
                       )}
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-white/60 text-sm">TCG Price</p>
-                          <p className="text-green-400 font-semibold">
+                          <p className="dark:text-white/60 text-black/60 text-sm">TCG Price</p>
+                          <p className="dark:text-green-400 text-green-600 font-semibold">
                             £{item.tcg_price?.toFixed(2) || '0.00'}
                           </p>
                         </div>
                         <div>
-                          <p className="text-white/60 text-sm">eBay Average</p>
-                          <p className="text-blue-400 font-semibold">
+                          <p className="dark:text-white/60 text-black/60 text-sm">eBay Average</p>
+                          <p className="dark:text-blue-400 text-blue-600 font-semibold">
                             £{item.ebay_average?.toFixed(2) || '0.00'}
                           </p>
                         </div>
                       </div>
 
                       {/* Confidence Meter */}
-                      <div className="pt-3 border-t border-white/10">
+                      <div className="pt-3 border-t border-white/10 dark:border-black/10">
                         <ConfidenceMeter item={item} />
                       </div>
 
-                      <div className="text-white/40 text-xs">
+                      <div className="dark:text-white/40 text-black/40 text-xs">
                         Saved {new Date(item.saved_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -999,14 +991,14 @@ export default function CompListPage() {
 
         {/* Data Explanation */}
         {compList.length > 0 && (
-          <div className="mt-12 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <div className="mt-12 p-4 dark:bg-blue-500/10 bg-blue-500/10 border border-blue-500/20 dark:border-blue-500/20 rounded-lg">
             <div className="flex items-start gap-3">
               <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="text-sm text-blue-200">
+              <div className="text-sm dark:text-blue-200 text-blue-600">
                 <div className="font-medium mb-1">Data Types Explained:</div>
-                <div className="space-y-1 text-blue-300">
+                <div className="space-y-1 dark:text-blue-300 text-blue-600">
                   <div>• <span className="text-green-400">Confidence & Volatility:</span> Available after running "Refresh Prices" (requires historical data)</div>
                   <div>• <span className="text-yellow-400">Price Trend:</span> Shows for cards that have been refreshed at least once</div>
                   <div>• <span className="text-gray-400">Pending Cards:</span> Need "Refresh Prices" to get confidence metrics</div>
