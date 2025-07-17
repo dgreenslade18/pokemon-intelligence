@@ -47,6 +47,7 @@ export default function CompListPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('grid-3')
+  const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('grid-3')
   const [isViewChanging, setIsViewChanging] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [showProgressOverlay, setShowProgressOverlay] = useState(false)
@@ -71,13 +72,14 @@ export default function CompListPage() {
   const handleViewChange = (newViewMode: ViewMode) => {
     if (newViewMode === viewMode) return
     
+    setPreviousViewMode(viewMode)
     setIsViewChanging(true)
     setViewMode(newViewMode)
     
     // Reset the animation state after transition
     setTimeout(() => {
       setIsViewChanging(false)
-    }, 700) // Match the transition duration
+    }, 800) // Match the new transition duration
   }
 
   const loadData = async (listId?: string) => {
@@ -822,22 +824,27 @@ export default function CompListPage() {
             )}
           </div>
                 ) : (
-          <div className={`grid gap-6 transition-all duration-700 ease-in-out ${
+          <div className={`grid gap-6 grid-enhanced-transition ${
             viewMode === 'grid-3' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
             viewMode === 'grid-4' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
             'grid-cols-1'
-          } ${isViewChanging ? 'opacity-75 scale-98' : 'opacity-100 scale-100'}`}>
+          } ${isViewChanging ? 'opacity-85 scale-98 transform-gpu' : 'opacity-100 scale-100'}`}>
             {filteredCards.map((item, index) => (
               <div 
                 key={item.id} 
                 className={`${
                   viewMode === 'list' 
-                    ? 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-500 ease-in-out flex items-center gap-6 list-item-animate'
-                    : 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-500 ease-in-out grid-item-animate'
+                    ? 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 grid-item-enhanced flex items-center gap-6 list-item-animate'
+                    : 'bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 grid-item-enhanced grid-resize-animate'
                 } transform hover:scale-105`}
                 style={{
-                  animationDelay: `${index * 100}ms`,
-                  animationFillMode: 'both'
+                  animationDelay: `${index * 50}ms`,
+                  animationFillMode: 'both',
+                  ...(isViewChanging && (viewMode === 'grid-3' || viewMode === 'grid-4') && (previousViewMode === 'grid-3' || previousViewMode === 'grid-4') && {
+                    animation: 'grid-reflow 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                    animationDelay: `${index * 30}ms`,
+                    transform: `translateY(${index * 2}px)`
+                  })
                 }}
               >
                 {viewMode === 'list' ? (
