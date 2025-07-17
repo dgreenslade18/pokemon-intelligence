@@ -93,7 +93,7 @@ export default function ListSelector({ selectedListId, onListChange, onManageLis
 
       {/* Dropdown */}
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-10">
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-10 min-w-[135%]">
           <div className="py-1">
             {lists.map((list) => (
               <button
