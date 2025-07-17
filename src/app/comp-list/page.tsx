@@ -357,7 +357,29 @@ export default function CompListPage() {
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-400">Confidence</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-400">Confidence</span>
+            <div className="group relative">
+              <svg className="w-3 h-3 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                <div className="text-center">
+                  <div className="font-semibold mb-1">Confidence Score (0-10)</div>
+                  <div className="space-y-1 text-gray-300">
+                    <div>• <span className="text-green-400">8-10:</span> High confidence - Good data from multiple sources</div>
+                    <div>• <span className="text-yellow-400">6-7:</span> Medium confidence - Some reliable data</div>
+                    <div>• <span className="text-orange-400">4-5:</span> Low confidence - Limited data available</div>
+                    <div>• <span className="text-red-400">0-3:</span> Very low confidence - Minimal data</div>
+                  </div>
+                  <div className="mt-2 text-gray-400 text-xs">
+                    Based on: eBay sales (3+ = +4pts), TCG price (+3pts), low volatility (+2pts), trend data (+1pt)
+                  </div>
+                </div>
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/90"></div>
+              </div>
+            </div>
+          </div>
           <span className={`text-xs font-medium ${getConfidenceColor(score)}`}>
             {getConfidenceLabel(score)} ({score.toFixed(1)})
           </span>
@@ -376,7 +398,25 @@ export default function CompListPage() {
 
         {item.market_trend && (
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-400">Trend</span>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-400">Trend</span>
+              <div className="group relative">
+                <svg className="w-3 h-3 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                  <div className="text-center">
+                    <div className="font-semibold mb-1">Market Trend</div>
+                    <div className="space-y-1 text-gray-300">
+                      <div>• <span className="text-green-400">↗️ Increasing:</span> Price up {'>'}5% from last refresh</div>
+                      <div>• <span className="text-red-400">↘️ Decreasing:</span> Price down {'>'}5% from last refresh</div>
+                      <div>• <span className="text-blue-400">→ Stable:</span> Price change within ±5%</div>
+                    </div>
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/90"></div>
+                </div>
+              </div>
+            </div>
             <span className={`font-medium ${getTrendColor(item.market_trend)}`}>
               {getTrendIcon(item.market_trend)} {item.market_trend}
             </span>
@@ -385,7 +425,26 @@ export default function CompListPage() {
 
         {item.price_change_percentage !== null && (
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-400">Change</span>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-400">Change</span>
+              <div className="group relative">
+                <svg className="w-3 h-3 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                  <div className="text-center">
+                    <div className="font-semibold mb-1">Price Change</div>
+                    <div className="space-y-1 text-gray-300">
+                      <div>Percentage change from last refresh</div>
+                      <div>• <span className="text-green-400">Green:</span> Price increased</div>
+                      <div>• <span className="text-red-400">Red:</span> Price decreased</div>
+                      <div>• <span className="text-gray-400">Gray:</span> No change</div>
+                    </div>
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/90"></div>
+                </div>
+              </div>
+            </div>
             <span className={`font-medium ${
               item.price_change_percentage > 0 ? 'text-green-400' : 
               item.price_change_percentage < 0 ? 'text-red-400' : 'text-gray-400'
@@ -397,7 +456,26 @@ export default function CompListPage() {
 
         {item.price_volatility !== null && (
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-400">Volatility</span>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-400">Volatility</span>
+              <div className="group relative">
+                <svg className="w-3 h-3 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                  <div className="text-center">
+                    <div className="font-semibold mb-1">Price Volatility</div>
+                    <div className="space-y-1 text-gray-300">
+                      <div>Standard deviation of recent eBay prices</div>
+                      <div>• <span className="text-green-400">Green:</span> Low volatility {'<'}10%</div>
+                      <div>• <span className="text-yellow-400">Yellow:</span> Medium volatility 10-25%</div>
+                      <div>• <span className="text-red-400">Red:</span> High volatility {'>'}25%</div>
+                    </div>
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/90"></div>
+                </div>
+              </div>
+            </div>
             <span className={`font-medium ${
               item.price_volatility < 10 ? 'text-green-400' : 
               item.price_volatility < 25 ? 'text-yellow-400' : 'text-red-400'
