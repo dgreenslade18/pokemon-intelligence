@@ -5,8 +5,8 @@ import { ThemeProvider } from '../components/ThemeProvider'
 import { layGrotesk, layGroteskHeading } from './fonts'
 
 export const metadata = {
-  title: 'Pokemon Arbitrage Intelligence',
-  description: 'Advanced market analysis tools for profitable Pokemon card trading opportunities',
+  title: 'Pokemon Card Intelligence',
+  description: 'Advanced market analysis tools for profitable Pokemon card trading opportunities by Dom Greenslade',
 }
 
 export default function RootLayout({

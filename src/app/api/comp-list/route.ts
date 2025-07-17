@@ -6,6 +6,7 @@ import {
   getCompList, 
   removeFromCompList
 } from '../../../lib/db'
+import { capitalizeCardName } from '../../../lib/utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     const savedItem = await saveToCompList(
       session.user.id,
-      cardName,
+      capitalizeCardName(cardName),
       cardNumber || '',
       recommendedPrice || '',
       tcgPrice,

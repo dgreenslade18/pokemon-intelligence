@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../lib/auth'
 import { getUserPreferences, UserPreferences } from '../../../lib/db'
+import { capitalizeCardName } from '../../../lib/utils'
 
 // Types for our API responses
 interface EbayItem {
@@ -350,7 +351,7 @@ export async function analyzeCard(
   } : undefined
 
   const result: AnalysisResult = {
-    card_name: cardName,
+    card_name: capitalizeCardName(cardName),
     timestamp: new Date().toISOString(),
     ebay_prices: ebayPrices,
     cardmarket: pokemonTcgData,

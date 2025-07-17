@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../../lib/auth'
 import { getCompList, saveToCompList, getUserPreferences } from '../../../../lib/db'
 import { analyzeCard } from '../../script7/route'
+import { capitalizeCardName } from '../../../../lib/utils'
 
 export const dynamic = 'force-dynamic'
 
