@@ -179,6 +179,9 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [lists, setLists] = useState<any[]>([])
+  const [selectedListId, setSelectedListId] = useState<string | null>(null)
+  const [showListSelector, setShowListSelector] = useState(false)
   const resultsRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<HTMLDivElement>(null)
@@ -297,6 +300,33 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
       window.removeEventListener('scroll', handleScroll)
     }
   }, [showAutocomplete])
+
+  // Load user lists
+  useEffect(() => {
+    const loadLists = async () => {
+      if (!session?.user?.id) return
+
+      try {
+        const response = await fetch('/api/lists')
+        if (response.ok) {
+          const data = await response.json()
+          setLists(data.lists || [])
+          
+          // Set default list as selected
+          const defaultList = data.lists?.find((list: any) => list.is_default)
+          if (defaultList) {
+            setSelectedListId(defaultList.id)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading lists:', error)
+      }
+    }
+
+    if (session?.user?.id) {
+      loadLists()
+    }
+  }, [session])
 
   // Handle suggestion selection
   const handleSuggestionClick = (suggestion: any) => {
@@ -530,7 +560,8 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
           tcgPrice: result.analysis.cardmarket_price > 0 ? result.analysis.cardmarket_price : null,
           ebayAverage: result.analysis.ebay_average > 0 ? result.analysis.ebay_average : null,
           cardImageUrl: result.card_details?.images?.large || result.card_details?.images?.small || '',
-          setName: result.card_details?.set?.name || ''
+          setName: result.card_details?.set?.name || '',
+          listId: selectedListId
         }),
       })
 
@@ -863,27 +894,46 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
                 {/* Save to Comp List Button */}
                 <div className="mb-8 flex justify-center">
-                  <button
-                    onClick={handleSaveToCompList}
-                    disabled={saving}
-                    className="flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  >
-                    {saving ? (
-                      <>
-                        <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                        </svg>
-                        Save to Comp List
-                      </>
+                  <div className="flex flex-col items-center gap-4">
+                    {lists.length > 1 && (
+                      <div className="flex items-center gap-4">
+                        <label className="text-white/80 text-sm">Save to:</label>
+                        <select
+                          value={selectedListId || ''}
+                          onChange={(e) => setSelectedListId(e.target.value)}
+                          className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+                        >
+                          {lists.map(list => (
+                            <option key={list.id} value={list.id}>
+                              {list.name} {list.is_default ? '(Default)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     )}
-                  </button>
+                    
+                    <button
+                      onClick={handleSaveToCompList}
+                      disabled={saving}
+                      className="flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                      {saving ? (
+                        <>
+                          <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                          </svg>
+                          Save to Comp List
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Save message */}

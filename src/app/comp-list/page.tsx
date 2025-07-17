@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 interface CompListItem {
   id: string
   user_id: string
+  list_id: string
   card_name: string
   card_number: string | null
   recommended_price: string | null
@@ -15,6 +16,17 @@ interface CompListItem {
   saved_at: string
   card_image_url: string | null
   set_name: string | null
+  list_name?: string
+}
+
+interface UserList {
+  id: string
+  user_id: string
+  name: string
+  description?: string
+  created_at: string
+  updated_at: string
+  is_default: boolean
 }
 
 interface ProgressUpdate {
@@ -29,6 +41,8 @@ export default function CompListPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [compList, setCompList] = useState<CompListItem[]>([])
+  const [lists, setLists] = useState<UserList[]>([])
+  const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -36,8 +50,12 @@ export default function CompListPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showProgressOverlay, setShowProgressOverlay] = useState(false)
   const [progress, setProgress] = useState<ProgressUpdate | null>(null)
+  const [showListModal, setShowListModal] = useState(false)
+  const [editingList, setEditingList] = useState<UserList | null>(null)
+  const [newListName, setNewListName] = useState('')
+  const [newListDescription, setNewListDescription] = useState('')
 
-  // Filter comp list based on search term
+  // Filter comp list based on search term and selected list
   const filteredCompList = compList.filter(item => {
     if (!searchTerm) return true
     
@@ -56,16 +74,23 @@ export default function CompListPage() {
     }
   }, [status, router])
 
-  // Load comp list
+  // Load comp list and lists
   useEffect(() => {
-    const loadCompList = async () => {
+    const loadData = async () => {
       if (!session?.user?.id) return
 
       try {
-        const response = await fetch('/api/comp-list')
+        const response = await fetch('/api/comp-list?includeLists=true')
         if (response.ok) {
           const result = await response.json()
           setCompList(result.items || [])
+          setLists(result.lists || [])
+          
+          // Set default list as selected
+          const defaultList = result.lists?.find((list: UserList) => list.is_default)
+          if (defaultList) {
+            setSelectedListId(defaultList.id)
+          }
         } else {
           console.error('Failed to load comp list')
           setError('Failed to load comp list')
@@ -79,7 +104,7 @@ export default function CompListPage() {
     }
 
     if (session?.user?.id) {
-      loadCompList()
+      loadData()
     }
   }, [session])
 
@@ -198,7 +223,6 @@ export default function CompListPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ streamProgress: false }),
         })
 
         if (!response.ok) {
@@ -209,15 +233,13 @@ export default function CompListPage() {
 
         if (data.success) {
           setCompList(data.items)
-          setMessage('Prices refreshed!')
+          setMessage('Prices refreshed successfully!')
           setTimeout(() => setMessage(''), 3000)
         } else {
           setError(data.error || 'Failed to refresh prices')
         }
       } catch (fallbackErr) {
         setError(`Network error: ${fallbackErr instanceof Error ? fallbackErr.message : 'Unknown error'}`)
-      } finally {
-        setShowProgressOverlay(false)
       }
     } finally {
       clearTimeout(timeoutId)
@@ -225,14 +247,94 @@ export default function CompListPage() {
     }
   }
 
+  const handleCreateList = async () => {
+    if (!newListName.trim()) {
+      setError('List name is required')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/lists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newListName.trim(),
+          description: newListDescription.trim() || undefined,
+          isDefault: false
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setLists(prev => [...prev, data.list])
+        setNewListName('')
+        setNewListDescription('')
+        setShowListModal(false)
+        setMessage('List created successfully!')
+        setTimeout(() => setMessage(''), 3000)
+      } else {
+        setError(data.message || 'Failed to create list')
+      }
+    } catch (error) {
+      setError('Failed to create list')
+    }
+  }
+
+  const handleDeleteList = async (listId: string) => {
+    if (!confirm('Are you sure you want to delete this list? All cards will be moved to your default list.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/lists?id=${listId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setLists(prev => prev.filter(list => list.id !== listId))
+        // Reload comp list to get updated data
+        const compResponse = await fetch('/api/comp-list?includeLists=true')
+        if (compResponse.ok) {
+          const result = await compResponse.json()
+          setCompList(result.items || [])
+        }
+        setMessage('List deleted successfully!')
+        setTimeout(() => setMessage(''), 3000)
+      } else {
+        setError(data.message || 'Failed to delete list')
+      }
+    } catch (error) {
+      setError('Failed to delete list')
+    }
+  }
+
+  const handleListChange = async (listId: string) => {
+    setSelectedListId(listId)
+    
+    try {
+      const response = await fetch(`/api/comp-list?listId=${listId}`)
+      if (response.ok) {
+        const result = await response.json()
+        setCompList(result.items || [])
+      }
+    } catch (error) {
+      console.error('Error loading list:', error)
+    }
+  }
+
   const getProgressIcon = (stage: string) => {
     switch (stage) {
       case 'starting':
-        return '📋'
-      case 'analyzing':
-        return '🔍'
-      case 'complete':
-        return '✅'
+        return '🚀'
+      case 'fetching':
+        return '📡'
+      case 'updating':
+        return '🔄'
       default:
         return '⚡'
     }
@@ -256,11 +358,12 @@ export default function CompListPage() {
     if (!compList.length) return null
 
     const csvData = [
-      ['Card Name', 'Card Number', 'Set Name', 'Recommended Price', 'TCG Price', 'eBay Average', 'Saved Date'],
+      ['Card Name', 'Card Number', 'Set Name', 'List Name', 'Recommended Price', 'TCG Price', 'eBay Average', 'Saved Date'],
       ...compList.map(item => [
         item.card_name,
         item.card_number || '',
         item.set_name || '',
+        item.list_name || '',
         item.recommended_price || '',
         item.tcg_price?.toFixed(2) || '0.00',
         item.ebay_average?.toFixed(2) || '0.00',
@@ -373,6 +476,56 @@ export default function CompListPage() {
         </div>
       )}
 
+      {/* List Management Modal */}
+      {showListModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 max-w-md mx-4 border border-white/20">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-white mb-6">Create New List</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">List Name</label>
+                  <input
+                    type="text"
+                    value={newListName}
+                    onChange={(e) => setNewListName(e.target.value)}
+                    placeholder="e.g., My Inventory, Wishlist"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">Description (Optional)</label>
+                  <textarea
+                    value={newListDescription}
+                    onChange={(e) => setNewListDescription(e.target.value)}
+                    placeholder="Describe what this list is for..."
+                    rows={3}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300 resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-8">
+                <button
+                  onClick={() => setShowListModal(false)}
+                  className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-2xl transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateList}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-semibold rounded-2xl transition-all duration-200"
+                >
+                  Create List
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
@@ -393,48 +546,78 @@ export default function CompListPage() {
           </p>
         </div>
 
-        {/* Search and Actions */}
+        {/* List Selector and Actions */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div className="flex-1 max-w-md">
-            <input
-              type="text"
-              placeholder="Search cards..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
-            />
-          </div>
-          
-          <div className="flex gap-4 md:flex-row flex-col">
-            {compList.length > 0 && (
-              <>
-                <button
-                  onClick={handleDownload}
-                  className="flex items-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 group"
-                >
-                  <svg className="w-5 h-5 mr-2 group-hover:translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>Download CSV</span>
-                </button>
-                <button
-                  onClick={handleRefreshPrices}
-                  disabled={refreshing}
-                  className="flex items-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
-                >
-                  {refreshing ? (
-                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                  {refreshing ? 'Refreshing...' : 'Refresh Prices'}
-                </button>
-              </>
+          <div className="flex gap-4 items-center">
+            {lists.length > 1 && (
+              <select
+                value={selectedListId || ''}
+                onChange={(e) => handleListChange(e.target.value)}
+                className="px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+              >
+                {lists.map(list => (
+                  <option key={list.id} value={list.id}>
+                    {list.name} {list.is_default ? '(Default)' : ''}
+                  </option>
+                ))}
+              </select>
             )}
+            
+            <button
+              onClick={() => setShowListModal(true)}
+              className="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105"
+            >
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                New List
+              </div>
+            </button>
+          </div>
+
+          <div className="flex gap-4 md:flex-row flex-col">
+            <div className="flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="Search cards..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+              />
+            </div>
+            
+            <div className="flex gap-4 md:flex-row flex-col">
+              {compList.length > 0 && (
+                <>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 group"
+                  >
+                    <svg className="w-5 h-5 mr-2 group-hover:translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Download CSV</span>
+                  </button>
+                  <button
+                    onClick={handleRefreshPrices}
+                    disabled={refreshing}
+                    className="flex items-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+                  >
+                    {refreshing ? (
+                      <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    )}
+                    {refreshing ? 'Refreshing...' : 'Refresh Prices'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -448,6 +631,51 @@ export default function CompListPage() {
         {error && (
           <div className="mb-6 p-4 bg-red-600/20 border border-red-500/30 rounded-lg text-red-300">
             {error}
+          </div>
+        )}
+
+        {/* List Management */}
+        {lists.length > 1 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white">Additional Lists</h3>
+              <button
+                onClick={() => setShowListModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105"
+              >
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  New List
+                </div>
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {lists.filter(list => !list.is_default).map(list => (
+                <div key={list.id} className="bg-white/10 rounded-2xl p-4 border border-white/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-white font-semibold">
+                      {list.name}
+                    </h4>
+                    <button
+                      onClick={() => handleDeleteList(list.id)}
+                      className="text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                  {list.description && (
+                    <p className="text-white/60 text-sm mb-2">{list.description}</p>
+                  )}
+                  <p className="text-white/40 text-xs">
+                    {compList.filter(item => item.list_id === list.id).length} cards
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -531,6 +759,9 @@ export default function CompListPage() {
                   )}
                   {item.set_name && (
                     <p className="text-gray-400 text-sm">{item.set_name}</p>
+                  )}
+                  {item.list_name && (
+                    <p className="text-blue-400 text-sm">{item.list_name}</p>
                   )}
                   <p className="text-gray-500 text-xs mt-2">
                     Saved {new Date(item.saved_at).toLocaleDateString()}

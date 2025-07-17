@@ -24,6 +24,7 @@ export interface UserPreferences {
 export interface CompListItem {
   id: string
   user_id: string
+  list_id: string
   card_name: string
   card_number: string
   recommended_price: string
@@ -33,6 +34,16 @@ export interface CompListItem {
   updated_at: Date
   card_image_url?: string
   set_name?: string
+}
+
+export interface UserList {
+  id: string
+  user_id: string
+  name: string
+  description?: string
+  created_at: Date
+  updated_at: Date
+  is_default: boolean
 }
 
 // Initialize database tables
@@ -63,11 +74,26 @@ export async function initDb() {
       );
     `
 
-    // Create comp_list table
+    // Create lists table
+    await sql`
+      CREATE TABLE IF NOT EXISTS lists (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        is_default BOOLEAN DEFAULT false,
+        UNIQUE(user_id, name)
+      );
+    `
+
+    // Create comp_list table with list_id
     await sql`
       CREATE TABLE IF NOT EXISTS comp_list (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        list_id UUID NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
         card_name VARCHAR(255) NOT NULL,
         card_number VARCHAR(50),
         recommended_price VARCHAR(100),
@@ -79,6 +105,56 @@ export async function initDb() {
         set_name VARCHAR(255)
       );
     `
+
+    // Add list_id column to existing comp_list table if it doesn't exist
+    try {
+      await sql`
+        ALTER TABLE comp_list 
+        ADD COLUMN IF NOT EXISTS list_id UUID REFERENCES lists(id) ON DELETE CASCADE;
+      `
+      console.log('✅ list_id column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  list_id column migration failed (might already exist):', migrationError.message)
+    }
+
+    // Create default list for existing users and migrate existing data
+    try {
+      // Create default lists for all users who don't have one
+      await sql`
+        INSERT INTO lists (user_id, name, description, is_default)
+        SELECT DISTINCT user_id, 'My Comp List', 'Default comparison list', true
+        FROM comp_list
+        WHERE user_id NOT IN (
+          SELECT DISTINCT user_id FROM lists
+        );
+      `
+      console.log('✅ Default lists created for existing users')
+
+      // Also create default list for users who have no cards yet
+      await sql`
+        INSERT INTO lists (user_id, name, description, is_default)
+        SELECT id, 'My Comp List', 'Default comparison list', true
+        FROM users
+        WHERE id NOT IN (
+          SELECT DISTINCT user_id FROM lists
+        );
+      `
+      console.log('✅ Default lists created for new users')
+
+      // Update existing comp_list items to use the default list
+      await sql`
+        UPDATE comp_list 
+        SET list_id = (
+          SELECT id FROM lists 
+          WHERE lists.user_id = comp_list.user_id 
+          AND lists.is_default = true
+        )
+        WHERE list_id IS NULL;
+      `
+      console.log('✅ Existing comp_list items migrated to default lists')
+    } catch (migrationError) {
+      console.log('⚠️  List migration failed:', migrationError.message)
+    }
 
     // Add updated_at column if it doesn't exist (migration)
     try {
@@ -97,9 +173,9 @@ export async function initDb() {
       await sql`
         DELETE FROM comp_list 
         WHERE id NOT IN (
-          SELECT DISTINCT ON (user_id, card_name, card_number) id
+          SELECT DISTINCT ON (user_id, list_id, card_name, card_number) id
           FROM comp_list
-          ORDER BY user_id, card_name, card_number, saved_at DESC
+          ORDER BY user_id, list_id, card_name, card_number, saved_at DESC
         );
       `
       console.log('✅ Duplicate removal completed')
@@ -111,16 +187,22 @@ export async function initDb() {
     try {
       await sql`
         ALTER TABLE comp_list 
-        ADD CONSTRAINT comp_list_unique_user_card UNIQUE(user_id, card_name, card_number);
+        ADD CONSTRAINT comp_list_unique_user_list_card UNIQUE(user_id, list_id, card_name, card_number);
       `
       console.log('✅ Unique constraint added successfully')
     } catch (constraintError) {
       console.log('⚠️  Unique constraint already exists or failed:', constraintError.message)
     }
 
-    // Create index on user_id for faster queries
+    // Create indexes for faster queries
     await sql`
       CREATE INDEX IF NOT EXISTS idx_comp_list_user_id ON comp_list(user_id);
+    `
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_comp_list_list_id ON comp_list(list_id);
+    `
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_lists_user_id ON lists(user_id);
     `
 
     // Add whatnot_fees column if it doesn't exist (migration)
@@ -231,65 +313,137 @@ export async function updateUserPreferences(
     whatnot_fees
   } = preferences
 
-  try {
-    const result = await sql`
-      UPDATE user_preferences
-      SET 
-        show_buy_value = COALESCE(${show_buy_value}, show_buy_value),
-        show_trade_value = COALESCE(${show_trade_value}, show_trade_value),
-        show_cash_value = COALESCE(${show_cash_value}, show_cash_value),
-        trade_percentage = COALESCE(${trade_percentage}, trade_percentage),
-        cash_percentage = COALESCE(${cash_percentage}, cash_percentage),
-        whatnot_fees = COALESCE(${whatnot_fees}, whatnot_fees),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = ${userId}
-      RETURNING *
-    `
-    
-    const row = result.rows[0]
-    return {
-      ...row,
-      trade_percentage: Number(row.trade_percentage),
-      cash_percentage: Number(row.cash_percentage),
-      whatnot_fees: Number(row.whatnot_fees || 12.5)
-    } as UserPreferences
-  } catch (error) {
-    // If whatnot_fees column doesn't exist, add it and retry
-    if (error.message?.includes('whatnot_fees')) {
-      console.log('Adding whatnot_fees column and retrying update...')
-      await sql`
-        ALTER TABLE user_preferences 
-        ADD COLUMN whatnot_fees DECIMAL(5,2) DEFAULT 12.50
-      `
-      
-      // Retry the update
-      const result = await sql`
-        UPDATE user_preferences
-        SET 
-          show_buy_value = COALESCE(${show_buy_value}, show_buy_value),
-          show_trade_value = COALESCE(${show_trade_value}, show_trade_value),
-          show_cash_value = COALESCE(${show_cash_value}, show_cash_value),
-          trade_percentage = COALESCE(${trade_percentage}, trade_percentage),
-          cash_percentage = COALESCE(${cash_percentage}, cash_percentage),
-          whatnot_fees = COALESCE(${whatnot_fees}, whatnot_fees),
-          updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = ${userId}
-        RETURNING *
-      `
-      
-      const row = result.rows[0]
-      return {
-        ...row,
-        trade_percentage: Number(row.trade_percentage),
-        cash_percentage: Number(row.cash_percentage),
-        whatnot_fees: Number(row.whatnot_fees || 12.5)
-      } as UserPreferences
-    }
-    throw error
-  }
+  const result = await sql`
+    UPDATE user_preferences 
+    SET 
+      show_buy_value = COALESCE(${show_buy_value}, show_buy_value),
+      show_trade_value = COALESCE(${show_trade_value}, show_trade_value),
+      show_cash_value = COALESCE(${show_cash_value}, show_cash_value),
+      trade_percentage = COALESCE(${trade_percentage}, trade_percentage),
+      cash_percentage = COALESCE(${cash_percentage}, cash_percentage),
+      whatnot_fees = COALESCE(${whatnot_fees}, whatnot_fees),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = ${userId}
+    RETURNING *
+  `
+  
+  const row = result.rows[0]
+  return {
+    ...row,
+    trade_percentage: Number(row.trade_percentage),
+    cash_percentage: Number(row.cash_percentage),
+    whatnot_fees: Number(row.whatnot_fees || 12.5)
+  } as UserPreferences
 }
 
-// Comp list operations
+// List management operations
+export async function createUserList(
+  userId: string,
+  name: string,
+  description?: string,
+  isDefault: boolean = false
+): Promise<UserList> {
+  // If this is the first list or isDefault is true, unset other default lists
+  if (isDefault) {
+    await sql`
+      UPDATE lists 
+      SET is_default = false 
+      WHERE user_id = ${userId}
+    `
+  }
+
+  const result = await sql`
+    INSERT INTO lists (user_id, name, description, is_default)
+    VALUES (${userId}, ${name}, ${description || null}, ${isDefault})
+    RETURNING *
+  `
+  
+  return result.rows[0] as UserList
+}
+
+export async function getUserLists(userId: string): Promise<UserList[]> {
+  const result = await sql`
+    SELECT * FROM lists 
+    WHERE user_id = ${userId}
+    ORDER BY is_default DESC, created_at ASC
+  `
+  
+  return result.rows as UserList[]
+}
+
+export async function getUserList(listId: string, userId: string): Promise<UserList | null> {
+  const result = await sql`
+    SELECT * FROM lists 
+    WHERE id = ${listId} AND user_id = ${userId}
+  `
+  
+  return result.rows[0] as UserList || null
+}
+
+export async function updateUserList(
+  listId: string,
+  userId: string,
+  updates: { name?: string; description?: string; is_default?: boolean }
+): Promise<UserList> {
+  // If setting as default, unset other default lists
+  if (updates.is_default) {
+    await sql`
+      UPDATE lists 
+      SET is_default = false 
+      WHERE user_id = ${userId} AND id != ${listId}
+    `
+  }
+
+  const { name, description, is_default } = updates
+
+  const result = await sql`
+    UPDATE lists 
+    SET 
+      name = COALESCE(${name}, name),
+      description = COALESCE(${description}, description),
+      is_default = COALESCE(${is_default}, is_default),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${listId} AND user_id = ${userId}
+    RETURNING *
+  `
+  
+  return result.rows[0] as UserList
+}
+
+export async function deleteUserList(listId: string, userId: string): Promise<void> {
+  // First, move all cards from this list to the default list
+  const defaultList = await sql`
+    SELECT id FROM lists 
+    WHERE user_id = ${userId} AND is_default = true
+    LIMIT 1
+  `
+  
+  if (defaultList.rows.length > 0) {
+    await sql`
+      UPDATE comp_list 
+      SET list_id = ${defaultList.rows[0].id}
+      WHERE list_id = ${listId} AND user_id = ${userId}
+    `
+  }
+
+  // Then delete the list
+  await sql`
+    DELETE FROM lists 
+    WHERE id = ${listId} AND user_id = ${userId}
+  `
+}
+
+export async function getDefaultUserList(userId: string): Promise<UserList | null> {
+  const result = await sql`
+    SELECT * FROM lists 
+    WHERE user_id = ${userId} AND is_default = true
+    LIMIT 1
+  `
+  
+  return result.rows[0] as UserList || null
+}
+
+// Comp list operations (updated to work with lists)
 export async function saveToCompList(
   userId: string,
   cardName: string,
@@ -298,71 +452,68 @@ export async function saveToCompList(
   tcgPrice: number | null,
   ebayAverage: number | null,
   cardImageUrl?: string,
-  setName?: string
+  setName?: string,
+  listId?: string
 ): Promise<CompListItem> {
-  try {
-    const result = await sql`
-      INSERT INTO comp_list (
-        user_id, card_name, card_number, recommended_price, 
-        tcg_price, ebay_average, card_image_url, set_name
-      )
-      VALUES (
-        ${userId}, ${cardName}, ${cardNumber}, ${recommendedPrice},
-        ${tcgPrice}, ${ebayAverage}, ${cardImageUrl || null}, ${setName || null}
-      )
-      ON CONFLICT (user_id, card_name, card_number) DO UPDATE SET
-        recommended_price = EXCLUDED.recommended_price,
-        tcg_price = EXCLUDED.tcg_price,
-        ebay_average = EXCLUDED.ebay_average,
-        card_image_url = EXCLUDED.card_image_url,
-        set_name = EXCLUDED.set_name,
-        updated_at = CURRENT_TIMESTAMP
-      RETURNING *
-    `
-    
-    // Convert DECIMAL values to numbers and handle nulls
-    const row = result.rows[0]
-    return {
-      ...row,
-      tcg_price: row.tcg_price ? Number(row.tcg_price) : null,
-      ebay_average: row.ebay_average ? Number(row.ebay_average) : null
-    } as CompListItem
-  } catch (error) {
-    console.error('Error in saveToCompList:', error)
-    
-    // Handle specific database errors
-    if (error.message?.includes('comp_list_unique_user_card')) {
-      throw new Error('Card already exists in your comp list')
-    } else if (error.message?.includes('user_id')) {
-      throw new Error('Invalid user ID')
-    } else if (error.message?.includes('card_name')) {
-      throw new Error('Card name is required')
+  // Always use the default list if no listId provided (maintains backward compatibility)
+  if (!listId) {
+    const defaultList = await getDefaultUserList(userId)
+    if (!defaultList) {
+      // Create default list if it doesn't exist
+      const newDefaultList = await createUserList(userId, 'My Comp List', 'Default comparison list', true)
+      listId = newDefaultList.id
     } else {
-      throw new Error(`Database error: ${error.message}`)
+      listId = defaultList.id
     }
   }
-}
 
-export async function getCompList(userId: string): Promise<CompListItem[]> {
   const result = await sql`
-    SELECT * FROM comp_list
-    WHERE user_id = ${userId}
-    ORDER BY saved_at DESC
+    INSERT INTO comp_list (user_id, list_id, card_name, card_number, recommended_price, tcg_price, ebay_average, card_image_url, set_name)
+    VALUES (${userId}, ${listId}, ${cardName}, ${cardNumber}, ${recommendedPrice}, ${tcgPrice}, ${ebayAverage}, ${cardImageUrl || null}, ${setName || null})
+    ON CONFLICT (user_id, list_id, card_name, card_number) 
+    DO UPDATE SET 
+      recommended_price = EXCLUDED.recommended_price,
+      tcg_price = EXCLUDED.tcg_price,
+      ebay_average = EXCLUDED.ebay_average,
+      card_image_url = EXCLUDED.card_image_url,
+      set_name = EXCLUDED.set_name,
+      updated_at = CURRENT_TIMESTAMP
+    RETURNING *
   `
   
-  // Convert DECIMAL values to numbers and handle nulls
-  const convertedRows = result.rows.map(row => ({
-    ...row,
-    tcg_price: row.tcg_price ? Number(row.tcg_price) : null,
-    ebay_average: row.ebay_average ? Number(row.ebay_average) : null
-  })) as CompListItem[]
+  return result.rows[0] as CompListItem
+}
+
+export async function getCompList(userId: string, listId?: string): Promise<CompListItem[]> {
+  let query: any
   
-  return convertedRows
+  if (listId) {
+    // Get cards from specific list
+    query = sql`
+      SELECT cl.*, l.name as list_name
+      FROM comp_list cl
+      JOIN lists l ON cl.list_id = l.id
+      WHERE cl.user_id = ${userId} AND cl.list_id = ${listId}
+      ORDER BY cl.saved_at DESC
+    `
+  } else {
+    // Get all cards from all lists
+    query = sql`
+      SELECT cl.*, l.name as list_name
+      FROM comp_list cl
+      JOIN lists l ON cl.list_id = l.id
+      WHERE cl.user_id = ${userId}
+      ORDER BY cl.saved_at DESC
+    `
+  }
+  
+  const result = await query
+  return result.rows as CompListItem[]
 }
 
 export async function removeFromCompList(userId: string, itemId: string): Promise<void> {
   await sql`
-    DELETE FROM comp_list
+    DELETE FROM comp_list 
     WHERE id = ${itemId} AND user_id = ${userId}
   `
 } 
