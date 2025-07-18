@@ -1154,7 +1154,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                                   <span className="dark:text-white text-black">{result.card_details.hp}</span>
                                 </div>
                               )}
-                              {result.card_details.types.length > 0 && (
+                              {result.card_details.types && result.card_details.types.length > 0 && (
                                 <div className="flex justify-between">
                                   <span className="dark:text-white/50 text-black/50">Types:</span>
                                   <span className="dark:text-white text-black">{result.card_details.types.join(', ')}</span>
@@ -1241,20 +1241,20 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             <div className="grid grid-cols-1 gap-2 text-sm">
                               <div className="flex justify-between">
                                 <span className="dark:text-white/50 text-black/50">Standard:</span>
-                                <span className={`${result.card_details.legalities.standard === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
-                                  {result.card_details.legalities.standard}
+                                <span className={`${result.card_details.legalities?.standard === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
+                                  {result.card_details.legalities?.standard || 'Unknown'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="dark:text-white/50 text-black/50">Expanded:</span>
-                                <span className={`${result.card_details.legalities.expanded === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
-                                  {result.card_details.legalities.expanded}
+                                <span className={`${result.card_details.legalities?.expanded === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
+                                  {result.card_details.legalities?.expanded || 'Unknown'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="dark:text-white/50 text-black/50">Unlimited:</span>
-                                <span className={`${result.card_details.legalities.unlimited === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
-                                  {result.card_details.legalities.unlimited}
+                                <span className={`${result.card_details.legalities?.unlimited === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
+                                  {result.card_details.legalities?.unlimited || 'Unknown'}
                                 </span>
                               </div>
                             </div>
