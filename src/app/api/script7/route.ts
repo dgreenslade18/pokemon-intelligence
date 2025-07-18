@@ -703,6 +703,55 @@ async function searchEbayWithScraping(cardName: string): Promise<EbayItem[]> {
   }
 }
 
+// Spelling corrections for common misspellings (same as autocomplete)
+const SPELLING_CORRECTIONS: Record<string, string> = {
+  'ninetails': 'ninetales',
+  'gyrados': 'gyarados', 
+  'dragonight': 'dragonite',
+  'morty': 'morty',
+  'mortys': 'morty\'s',
+}
+
+function correctSpelling(term: string): string {
+  const words = term.toLowerCase().split(' ')
+  return words.map(word => SPELLING_CORRECTIONS[word] || word).join(' ')
+}
+
+// Build search strategies (same as autocomplete)
+function buildSearchStrategies(query: string): string[] {
+  const strategies: string[] = []
+  
+  // "pokemon number" format (e.g., "charizard 223")
+  const numberMatch = query.match(/^(.+?)\s+(\d+)$/)
+  if (numberMatch) {
+    const [, name, number] = numberMatch
+    strategies.push(`name:*${name}* AND number:${number}`)
+    return strategies // Return early for number searches
+  }
+  
+  // "pokemon type" format (e.g., "charizard ex", "rayquaza v")  
+  const words = query.split(' ')
+  const cardTypes = ['ex', 'gx', 'v', 'vmax', 'vstar']
+  if (words.length === 2) {
+    const [name, type] = words
+    if (cardTypes.includes(type.toLowerCase())) {
+      if (type.toLowerCase() === 'ex') {
+        strategies.push(`name:*${name}*EX*`)
+      } else if (type.toLowerCase() === 'gx') {
+        strategies.push(`name:*${name}*GX*`)
+      } else {
+        strategies.push(`name:*${name}* AND name:*${type.toUpperCase()}*`)
+      }
+      return strategies // Return early for type searches
+    }
+  }
+  
+  // Simple wildcard search for everything else
+  strategies.push(`name:*${query}*`)
+  
+  return strategies
+}
+
 async function searchPokemonTcgApi(
   cardName: string,
   progress: (stage: string, message: string) => void
@@ -710,213 +759,133 @@ async function searchPokemonTcgApi(
   progress('cardmarket', 'Searching Pokemon TCG API...')
   
   try {
-    // Use the same successful logic as the autocomplete
+    // Use the same optimized search logic as autocomplete
     let searchTerm = cardName.trim()
     
-    // Check if search term contains a number (card number) first
-    const cardNumberMatch = searchTerm.match(/^(.+?)\s+(\d+)$/)
-    // Check if search term contains alphanumeric promo codes
-    const promoCodeMatch = searchTerm.match(/^(.+?)\s+([a-zA-Z]+\d+|[a-zA-Z]{2}\d+)$/i)
-    let searchQuery: string
-    
-    if (cardNumberMatch) {
-      // Search for card name AND card number - use original card name without transformations
-      const baseCardName = cardNumberMatch[1].trim()
-      const cardNumber = cardNumberMatch[2].trim()
-      
-      if (baseCardName.includes(' ')) {
-        // Multi-word card name with number
-        const words = baseCardName.split(' ')
-        const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-        searchQuery = `(${nameQueries}) AND number:${cardNumber}`
-      } else {
-        // Single word card name with number
-        searchQuery = `name:${baseCardName}* AND number:${cardNumber}`
-      }
-    } else if (promoCodeMatch) {
-      // Handle promo codes like "gg10", "ex", "v", etc.
-      const baseCardName = promoCodeMatch[1].trim()
-      const promoCode = promoCodeMatch[2].trim()
-      
-      // For promo cards, properly handle multi-word names
-      if (baseCardName.includes(' ')) {
-        // Multi-word card name with promo code
-        const words = baseCardName.split(' ')
-        const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-        searchQuery = `(${nameQueries}) AND number:${promoCode}`
-      } else {
-        // Single word card name with promo code
-        searchQuery = `name:${baseCardName}* AND number:${promoCode}`
-      }
-    } else {
-      // Apply transformations for general searches (no specific card number)
-      if (searchTerm.toLowerCase().includes(' ex ') || searchTerm.toLowerCase().endsWith(' ex')) {
-        // For EX cards, try both formats
-        searchTerm = searchTerm.replace(/ ex$/i, '-EX').replace(/ ex /gi, '-EX ')
-      }
-      
-      if (searchTerm.includes(' ')) {
-        // Multi-word search without card number
-        const words = searchTerm.split(' ')
-        const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-        searchQuery = nameQueries
-      } else {
-        // Single word search
-        searchQuery = `name:${searchTerm}*`
-      }
+    const correctedQuery = correctSpelling(searchTerm)
+    if (correctedQuery !== searchTerm) {
+      console.log(`📝 Spelling corrected: "${searchTerm}" → "${correctedQuery}"`)
+      searchTerm = correctedQuery
     }
     
-    let response: Response
+    const strategies = buildSearchStrategies(searchTerm)
+    console.log(`🔍 Pokemon TCG API Search: "${cardName}" -> strategies: [${strategies.join(', ')}]`)
     
-    // Try the primary search query first
-    let url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=10`
-    
-    console.log(`🔍 Pokemon TCG API Search: "${cardName}" -> "${searchQuery}"`)
-    console.log(`📡 Pokemon TCG API URL: ${url}`)
-    
-    response = await fetch(url, {
-      headers: {
-        'User-Agent': 'PokemonIntelligence/1.0'
-      }
-    })
-
-    console.log(`🌐 Pokemon TCG API Response Status: ${response.status}`)
-
-    if (!response.ok) {
-      console.error(`❌ Pokemon TCG API Error: ${response.status}`)
-      
-      // If the primary search failed and it was a promo code search, try fallback
-      if (promoCodeMatch) {
-        const baseCardName = promoCodeMatch[1].trim()
-        console.log(`🔄 Trying fallback search for promo card: "${baseCardName}"`)
+    // Try each strategy until one succeeds
+    for (const strategy of strategies) {
+      try {
+        const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(strategy)}&pageSize=10`
+        console.log(`📡 Pokemon TCG API URL: ${url}`)
         
-        let fallbackQuery: string
-        if (baseCardName.includes(' ')) {
-          const words = baseCardName.split(' ')
-          const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-          fallbackQuery = nameQueries
-        } else {
-          fallbackQuery = `name:${baseCardName}*`
-        }
-        
-        url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(fallbackQuery)}&pageSize=10`
-        console.log(`🔄 Fallback Pokemon TCG API URL: ${url}`)
-        
-        response = await fetch(url, {
+        const response = await fetch(url, {
           headers: {
             'User-Agent': 'PokemonIntelligence/1.0'
           }
         })
-        
-        console.log(`🌐 Fallback Pokemon TCG API Response Status: ${response.status}`)
-        
-        if (!response.ok) {
-          throw new Error(`Pokemon TCG API returned ${response.status}`)
-        }
-      } else {
-        throw new Error(`Pokemon TCG API returned ${response.status}`)
-      }
-    }
 
-    const data = await response.json()
-    console.log(`📦 Pokemon TCG API Response: ${data.data?.length || 0} cards found`)
-    
-    if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-      const card = data.data[0]
-      console.log(`🎯 First card: ${card.name} (${card.set?.name || 'Unknown Set'})`)
-      
-      // Extract card details
-      const cardDetails: CardDetails = {
-        id: card.id,
-        name: card.name,
-        number: card.number,
-        set: card.set ? {
-          id: card.set.id,
-          name: card.set.name,
-          series: card.set.series,
-          releaseDate: card.set.releaseDate,
-          total: card.set.total
-        } : undefined,
-        images: card.images ? {
-          small: card.images.small,
-          large: card.images.large
-        } : undefined,
-        rarity: card.rarity,
-        artist: card.artist,
-        types: card.types,
-        hp: card.hp,
-        attacks: card.attacks,
-        weaknesses: card.weaknesses,
-        resistances: card.resistances,
-        retreatCost: card.retreatCost,
-        convertedRetreatCost: card.convertedRetreatCost,
-        subtypes: card.subtypes,
-        supertype: card.supertype,
-        nationalPokedexNumbers: card.nationalPokedexNumbers,
-        legalities: card.legalities,
-        tcgplayer: card.tcgplayer
-      }
-      
-      // Extract pricing if available
-      let priceSource: PriceSource | null = null
-      if (card.tcgplayer && card.tcgplayer.prices) {
-        const prices = card.tcgplayer.prices
-        console.log(`💰 TCGPlayer prices available:`, Object.keys(prices))
-        
-        // Try different price types
-        let usdPrice = null
-        
-        if (prices.normal && prices.normal.market) {
-          usdPrice = prices.normal.market
-          console.log(`💵 Normal market price: $${usdPrice}`)
-        } else if (prices.holofoil && prices.holofoil.market) {
-          usdPrice = prices.holofoil.market
-          console.log(`✨ Holofoil market price: $${usdPrice}`)
-        } else if (prices.reverseHolofoil && prices.reverseHolofoil.market) {
-          usdPrice = prices.reverseHolofoil.market
-          console.log(`🔄 Reverse holofoil market price: $${usdPrice}`)
+        console.log(`🌐 Pokemon TCG API Response Status: ${response.status}`)
+
+        if (!response.ok) {
+          console.log(`❌ Pokemon TCG API returned ${response.status} for strategy: "${strategy}"`)
+          continue // Try next strategy
         }
+
+        const data = await response.json()
+        console.log(`📦 Pokemon TCG API Response: ${data.data?.length || 0} cards found`)
         
-        if (usdPrice) {
-          const gbpPrice = usdPrice * 0.79 // Convert USD to GBP
-          console.log(`✅ Pokemon TCG API price: $${usdPrice} USD = £${gbpPrice.toFixed(2)} GBP`)
+        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+          const card = data.data[0]
+          console.log(`🎯 First card: ${card.name} (${card.set?.name || 'Unknown Set'})`)
           
-          priceSource = {
-            title: `${card.name || cardName} (Pokemon TCG API)`,
-            price: parseFloat(gbpPrice.toFixed(2)),
-            source: 'Pokemon TCG API',
-            url: card.tcgplayer?.url || 'https://pokemontcg.io'
+          // Extract card details
+          const cardDetails: CardDetails = {
+            id: card.id,
+            name: card.name,
+            number: card.number,
+            set: card.set ? {
+              id: card.set.id,
+              name: card.set.name,
+              series: card.set.series,
+              releaseDate: card.set.releaseDate,
+              total: card.set.total
+            } : undefined,
+            images: card.images ? {
+              small: card.images.small,
+              large: card.images.large
+            } : undefined,
+            rarity: card.rarity,
+            artist: card.artist,
+            types: card.types,
+            hp: card.hp,
+            attacks: card.attacks,
+            weaknesses: card.weaknesses,
+            resistances: card.resistances,
+            retreatCost: card.retreatCost,
+            convertedRetreatCost: card.convertedRetreatCost,
+            subtypes: card.subtypes,
+            supertype: card.supertype,
+            nationalPokedexNumbers: card.nationalPokedexNumbers,
+            legalities: card.legalities,
+            tcgplayer: card.tcgplayer
           }
+          
+          // Extract pricing if available
+          let priceSource: PriceSource | null = null
+          if (card.tcgplayer && card.tcgplayer.prices) {
+            const prices = card.tcgplayer.prices
+            console.log(`💰 TCGPlayer prices available:`, Object.keys(prices))
+            
+            // Try different price types
+            let usdPrice = null
+            
+            if (prices.normal && prices.normal.market) {
+              usdPrice = prices.normal.market
+              console.log(`💵 Normal market price: $${usdPrice}`)
+            } else if (prices.holofoil && prices.holofoil.market) {
+              usdPrice = prices.holofoil.market
+              console.log(`✨ Holofoil market price: $${usdPrice}`)
+            } else if (prices.reverseHolofoil && prices.reverseHolofoil.market) {
+              usdPrice = prices.reverseHolofoil.market
+              console.log(`🔄 Reverse holofoil market price: $${usdPrice}`)
+            }
+            
+            if (usdPrice) {
+              const gbpPrice = usdPrice * 0.79 // Convert USD to GBP
+              console.log(`✅ Pokemon TCG API price: $${usdPrice} USD = £${gbpPrice.toFixed(2)} GBP`)
+              
+              priceSource = {
+                title: `${card.name || cardName} (Pokemon TCG API)`,
+                price: parseFloat(gbpPrice.toFixed(2)),
+                source: 'Pokemon TCG API',
+                url: card.tcgplayer?.url || 'https://pokemontcg.io'
+              }
+            }
+          }
+          
+          if (!priceSource) {
+            console.log(`📊 Card found but no TCGPlayer pricing available`)
+            priceSource = {
+              title: `${card.name || cardName} (Pokemon TCG API)`,
+              price: 0,
+              source: 'Pokemon TCG API',
+              url: 'https://pokemontcg.io'
+            }
+          }
+          
+          return { priceSource, cardDetails }
         }
-      }
-      
-      if (!priceSource) {
-        console.log(`📊 Card found but no TCGPlayer pricing available`)
-        priceSource = {
-          title: `${card.name || cardName} (Pokemon TCG API)`,
-          price: 0,
-          source: 'Pokemon TCG API',
-          url: 'https://pokemontcg.io'
-        }
-      }
-      
-      return {
-        priceSource,
-        cardDetails
+      } catch (error) {
+        console.log(`⚠️ Pokemon TCG API strategy failed: "${strategy}"`)
+        continue // Try next strategy
       }
     }
     
-    console.log(`❌ No cards found for query: "${searchQuery}"`)
-    return {
-      priceSource: null,
-      cardDetails: null
-    }
+    // If all strategies failed
+    console.log(`❌ All Pokemon TCG API strategies failed for: "${cardName}"`)
+    return { priceSource: null, cardDetails: null }
     
   } catch (error) {
-    console.error('Pokemon TCG API search failed:', error)
-    return {
-      priceSource: null,
-      cardDetails: null
-    }
+    console.error('❌ Pokemon TCG API search failed:', error)
+    return { priceSource: null, cardDetails: null }
   }
 }
