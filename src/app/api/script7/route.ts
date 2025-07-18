@@ -834,32 +834,72 @@ async function searchPokemonTcgApi(
           if (card.tcgplayer && card.tcgplayer.prices) {
             const prices = card.tcgplayer.prices
             console.log(`💰 TCGPlayer prices available:`, Object.keys(prices))
+            console.log(`🔍 Full TCGPlayer prices object:`, JSON.stringify(prices, null, 2))
             
-            // Try different price types
+            // Try different price types with better debugging
             let usdPrice = null
+            let priceType = null
             
-            if (prices.normal && prices.normal.market) {
-              usdPrice = prices.normal.market
-              console.log(`💵 Normal market price: $${usdPrice}`)
-            } else if (prices.holofoil && prices.holofoil.market) {
-              usdPrice = prices.holofoil.market
-              console.log(`✨ Holofoil market price: $${usdPrice}`)
-            } else if (prices.reverseHolofoil && prices.reverseHolofoil.market) {
-              usdPrice = prices.reverseHolofoil.market
-              console.log(`🔄 Reverse holofoil market price: $${usdPrice}`)
+            // Check all possible price types
+            const priceTypes = [
+              { key: 'normal', name: 'Normal' },
+              { key: 'holofoil', name: 'Holofoil' },
+              { key: 'reverseHolofoil', name: 'Reverse Holofoil' },
+              { key: '1stEditionNormal', name: '1st Edition Normal' },
+              { key: '1stEditionHolofoil', name: '1st Edition Holofoil' },
+              { key: 'unlimitedHolofoil', name: 'Unlimited Holofoil' },
+              { key: 'unlimitedNormal', name: 'Unlimited Normal' }
+            ]
+            
+            for (const type of priceTypes) {
+              if (prices[type.key] && prices[type.key].market) {
+                usdPrice = prices[type.key].market
+                priceType = type.name
+                console.log(`💵 ${type.name} market price: $${usdPrice}`)
+                break
+              }
+            }
+            
+            // If no market price, try other price fields
+            if (!usdPrice) {
+              for (const type of priceTypes) {
+                if (prices[type.key]) {
+                  const priceData = prices[type.key]
+                  if (priceData.mid) {
+                    usdPrice = priceData.mid
+                    priceType = `${type.name} Mid`
+                    console.log(`💵 ${type.name} mid price: $${usdPrice}`)
+                    break
+                  } else if (priceData.low) {
+                    usdPrice = priceData.low
+                    priceType = `${type.name} Low`
+                    console.log(`💵 ${type.name} low price: $${usdPrice}`)
+                    break
+                  } else if (priceData.high) {
+                    usdPrice = priceData.high
+                    priceType = `${type.name} High`
+                    console.log(`💵 ${type.name} high price: $${usdPrice}`)
+                    break
+                  }
+                }
+              }
             }
             
             if (usdPrice) {
               const gbpPrice = usdPrice * 0.79 // Convert USD to GBP
-              console.log(`✅ Pokemon TCG API price: $${usdPrice} USD = £${gbpPrice.toFixed(2)} GBP`)
+              console.log(`✅ Pokemon TCG API price: $${usdPrice} USD = £${gbpPrice.toFixed(2)} GBP (${priceType})`)
               
               priceSource = {
-                title: `${card.name || cardName} (Pokemon TCG API)`,
+                title: `${card.name || cardName} (Pokemon TCG API - ${priceType})`,
                 price: parseFloat(gbpPrice.toFixed(2)),
                 source: 'Pokemon TCG API',
                 url: card.tcgplayer?.url || 'https://pokemontcg.io'
               }
+            } else {
+              console.log(`❌ No valid price found in TCGPlayer data`)
             }
+          } else {
+            console.log(`❌ No TCGPlayer data available for card`)
           }
           
           if (!priceSource) {
