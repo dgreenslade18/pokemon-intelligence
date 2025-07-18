@@ -5,6 +5,8 @@ const SPELLING_CORRECTIONS: Record<string, string> = {
   'ninetails': 'ninetales',
   'gyrados': 'gyarados', 
   'dragonight': 'dragonite',
+  'morty': 'morty',
+  'mortys': 'morty\'s',
 }
 
 function correctSpelling(term: string): string {
@@ -12,14 +14,14 @@ function correctSpelling(term: string): string {
   return words.map(word => SPELLING_CORRECTIONS[word] || word).join(' ')
 }
 
-// Cache for API results
+// Enhanced cache with longer duration
 const cache = new Map<string, any>()
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+const CACHE_DURATION = 30 * 60 * 1000 // 30 minutes
 
-// Test fallback data
+// Enhanced fallback data with proper images and set names
 const FALLBACK_DATA = [
   {
-    id: 'charizard-base',
+    id: 'charizard-base-4',
     name: 'Charizard',
     set: 'Base Set',
     number: '4',
@@ -39,7 +41,7 @@ const FALLBACK_DATA = [
     searchValue: 'Charizard ex 223'
   },
   {
-    id: 'pikachu-base',
+    id: 'pikachu-base-58',
     name: 'Pikachu',
     set: 'Base Set',
     number: '58', 
@@ -69,7 +71,17 @@ const FALLBACK_DATA = [
     searchValue: 'Mew ex 232'
   },
   {
-    id: 'oddish-base',
+    id: 'morty-conviction-201',
+    name: 'Morty\'s Conviction',
+    set: 'Temporal Forces',
+    number: '201',
+    image: 'https://images.pokemontcg.io/sv5/201.png',
+    rarity: 'Rare',
+    display: 'Morty\'s Conviction (Temporal Forces)',
+    searchValue: 'Morty\'s Conviction 201'
+  },
+  {
+    id: 'oddish-base-67',
     name: 'Oddish',
     set: 'Base Set',
     number: '67',
@@ -79,7 +91,7 @@ const FALLBACK_DATA = [
     searchValue: 'Oddish 67'
   },
   {
-    id: 'squirtle-base',
+    id: 'squirtle-base-63',
     name: 'Squirtle',
     set: 'Base Set',
     number: '63',
@@ -89,7 +101,7 @@ const FALLBACK_DATA = [
     searchValue: 'Squirtle 63'
   },
   {
-    id: 'bulbasaur-base',
+    id: 'bulbasaur-base-44',
     name: 'Bulbasaur',
     set: 'Base Set',
     number: '44',
@@ -108,9 +120,8 @@ const FALLBACK_DATA = [
     display: 'Galarian Moltres (SWSH Black Star Promos)',
     searchValue: 'Galarian Moltres SWSH284'
   },
-  // Add more common Pokemon
   {
-    id: 'alakazam-base',
+    id: 'alakazam-base-1',
     name: 'Alakazam',
     set: 'Base Set',
     number: '1',
@@ -120,7 +131,7 @@ const FALLBACK_DATA = [
     searchValue: 'Alakazam 1'
   },
   {
-    id: 'blastoise-base',
+    id: 'blastoise-base-2',
     name: 'Blastoise',
     set: 'Base Set',
     number: '2',
@@ -130,7 +141,7 @@ const FALLBACK_DATA = [
     searchValue: 'Blastoise 2'
   },
   {
-    id: 'venusaur-base',
+    id: 'venusaur-base-15',
     name: 'Venusaur',
     set: 'Base Set',
     number: '15',
@@ -140,7 +151,7 @@ const FALLBACK_DATA = [
     searchValue: 'Venusaur 15'
   },
   {
-    id: 'gyarados-base',
+    id: 'gyarados-base-6',
     name: 'Gyarados',
     set: 'Base Set',
     number: '6',
@@ -150,7 +161,7 @@ const FALLBACK_DATA = [
     searchValue: 'Gyarados 6'
   },
   {
-    id: 'dragonite-fossil',
+    id: 'dragonite-fossil-4',
     name: 'Dragonite',
     set: 'Fossil',
     number: '4',
@@ -160,7 +171,7 @@ const FALLBACK_DATA = [
     searchValue: 'Dragonite 4'
   },
   {
-    id: 'ninetales-base',
+    id: 'ninetales-base-12',
     name: 'Ninetales',
     set: 'Base Set', 
     number: '12',
@@ -181,192 +192,56 @@ const FALLBACK_DATA = [
   }
 ]
 
-async function searchPokemonAPI(query: string): Promise<any> {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 5000)
-  const startTime = Date.now()
-  
-  try {
-    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=8`
-    const headers = { 'Accept': 'application/json' }
-    
-    console.log(`🌐 API Request URL: ${url}`)
-    console.log(`📤 API Request Headers:`, headers)
-    console.log(`🔗 Encoded Query: "${encodeURIComponent(query)}" (original: "${query}")`)
-    console.log(`⏱️  Starting API call at ${new Date().toISOString()}`)
-    
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers
-    })
-    
-    const fetchTime = Date.now() - startTime
-    console.log(`⏱️  API call completed in ${fetchTime}ms`)
-    
-    clearTimeout(timeout)
-    
-    console.log(`📨 API Response Status: ${response.status} ${response.statusText}`)
-    console.log(`📥 API Response Headers:`, Object.fromEntries(response.headers.entries()))
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`❌ Pokemon TCG API returned ${response.status} for query: "${query}"`)
-      console.error(`❌ Error Response Body:`, errorText)
-      return null
-    }
-    
-    const data = await response.json()
-    console.log(`📦 Raw API Response:`, {
-      totalCount: data.totalCount,
-      count: data.count,
-      page: data.page,
-      pageSize: data.pageSize,
-      cardsFound: data.data?.length || 0
-    })
-    
-    if (data.data?.length > 0) {
-      console.log(`🎴 Cards returned:`)
-      data.data.forEach((card: any, index: number) => {
-        console.log(`  ${index + 1}. ${card.name} (${card.set?.name || 'Unknown Set'}) #${card.number || 'N/A'}`)
-      })
-      
-      const mappedResults = data.data.map((card: any) => ({
-        id: card.id,
-        name: card.name,
-        set: card.set?.name || 'Unknown Set',
-        number: card.number || '',
-        image: card.images?.small || '',
-        rarity: card.rarity || 'Unknown',
-        display: `${card.name} (${card.set?.name || 'Unknown Set'})`,
-        searchValue: card.number ? `${card.name} ${card.number}` : card.name
-      }))
-      
-      console.log(`✅ Mapped ${mappedResults.length} cards for autocomplete`)
-      return mappedResults
-    }
-    
-    console.log(`❌ No cards found in API response`)
-    return null
-  } catch (error) {
-    clearTimeout(timeout)
-    const errorTime = Date.now() - startTime
-    console.error(`❌ Pokemon TCG API fetch error for "${query}" after ${errorTime}ms:`, error)
-    return null
-  }
-}
-
-// Alternative API: TCGPlayer (if API key is available)
-async function searchTCGPlayerAPI(query: string): Promise<any> {
-  const tcgPlayerToken = process.env.TCGPLAYER_API_TOKEN
-  
-  if (!tcgPlayerToken) {
-    console.log('🔄 TCGPlayer API token not available')
-    return null
-  }
-
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 5000)
-  const startTime = Date.now()
-  
-  try {
-    // TCGPlayer uses different search format
-    const searchUrl = `https://api.tcgplayer.com/catalog/products?q=${encodeURIComponent(query)}&limit=8&productTypes=Cards&categoryId=3` // 3 = Pokemon
-    console.log(`🎯 Trying TCGPlayer API: ${searchUrl}`)
-    
-    const response = await fetch(searchUrl, {
-      signal: controller.signal,
-      headers: { 
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${tcgPlayerToken}`
-      }
-    })
-    
-    clearTimeout(timeout)
-    const responseTime = Date.now() - startTime
-    
-    if (!response.ok) {
-      console.error(`❌ TCGPlayer API returned ${response.status} for query: "${query}"`)
-      return null
-    }
-    
-    const data = await response.json()
-    console.log(`📦 TCGPlayer API found ${data.results?.length || 0} cards`)
-    
-    if (data.results?.length > 0) {
-      return data.results.map((card: any) => ({
-        id: card.productId,
-        name: card.name,
-        set: card.groupName || 'Unknown Set',
-        number: card.productNumber || '',
-        image: card.imageUrl || '',
-        rarity: card.rarity || 'Unknown',
-        display: `${card.name} (${card.groupName || 'Unknown Set'})`,
-        searchValue: card.productNumber ? `${card.name} ${card.productNumber}` : card.name
-      }))
-    }
-    
-    return null
-  } catch (error) {
-    clearTimeout(timeout)
-    const errorTime = Date.now() - startTime
-    console.error(`❌ TCGPlayer API fetch error for "${query}" after ${errorTime}ms:`, error)
-    return null
-  }
-}
-
-// Alternative API: TCGDx (backup API)
+// Fast TCGDx API call with shorter timeout
 async function searchTCGDxAPI(query: string): Promise<any> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 5000)
+  const timeout = setTimeout(() => controller.abort(), 2000) // 2 second timeout
   const startTime = Date.now()
   
   try {
-    // TCGDx API doesn't support query parameters for filtering
-    // We fetch from the base endpoint and filter locally
-    const searchUrl = `https://api.tcgdex.net/v2/en/cards`
-    console.log(`🎯 Trying TCGDx API: ${searchUrl}`)
-    
-    const response = await fetch(searchUrl, {
+    const url = 'https://api.tcgdex.net/v2/en/cards'
+    const response = await fetch(url, {
       signal: controller.signal,
-      headers: { 
-        'Accept': 'application/json'
-      }
+      headers: { 'Accept': 'application/json' }
     })
     
     clearTimeout(timeout)
     const responseTime = Date.now() - startTime
     
     if (!response.ok) {
-      console.error(`❌ TCGDx API returned ${response.status} for query: "${query}"`)
+      console.log(`❌ TCGDx API returned ${response.status} for "${query}" after ${responseTime}ms`)
       return null
     }
     
     const data = await response.json()
-    console.log(`📦 TCGDx API found ${Array.isArray(data) ? data.length : 0} total cards`)
+    console.log(`📦 TCGDx API found ${data.length} total cards`)
     
-    if (Array.isArray(data) && data.length > 0) {
-      // Filter cards locally by name (case-insensitive)
-      const lowercaseQuery = query.toLowerCase()
-      const filteredCards = data.filter((card: any) => 
-        card.name && card.name.toLowerCase().includes(lowercaseQuery)
-      )
+    // Filter cards by query
+    const queryLower = query.toLowerCase()
+    const filteredCards = data.filter((card: any) => {
+      const cardName = card.name?.toLowerCase() || ''
+      const setId = card.set?.id?.toLowerCase() || ''
+      const localId = card.localId?.toString() || ''
       
-      console.log(`📦 TCGDx API filtered to ${filteredCards.length} matching cards`)
-      
-      if (filteredCards.length > 0) {
-      // Limit to 8 results to match other APIs
-        const limitedResults = filteredCards.slice(0, 8)
+      return cardName.includes(queryLower) || 
+             setId.includes(queryLower) || 
+             localId.includes(queryLower)
+    })
+    
+    console.log(`📦 TCGDx API filtered to ${filteredCards.length} matching cards`)
+    
+    if (filteredCards.length > 0) {
+      const limitedResults = filteredCards.slice(0, 8)
       return limitedResults.map((card: any) => ({
         id: card.id,
         name: card.name,
         set: card.set?.name || 'Unknown Set',
         number: card.localId || '',
         image: card.image || '',
-        rarity: 'Unknown', // TCGDx doesn't include rarity in search results
+        rarity: card.rarity || 'Unknown',
         display: `${card.name} ${card.set?.name ? `(${card.set.name})` : ''}`.trim(),
         searchValue: card.localId ? `${card.name} ${card.localId}` : card.name
       }))
-      }
     }
     
     return null
@@ -378,28 +253,48 @@ async function searchTCGDxAPI(query: string): Promise<any> {
   }
 }
 
-// Fetch a single card from TCGDx by setId and localId
-async function fetchTCGDxCardBySetAndNumber(setId: string, localId: string): Promise<any> {
-  const url = `https://api.tcgdex.net/v2/en/sets/${setId}/${localId}`
+// Fast Pokemon TCG API call with shorter timeout
+async function searchPokemonAPI(query: string): Promise<any> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 2000) // 2 second timeout
+  const startTime = Date.now()
+  
   try {
-    const response = await fetch(url, { headers: { 'Accept': 'application/json' } })
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=8`
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' }
+    })
+    
+    clearTimeout(timeout)
+    const responseTime = Date.now() - startTime
+    
     if (!response.ok) {
-      console.error(`❌ TCGDx set-card API returned ${response.status} for setId: ${setId}, localId: ${localId}`)
+      console.log(`❌ Pokemon TCG API returned ${response.status} for "${query}" after ${responseTime}ms`)
       return null
     }
-    const card = await response.json()
-    return [{
-      id: card.id,
-      name: card.name,
-      set: card.set?.name || 'Unknown Set',
-      number: card.localId || '',
-      image: card.image || '',
-      rarity: card.rarity || 'Unknown',
-      display: `${card.name} (${card.set?.name || setId})`,
-      searchValue: card.localId ? `${card.name} ${card.localId}` : card.name
-    }]
+    
+    const data = await response.json()
+    console.log(`📦 Pokemon TCG API found ${data.data?.length || 0} cards`)
+    
+    if (data.data && data.data.length > 0) {
+      return data.data.map((card: any) => ({
+        id: card.id,
+        name: card.name,
+        set: card.set?.name || 'Unknown Set',
+        number: card.number || '',
+        image: card.images?.small || card.images?.large || '',
+        rarity: card.rarity || 'Unknown',
+        display: `${card.name} (${card.set?.name || 'Unknown Set'})`,
+        searchValue: card.number ? `${card.name} ${card.number}` : card.name
+      }))
+    }
+    
+    return null
   } catch (error) {
-    console.error(`❌ Error fetching TCGDx card by set and number:`, error)
+    clearTimeout(timeout)
+    const errorTime = Date.now() - startTime
+    console.error(`❌ Pokemon TCG API fetch error for "${query}" after ${errorTime}ms:`, error)
     return null
   }
 }
@@ -409,12 +304,8 @@ function searchFallbackData(query: string) {
   return FALLBACK_DATA.filter(card => {
     const cardText = `${card.name} ${card.number} ${card.searchValue}`.toLowerCase()
     return queryWords.every(word => cardText.includes(word))
-  })
+  }).slice(0, 8) // Limit to 8 results
 }
-
-
-
-
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -439,13 +330,10 @@ export async function GET(request: NextRequest) {
     const correctedQuery = correctSpelling(query.trim())
     if (correctedQuery !== query.trim()) {
       console.log(`📝 Spelling corrected: "${query.trim()}" → "${correctedQuery}"`)
-    } else {
-      console.log(`📝 No spelling corrections needed for: "${correctedQuery}"`)
     }
     
     // Build search strategies
     const strategies = []
-    console.log(`🔧 Building search strategies for: "${correctedQuery}"`)
     
     // "pokemon number" format (e.g., "charizard 223")
     const numberMatch = correctedQuery.match(/^(.+?)\s+(\d+)$/)
@@ -453,7 +341,6 @@ export async function GET(request: NextRequest) {
       const [, name, number] = numberMatch
       const strategy = `name:*${name}* number:${number}`
       strategies.push(strategy)
-      console.log(`🔢 Added number strategy: ${strategy}`)
     }
     
     // "pokemon type" format (e.g., "charizard ex", "rayquaza v")  
@@ -471,77 +358,56 @@ export async function GET(request: NextRequest) {
           strategy = `name:*${name}* name:*${type.toUpperCase()}*`
         }
         strategies.push(strategy)
-        console.log(`🎴 Added type strategy: ${strategy}`)
       }
     }
     
     // Multi-word name strategy (e.g., "galarian moltres")
     if (words.length >= 2 && !numberMatch && !cardTypes.includes(words[words.length - 1].toLowerCase())) {
-      // Capitalize each word and wrap in parentheses for proper API syntax
       const capitalizedWords = words.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       const multiWordStrategy = `(${capitalizedWords.map(word => `name:*${word}*`).join(' AND ')})`
       strategies.push(multiWordStrategy)
-      console.log(`🔀 Added multi-word strategy: ${multiWordStrategy}`)
     }
     
-    // Basic searches with proper capitalization
+    // Basic searches
     const capitalizedQuery = correctedQuery.charAt(0).toUpperCase() + correctedQuery.slice(1).toLowerCase()
     const basicStrategies = [`name:${capitalizedQuery}*`, `name:*${capitalizedQuery}*`]
     strategies.push(...basicStrategies)
-    console.log(`🔍 Added basic strategies: ${basicStrategies.join(', ')}`)
     
-    // Try Pokemon TCG API first
+    // Run APIs in parallel for speed
+    const apiPromises = []
+    
+    // Add Pokemon TCG API calls for each strategy
     for (const strategy of strategies) {
-      console.log(`🎯 Trying Pokemon TCG API strategy: ${strategy}`)
-      const apiResults = await searchPokemonAPI(strategy)
-      
-      if (apiResults && apiResults.length > 0) {
-        cache.set(cacheKey, { data: apiResults, timestamp: Date.now() })
-        console.log(`✅ Pokemon TCG API success: ${apiResults.length} results`)
-        return NextResponse.json({ suggestions: apiResults })
+      apiPromises.push(searchPokemonAPI(strategy))
+    }
+    
+    // Add TCGDx API call
+    apiPromises.push(searchTCGDxAPI(correctedQuery))
+    
+    // Wait for all APIs with a short timeout
+    const results = await Promise.allSettled(apiPromises)
+    
+    // Process results
+    let bestResults: any[] = []
+    
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
+        bestResults = result.value
+        break // Use first successful result
       }
     }
     
-    // Try TCGPlayer API as alternative 
-    console.log(`🔄 Pokemon TCG API failed, trying TCGPlayer API for: "${correctedQuery}"`)
-    const tcgPlayerResults = await searchTCGPlayerAPI(correctedQuery)
-    
-    if (tcgPlayerResults && tcgPlayerResults.length > 0) {
-      cache.set(cacheKey, { data: tcgPlayerResults, timestamp: Date.now() })
-      console.log(`✅ TCGPlayer API success: ${tcgPlayerResults.length} results`)
-      return NextResponse.json({ suggestions: tcgPlayerResults })
-    }
-
-    // Try TCGDx API as backup
-    console.log(`🔄 TCGPlayer API failed, trying TCGDx API for: "${correctedQuery}"`)
-    let tcgdxResults = await searchTCGDxAPI(correctedQuery)
-    
-    // Try setId/number pattern: e.g., 'Bulbasaur sv2a 142' or just 'sv2a 142'
-    const setNumberMatch = correctedQuery.match(/([a-zA-Z0-9]+)\s+(\d{1,4})$/)
-    if ((!tcgdxResults || tcgdxResults.length === 0) && setNumberMatch) {
-      const setId = setNumberMatch[1]
-      const localId = setNumberMatch[2]
-      console.log(`🔎 Trying TCGDx set-card API for setId: ${setId}, localId: ${localId}`)
-      tcgdxResults = await fetchTCGDxCardBySetAndNumber(setId, localId)
-    }
-    if (tcgdxResults && tcgdxResults.length > 0) {
-      cache.set(cacheKey, { data: tcgdxResults, timestamp: Date.now() })
-      console.log(`✅ TCGDx API success: ${tcgdxResults.length} results`)
-      return NextResponse.json({ suggestions: tcgdxResults })
+    // If no API results, use fallback
+    if (bestResults.length === 0) {
+      console.log(`🔄 No API results, using fallback data for: "${correctedQuery}"`)
+      bestResults = searchFallbackData(correctedQuery)
     }
     
-    // Fallback to local data if all APIs fail
-    console.log(`🔄 All APIs failed, using fallback data for: "${correctedQuery}"`)
-    const fallbackResults = searchFallbackData(correctedQuery)
+    // Cache the results
+    cache.set(cacheKey, { data: bestResults, timestamp: Date.now() })
     
-    if (fallbackResults.length > 0) {
-      console.log(`✅ Fallback success: ${fallbackResults.length} results`)
-      console.log(`📊 Fallback results: ${fallbackResults.map(r => r.display).join(', ')}`)
-      return NextResponse.json({ suggestions: fallbackResults })
-    }
-    
-    console.log(`❌ No results found anywhere for: "${correctedQuery}"`)
-    return NextResponse.json({ suggestions: [] })
+    console.log(`✅ Autocomplete success: ${bestResults.length} results`)
+    return NextResponse.json({ suggestions: bestResults })
     
   } catch (error) {
     console.error(`💥 Autocomplete error for query "${query}":`, error)
@@ -549,7 +415,6 @@ export async function GET(request: NextRequest) {
     // Emergency fallback
     console.log(`🆘 Emergency fallback for: "${query.trim()}"`)
     const fallbackResults = searchFallbackData(query.trim())
-    console.log(`🆘 Emergency fallback returned ${fallbackResults.length} results`)
     return NextResponse.json({ suggestions: fallbackResults })
   }
 } 
