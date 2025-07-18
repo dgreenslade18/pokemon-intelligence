@@ -725,7 +725,15 @@ function buildSearchStrategies(query: string): string[] {
   const numberMatch = query.match(/^(.+?)\s+(\d+)$/)
   if (numberMatch) {
     const [, name, number] = numberMatch
-    strategies.push(`name:*${name}* AND number:${number}`)
+    // Handle multi-word names properly
+    if (name.includes(' ')) {
+      // For multi-word names like "mew ex", use proper wildcard syntax
+      const words = name.split(' ')
+      const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
+      strategies.push(`(${nameQueries}) AND number:${number}`)
+    } else {
+      strategies.push(`name:*${name}* AND number:${number}`)
+    }
     return strategies // Return early for number searches
   }
   
