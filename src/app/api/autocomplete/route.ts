@@ -198,7 +198,7 @@ const FALLBACK_DATA = [
 // Optimized TCGDx API call with faster timeout and early filtering
 async function searchTCGDxAPI(query: string): Promise<any> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 1000) // Reduced to 1 second
+  const timeout = setTimeout(() => controller.abort(), 1500) // Increased to 1.5 seconds
   const startTime = Date.now()
   
   try {
@@ -234,16 +234,44 @@ async function searchTCGDxAPI(query: string): Promise<any> {
     
     if (filteredCards.length > 0) {
       const limitedResults = filteredCards.slice(0, 8)
-      return limitedResults.map((card: any) => ({
-        id: card.id,
-        name: card.name,
-        set: card.set?.name || 'Unknown Set',
-        number: card.localId || '',
-        image: card.image || '',
-        rarity: card.rarity || 'Unknown',
-        display: `${card.name} ${card.set?.name ? `(${card.set.name})` : ''}`.trim(),
-        searchValue: card.localId ? `${card.name} ${card.localId}` : card.name
-      }))
+      return limitedResults.map((card: any) => {
+        // Better set name extraction from TCGDx
+        let setName = 'Unknown Set'
+        if (card.set?.name) {
+          setName = card.set.name
+        } else if (card.set?.id) {
+          // Try to extract set name from ID
+          const setId = card.set.id
+          if (setId.includes('-')) {
+            setName = setId.split('-').map((part: string) => 
+              part.charAt(0).toUpperCase() + part.slice(1)
+            ).join(' ')
+          } else {
+            setName = setId.charAt(0).toUpperCase() + setId.slice(1)
+          }
+        }
+        
+        // Better image extraction
+        let imageUrl = ''
+        if (card.image) {
+          imageUrl = card.image
+        } else if (card.images && card.images.small) {
+          imageUrl = card.images.small
+        } else if (card.images && card.images.large) {
+          imageUrl = card.images.large
+        }
+        
+        return {
+          id: card.id,
+          name: card.name,
+          set: setName,
+          number: card.localId || card.number || '',
+          image: imageUrl,
+          rarity: card.rarity || 'Unknown',
+          display: `${card.name} (${setName})`,
+          searchValue: card.localId ? `${card.name} ${card.localId}` : card.name
+        }
+      })
     }
     
     return null
@@ -258,7 +286,7 @@ async function searchTCGDxAPI(query: string): Promise<any> {
 // Optimized Pokemon TCG API call with faster timeout
 async function searchPokemonAPI(query: string): Promise<any> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 1000) // Reduced to 1 second
+  const timeout = setTimeout(() => controller.abort(), 1500) // Increased to 1.5 seconds
   const startTime = Date.now()
   
   try {
@@ -401,11 +429,11 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // Fallback to TCGDx API
+      // Only fallback to TCGDx if Pokemon TCG API completely failed
       try {
         const tcgdxResult = await searchTCGDxAPI(correctedQuery)
         if (tcgdxResult && tcgdxResult.length > 0) {
-          console.log(`✅ TCGDx API success`)
+          console.log(`✅ TCGDx API success (fallback)`)
           return tcgdxResult
         }
       } catch (error) {
