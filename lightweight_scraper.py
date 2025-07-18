@@ -23,7 +23,7 @@ def emit_progress(stage, message):
     }
     print(f"PROGRESS:{json.dumps(progress_data)}", flush=True)
 
-def search_ebay_uk_lightweight(card_name, max_results=3):
+def search_ebay_uk_lightweight(card_name, max_results=4):
     """Lightweight eBay search using requests only - much lower memory usage"""
     emit_progress("ebay", "Connecting to eBay UK (lightweight)...")
     print(f"🔍 Searching eBay UK for: {card_name}")
@@ -272,7 +272,7 @@ def analyze_lightweight(card_name):
     emit_progress("analysis", "Starting lightweight analysis...")
     
     # eBay search
-    ebay_prices = search_ebay_uk_lightweight(card_name, 3)
+    ebay_prices = search_ebay_uk_lightweight(card_name, 4)
     results['ebay_prices'] = ebay_prices
     
     # Price Charting search  

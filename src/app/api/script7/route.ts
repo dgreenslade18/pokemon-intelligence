@@ -512,7 +512,7 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
     
     const requestBody = {
       keywords: searchQuery,
-      max_search_results: 10, // Reduced from 25 since we only need 3
+      max_search_results: 15, // Increased to get more results for better average
       excluded_keywords: "graded psa bgs cgc ace sgc hga gma gem mint 10 mint 9 pristine perfect", // Exclude all graded items
       site_id: "3", // UK eBay site
       remove_outliers: true,
@@ -559,10 +559,10 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
       return [] // Return empty array if no results
     }
     
-    // Sort by date sold (most recent first) and take top 3
+    // Sort by date sold (most recent first) and take top 4
     const sortedProducts = data.products
       .sort((a: any, b: any) => new Date(b.date_sold).getTime() - new Date(a.date_sold).getTime())
-      .slice(0, 3)
+      .slice(0, 4)
     
     const results = sortedProducts.map((item: any) => ({
       title: item.title,
@@ -676,7 +676,7 @@ async function searchEbayWithScraping(cardName: string): Promise<EbayItem[]> {
         const items: EbayItem[] = []
         
         // Create items from scraped data
-        for (let i = 0; i < Math.min(prices.length, 5); i++) {
+        for (let i = 0; i < Math.min(prices.length, 4); i++) {
           const title = titles[i] || `${cardName} - eBay Sold Item`
           const price = prices[i]
           

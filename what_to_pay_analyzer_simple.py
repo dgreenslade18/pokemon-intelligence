@@ -20,7 +20,7 @@ def emit_progress(stage, message):
     }
     print(f"PROGRESS:{json.dumps(progress_data)}", flush=True)
 
-def search_ebay_uk_sold(card_name, max_results=3):
+def search_ebay_uk_sold(card_name, max_results=4):
     """Search eBay UK for recently sold raw cards using requests"""
     emit_progress("ebay", "Connecting to eBay UK...")
     print(f"🔍 Searching eBay UK for: {card_name}")

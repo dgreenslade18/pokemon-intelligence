@@ -36,7 +36,7 @@ def emit_progress(stage, message):
     }
     print(f"PROGRESS:{json.dumps(progress_data)}", flush=True)
 
-def search_ebay_uk_sold(card_name, max_results=3):
+def search_ebay_uk_sold(card_name, max_results=4):
     """Search eBay UK for recently sold raw cards from auctions only (no Buy It Now)"""
     emit_progress("ebay", "Connecting to eBay UK...")
     print(f"🔍 Searching eBay UK for: {card_name}")
@@ -836,7 +836,7 @@ def analyze_what_to_pay(card_name):
     
     with ThreadPoolExecutor(max_workers=3) as executor:
         # Submit all three searches to run concurrently
-        ebay_future = executor.submit(search_ebay_uk_sold, card_name, 3)
+        ebay_future = executor.submit(search_ebay_uk_sold, card_name, 4)
         price_charting_future = executor.submit(search_price_charting, card_name)
         cardmarket_future = executor.submit(search_cardmarket, card_name)
         
