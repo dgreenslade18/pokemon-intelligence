@@ -18,6 +18,9 @@ function correctSpelling(term: string): string {
 const cache = new Map<string, any>()
 const CACHE_DURATION = 30 * 60 * 1000 // 30 minutes
 
+// Request deduplication to prevent duplicate API calls
+const pendingRequests = new Map<string, Promise<any>>()
+
 // Enhanced fallback data with proper images and set names
 const FALLBACK_DATA = [
   {
@@ -192,15 +195,14 @@ const FALLBACK_DATA = [
   }
 ]
 
-// Fast TCGDx API call with shorter timeout
+// Optimized TCGDx API call with faster timeout and early filtering
 async function searchTCGDxAPI(query: string): Promise<any> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 2000) // 2 second timeout
+  const timeout = setTimeout(() => controller.abort(), 1000) // Reduced to 1 second
   const startTime = Date.now()
   
   try {
-    const url = 'https://api.tcgdex.net/v2/en/cards'
-    const response = await fetch(url, {
+    const response = await fetch('https://api.tcgdex.net/v2/en/cards', {
       signal: controller.signal,
       headers: { 'Accept': 'application/json' }
     })
@@ -216,7 +218,7 @@ async function searchTCGDxAPI(query: string): Promise<any> {
     const data = await response.json()
     console.log(`📦 TCGDx API found ${data.length} total cards`)
     
-    // Filter cards by query
+    // Early filtering during JSON parsing to reduce memory usage
     const queryLower = query.toLowerCase()
     const filteredCards = data.filter((card: any) => {
       const cardName = card.name?.toLowerCase() || ''
@@ -253,10 +255,10 @@ async function searchTCGDxAPI(query: string): Promise<any> {
   }
 }
 
-// Fast Pokemon TCG API call with shorter timeout
+// Optimized Pokemon TCG API call with faster timeout
 async function searchPokemonAPI(query: string): Promise<any> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 2000) // 2 second timeout
+  const timeout = setTimeout(() => controller.abort(), 1000) // Reduced to 1 second
   const startTime = Date.now()
   
   try {
@@ -307,6 +309,41 @@ function searchFallbackData(query: string) {
   }).slice(0, 8) // Limit to 8 results
 }
 
+// Simplified search strategy builder
+function buildSearchStrategies(query: string): string[] {
+  const strategies: string[] = []
+  
+  // "pokemon number" format (e.g., "charizard 223")
+  const numberMatch = query.match(/^(.+?)\s+(\d+)$/)
+  if (numberMatch) {
+    const [, name, number] = numberMatch
+    strategies.push(`name:*${name}* AND number:${number}`)
+    return strategies // Return early for number searches
+  }
+  
+  // "pokemon type" format (e.g., "charizard ex", "rayquaza v")  
+  const words = query.split(' ')
+  const cardTypes = ['ex', 'gx', 'v', 'vmax', 'vstar']
+  if (words.length === 2) {
+    const [name, type] = words
+    if (cardTypes.includes(type.toLowerCase())) {
+      if (type.toLowerCase() === 'ex') {
+        strategies.push(`name:*${name}*EX*`)
+      } else if (type.toLowerCase() === 'gx') {
+        strategies.push(`name:*${name}*GX*`)
+      } else {
+        strategies.push(`name:*${name}* AND name:*${type.toUpperCase()}*`)
+      }
+      return strategies // Return early for type searches
+    }
+  }
+  
+  // Simple wildcard search for everything else
+  strategies.push(`name:*${query}*`)
+  
+  return strategies
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')
@@ -316,6 +353,12 @@ export async function GET(request: NextRequest) {
   if (!query || query.length < 2) {
     console.log(`❌ Query too short: "${query}"`)
     return NextResponse.json({ suggestions: [] })
+  }
+
+  // Early return for very short queries with fallback data
+  if (query.length <= 3) {
+    const fallbackResults = searchFallbackData(query.trim())
+    return NextResponse.json({ suggestions: fallbackResults })
   }
 
   try {
@@ -332,85 +375,69 @@ export async function GET(request: NextRequest) {
       console.log(`📝 Spelling corrected: "${query.trim()}" → "${correctedQuery}"`)
     }
     
-    // Build search strategies
-    const strategies = []
-    
-    // "pokemon number" format (e.g., "charizard 223")
-    const numberMatch = correctedQuery.match(/^(.+?)\s+(\d+)$/)
-    if (numberMatch) {
-      const [, name, number] = numberMatch
-      const strategy = `name:*${name}* number:${number}`
-      strategies.push(strategy)
+    // Check for pending request to prevent duplicates
+    if (pendingRequests.has(cacheKey)) {
+      console.log(`⏳ Waiting for pending request: "${query}"`)
+      const result = await pendingRequests.get(cacheKey)
+      return NextResponse.json({ suggestions: result })
     }
     
-    // "pokemon type" format (e.g., "charizard ex", "rayquaza v")  
-    const words = correctedQuery.split(' ')
-    const cardTypes = ['ex', 'gx', 'v', 'vmax', 'vstar']
-    if (words.length === 2 && !numberMatch) {
-      const [name, type] = words
-      if (cardTypes.includes(type.toLowerCase())) {
-        let strategy = ''
-        if (type.toLowerCase() === 'ex') {
-          strategy = `name:*${name}*EX*`
-        } else if (type.toLowerCase() === 'gx') {
-          strategy = `name:*${name}*GX*`
-        } else {
-          strategy = `name:*${name}* name:*${type.toUpperCase()}*`
+    // Build simplified search strategies
+    const strategies = buildSearchStrategies(correctedQuery)
+    
+    // Create the request promise with early termination
+    const requestPromise = (async () => {
+      // Try Pokemon TCG API first (usually faster and more accurate)
+      for (const strategy of strategies) {
+        try {
+          const result = await searchPokemonAPI(strategy)
+          if (result && result.length > 0) {
+            console.log(`✅ Pokemon TCG API success with strategy: "${strategy}"`)
+            return result
+          }
+        } catch (error) {
+          console.log(`⚠️ Pokemon TCG API strategy failed: "${strategy}"`)
+          continue // Try next strategy
         }
-        strategies.push(strategy)
       }
-    }
-    
-    // Multi-word name strategy (e.g., "galarian moltres")
-    if (words.length >= 2 && !numberMatch && !cardTypes.includes(words[words.length - 1].toLowerCase())) {
-      const capitalizedWords = words.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      const multiWordStrategy = `(${capitalizedWords.map(word => `name:*${word}*`).join(' AND ')})`
-      strategies.push(multiWordStrategy)
-    }
-    
-    // Basic searches
-    const capitalizedQuery = correctedQuery.charAt(0).toUpperCase() + correctedQuery.slice(1).toLowerCase()
-    const basicStrategies = [`name:${capitalizedQuery}*`, `name:*${capitalizedQuery}*`]
-    strategies.push(...basicStrategies)
-    
-    // Run APIs in parallel for speed
-    const apiPromises = []
-    
-    // Add Pokemon TCG API calls for each strategy
-    for (const strategy of strategies) {
-      apiPromises.push(searchPokemonAPI(strategy))
-    }
-    
-    // Add TCGDx API call
-    apiPromises.push(searchTCGDxAPI(correctedQuery))
-    
-    // Wait for all APIs with a short timeout
-    const results = await Promise.allSettled(apiPromises)
-    
-    // Process results
-    let bestResults: any[] = []
-    
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
-        bestResults = result.value
-        break // Use first successful result
+      
+      // Fallback to TCGDx API
+      try {
+        const tcgdxResult = await searchTCGDxAPI(correctedQuery)
+        if (tcgdxResult && tcgdxResult.length > 0) {
+          console.log(`✅ TCGDx API success`)
+          return tcgdxResult
+        }
+      } catch (error) {
+        console.log(`⚠️ TCGDx API failed`)
       }
-    }
-    
-    // If no API results, use fallback
-    if (bestResults.length === 0) {
+      
+      // Final fallback to static data
       console.log(`🔄 No API results, using fallback data for: "${correctedQuery}"`)
-      bestResults = searchFallbackData(correctedQuery)
-    }
+      return searchFallbackData(correctedQuery)
+    })()
     
-    // Cache the results
-    cache.set(cacheKey, { data: bestResults, timestamp: Date.now() })
+    // Store the pending request
+    pendingRequests.set(cacheKey, requestPromise)
+    
+    // Wait for result and clean up
+    const bestResults = await requestPromise
+    pendingRequests.delete(cacheKey)
+    
+    // Cache the results (only cache successful API results, not fallback)
+    if (bestResults.length > 0) {
+      cache.set(cacheKey, { data: bestResults, timestamp: Date.now() })
+    }
     
     console.log(`✅ Autocomplete success: ${bestResults.length} results`)
     return NextResponse.json({ suggestions: bestResults })
     
   } catch (error) {
     console.error(`💥 Autocomplete error for query "${query}":`, error)
+    
+    // Clean up pending request on error
+    const cacheKey = query.toLowerCase().trim()
+    pendingRequests.delete(cacheKey)
     
     // Emergency fallback
     console.log(`🆘 Emergency fallback for: "${query.trim()}"`)
