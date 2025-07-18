@@ -923,7 +923,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                                 {result.ebay_prices.map((item, index) => (
                                   <div key={index} className="text-xs dark:text-white/40 text-black/40 bg-black/5 dark:bg-white/5 rounded p-2">
                                     <div className="font-medium">£{formatPrice(item.price)}</div>
-                                    <div className="truncate mb-1">{item.title}</div>
+                                    <div className="mb-1">{item.title}</div>
                                     {item.url && (
                                       <a 
                                         href={item.url} 
@@ -955,7 +955,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       <div className="w-10 h-10 dark:bg-purple-100 bg-purple-300 rounded-lg flex items-center justify-center mr-3">
                         <span className="text-xl">🎮</span>
                       </div>
-                      <h4 className="text-lg font-semibold dark:text-white text-black">Pokemon TCG API</h4>
+                      <h4 className="text-lg font-semibold dark:text-white text-black">Market data</h4>
                     </div>
                     
                     {result.cardmarket ? (

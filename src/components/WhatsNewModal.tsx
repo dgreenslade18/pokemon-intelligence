@@ -18,6 +18,54 @@ interface WhatsNewModalProps {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'v2.3.0',
+    date: '2024-01-15',
+    title: 'Mobile Layout Overhaul',
+    description: 'Completely redesigned mobile experience with improved card layouts, responsive grid systems, and better touch interactions. Cards now display image and pricing info side-by-side with confidence metrics below.',
+    type: 'improvement',
+    icon: '📱'
+  },
+  {
+    version: 'v2.2.5',
+    date: '2024-01-15',
+    title: 'Enhanced Autocomplete',
+    description: 'Rewrote autocomplete API with parallel calls to Pokemon TCG API and TCGDx, added intelligent caching, fallback data, and spelling corrections. Improved speed and data quality significantly.',
+    type: 'performance',
+    icon: '⚡'
+  },
+  {
+    version: 'v2.2.4',
+    date: '2024-01-15',
+    title: 'Search Query Improvements',
+    description: 'Fixed multi-word search queries by implementing proper wildcard handling. Searches like "mew ex 232" now work correctly without causing API errors.',
+    type: 'fix',
+    icon: '🔍'
+  },
+  {
+    version: 'v2.2.3',
+    date: '2024-01-15',
+    title: 'Price Extraction Enhancement',
+    description: 'Enhanced price extraction logic to check multiple price types and fallback fields with detailed logging. Improved accuracy of pricing data display.',
+    type: 'improvement',
+    icon: '💰'
+  },
+  {
+    version: 'v2.2.2',
+    date: '2024-01-15',
+    title: 'Runtime Error Fixes',
+    description: 'Added comprehensive null checks and error handling to prevent runtime errors in Script7Panel and other components.',
+    type: 'fix',
+    icon: '🛠️'
+  },
+  {
+    version: 'v2.2.1',
+    date: '2024-01-15',
+    title: 'Dropdown Width Extensions',
+    description: 'Extended dropdown widths for better readability and improved list name display across all components.',
+    type: 'improvement',
+    icon: '📋'
+  },
+  {
     version: 'v2.2.0',
     date: '2024-01-15',
     title: 'Card Name Capitalization',

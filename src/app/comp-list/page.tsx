@@ -575,10 +575,10 @@ export default function CompListPage() {
                 <div className="text-6xl mb-4 animate-bounce">
                   {progress ? getProgressIcon(progress.stage) : '🚀'}
                 </div>
-                <h3 className="text-2xl font-bold text-white dark:text-black mb-2">
+                <h3 className="text-2xl font-bold dark:text-white text-black mb-2">
                   Refreshing Prices
                 </h3>
-                <p className="text-white/60 dark:text-black/60">
+                <p className="dark:text-white/60 text-black/60">
                   Please wait while we update your card prices...
                 </p>
               </div>
@@ -663,14 +663,14 @@ export default function CompListPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-6 py-12">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8 sm:mb-12">
 
-          <h1 className="text-5xl font-bold gradient-text mb-4">
+          <h1 className="text-3xl sm:text-5xl font-bold gradient-text mb-4">
             My Comp List
           </h1>
-          <p className="dark:text-white/60 text-black/60 text-xl font-light">
+          <p className="dark:text-white/60 text-black/60 text-lg sm:text-xl font-light">
             Your saved card comparisons and prices
           </p>
         </div>
@@ -685,12 +685,12 @@ export default function CompListPage() {
           />
           
           {/* Action Buttons */}
-          <div className="flex gap-4 md:flex-row flex-col">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full lg:w-auto">
             {compList.length > 0 && (
               <>
                 <button
                   onClick={handleDownload}
-                  className="flex items-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 group"
+                  className="flex items-center justify-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 group"
                 >
                   <svg className="w-5 h-5 mr-2 group-hover:translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -700,7 +700,7 @@ export default function CompListPage() {
                 <button
                   onClick={handleRefreshPrices}
                   disabled={refreshing}
-                  className="flex items-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+                  className="flex items-center justify-center px-4 md:px-6 text-[14px] py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
                 >
                   {refreshing ? (
                     <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -733,13 +733,13 @@ export default function CompListPage() {
 
         {/* Statistics */}
         {compList.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold dark:text-white text-black mb-2">{compList.length}</div>
-              <div className="dark:text-white/60 text-black/60">Total Cards</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold dark:text-white text-black mb-2">{compList.length}</div>
+              <div className="dark:text-white/60 text-black/60 text-sm sm:text-base">Total Cards</div>
             </div>
-            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold dark:text-green-400 text-green-600 mb-2">
+            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold dark:text-green-400 text-green-600 mb-2">
                 £{(() => {
                   const validTcgPrices = compList.filter(item => item.tcg_price && item.tcg_price > 0)
                   if (validTcgPrices.length === 0) return '0.00'
@@ -747,10 +747,10 @@ export default function CompListPage() {
                   return (total / validTcgPrices.length).toFixed(2)
                 })()}
               </div>
-              <div className="dark:text-white/60 text-black/60">Avg TCG Price</div>
+              <div className="dark:text-white/60 text-black/60 text-sm sm:text-base">Avg TCG Price</div>
             </div>
-            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold dark:text-blue-400 text-blue-600 mb-2">
+            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold dark:text-blue-400 text-blue-600 mb-2">
                 £{(() => {
                   const validEbayPrices = compList.filter(item => item.ebay_average && item.ebay_average > 0)
                   if (validEbayPrices.length === 0) return '0.00'
@@ -758,13 +758,13 @@ export default function CompListPage() {
                   return (total / validEbayPrices.length).toFixed(2)
                 })()}
               </div>
-              <div className="dark:text-white/60 text-black/60">Avg eBay Price</div>
+              <div className="dark:text-white/60 text-black/60 text-sm sm:text-base">Avg eBay Price</div>
             </div>
-            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-6">
-              <div className="text-3xl font-bold dark:text-purple-400 text-purple-600 mb-2">
+            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6">
+              <div className="text-2xl sm:text-3xl font-bold dark:text-purple-400 text-purple-600 mb-2">
                 {averageConfidence.toFixed(1)}
               </div>
-              <div className="dark:text-white/60 text-black/60">Avg Confidence</div>
+              <div className="dark:text-white/60 text-black/60 text-sm sm:text-base">Avg Confidence</div>
             </div>
           </div>
         )}
@@ -773,7 +773,7 @@ export default function CompListPage() {
         {compList.length > 0 && (
           <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-8">
             {/* Search Bar */}
-            <div className="flex-1 max-w-md">
+            <div className="flex-1 w-full lg:max-w-md">
               <input
                 type="text"
                 placeholder="Search cards..."
@@ -817,10 +817,10 @@ export default function CompListPage() {
               </button>
             )}
           </div>
-                ) : (
-          <div className={`grid gap-6 grid-enhanced-transition ${
-            viewMode === 'grid-3' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
-            viewMode === 'grid-4' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
+        ) : (
+          <div className={`grid gap-4 sm:gap-6 grid-enhanced-transition ${
+            viewMode === 'grid-3' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
+            viewMode === 'grid-4' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
             'grid-cols-1'
           } ${isViewChanging ? 'opacity-85 scale-98 transform-gpu' : 'opacity-100 scale-100'}`}>
             {filteredCards.map((item, index) => (
@@ -828,8 +828,8 @@ export default function CompListPage() {
                 key={item.id} 
                 className={`${
                   viewMode === 'list' 
-                    ? 'dark:bg-white/10 bg-black/10 rounded-2xl p-6 border border-white/20 dark:border-black/20 hover:bg-white/15 grid-item-enhanced flex items-center gap-6 list-item-animate'
-                    : 'dark:bg-white/10 bg-black/10 rounded-2xl p-6 border border-white/20 dark:border-black/20 hover:bg-white/15 grid-item-enhanced grid-resize-animate'
+                    ? 'dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6 border border-white/20 dark:border-black/20 hover:bg-white/15 grid-item-enhanced flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 list-item-animate'
+                    : 'dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6 border border-white/20 dark:border-black/20 hover:bg-white/15 grid-item-enhanced grid-resize-animate'
                 } transform hover:scale-105`}
                 style={{
                   animationDelay: `${index * 50}ms`,
@@ -849,7 +849,7 @@ export default function CompListPage() {
                         <img 
                           src={item.card_image_url} 
                           alt={item.card_name}
-                          className="w-20 h-28 object-cover rounded-lg"
+                          className="w-16 h-22 sm:w-20 sm:h-28 object-cover rounded-lg"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement
                             target.style.display = 'none'
@@ -862,9 +862,9 @@ export default function CompListPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold dark:text-white text-black mb-1 truncate">{item.card_name}</h3>
+                          <h3 className="text-base sm:text-lg font-semibold dark:text-white text-black mb-1 truncate">{item.card_name}</h3>
                           {item.set_name && (
-                            <p className="dark:text-white/60 text-black/60 text-sm truncate">{item.set_name}</p>
+                            <p className="dark:text-white/60 text-black/60 text-xs sm:text-sm truncate">{item.set_name}</p>
                           )}
                           {item.card_number && (
                             <p className="dark:text-white/40 text-black/40 text-xs">#{item.card_number}</p>
@@ -874,34 +874,34 @@ export default function CompListPage() {
                           onClick={() => handleRemoveFromCompList(item.id)}
                           className="text-red-400 hover:text-red-300 transition-colors ml-2 flex-shrink-0"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-xs sm:text-sm">
                         {item.recommended_price && (
                           <div>
                             <p className="text-white/60 text-xs">Recommended</p>
-                            <p className="text-white font-semibold">{item.recommended_price}</p>
+                            <p className="text-white font-semibold truncate">{item.recommended_price}</p>
                           </div>
                         )}
                         <div>
                           <p className="text-white/60 text-xs">TCG Price</p>
-                          <p className="text-green-400 font-semibold">
+                          <p className="text-green-400 font-semibold truncate">
                             £{item.tcg_price?.toFixed(2) || '0.00'}
                           </p>
                         </div>
                         <div>
                           <p className="text-white/60 text-xs">eBay Average</p>
-                          <p className="text-blue-400 font-semibold">
+                          <p className="text-blue-400 font-semibold truncate">
                             £{item.ebay_average?.toFixed(2) || '0.00'}
                           </p>
                         </div>
                         <div>
                           <p className="text-white/60 text-xs">Confidence</p>
-                          <p className="text-purple-400 font-semibold">
+                          <p className="text-purple-400 font-semibold truncate">
                             {item.confidence_score ? `${item.confidence_score}/10` : 'Pending'}
                           </p>
                         </div>
@@ -909,18 +909,19 @@ export default function CompListPage() {
                     </div>
                     
                     {/* Confidence Meter (Compact) */}
-                    <div className="flex-shrink-0 w-32">
+                    <div className="flex-shrink-0 w-full sm:w-32">
                       <ConfidenceMeter item={item} />
                     </div>
                   </>
                 ) : (
                   // Grid View Layout
                   <>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold dark:text-white text-black mb-1">{item.card_name}</h3>
+                    {/* Header with title and delete button */}
+                    <div className="flex justify-between items-start mb-3 sm:mb-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold dark:text-white text-black mb-1 truncate">{item.card_name}</h3>
                         {item.set_name && (
-                          <p className="dark:text-white/60 text-black/60 text-sm">{item.set_name}</p>
+                          <p className="dark:text-white/60 text-black/60 text-xs sm:text-sm truncate">{item.set_name}</p>
                         )}
                         {item.card_number && (
                           <p className="dark:text-white/40 text-black/40 text-xs">#{item.card_number}</p>
@@ -928,55 +929,60 @@ export default function CompListPage() {
                       </div>
                       <button
                         onClick={() => handleRemoveFromCompList(item.id)}
-                        className="text-red-400 hover:text-red-300 transition-colors ml-2"
+                        className="text-red-400 hover:text-red-300 transition-colors ml-2 flex-shrink-0"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
                     </div>
 
-                    {item.card_image_url && (
-                      <div className="mb-4">
-                        <img 
-                          src={item.card_image_url} 
-                          alt={item.card_name}
-                          className="w-full h-32 object-cover rounded-lg"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            target.style.display = 'none'
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-3">
-                      {item.recommended_price && (
-                        <div>
-                          <p className="dark:text-white/60 text-black/60 text-sm">Recommended Price</p>
-                          <p className="dark:text-white text-black font-semibold">{item.recommended_price}</p>
+                    {/* Card Image and Info Side by Side */}
+                    <div className="flex gap-4 mb-4">
+                      {/* Card Image */}
+                      {item.card_image_url && (
+                        <div className="flex-shrink-0">
+                          <img 
+                            src={item.card_image_url} 
+                            alt={item.card_name}
+                            className="w-20 h-28 sm:w-24 sm:h-32 object-cover rounded-lg"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                            }}
+                          />
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="dark:text-white/60 text-black/60 text-sm">TCG Price</p>
-                          <p className="dark:text-green-400 text-green-600 font-semibold">
-                            £{item.tcg_price?.toFixed(2) || '0.00'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="dark:text-white/60 text-black/60 text-sm">eBay Average</p>
-                          <p className="dark:text-blue-400 text-blue-600 font-semibold">
-                            £{item.ebay_average?.toFixed(2) || '0.00'}
-                          </p>
-                        </div>
-                      </div>
+                      {/* Card Info and Prices */}
+                      <div className="flex-1 min-w-0 space-y-2">
+                        {item.recommended_price && (
+                          <div>
+                            <p className="dark:text-white/60 text-black/60 text-xs sm:text-sm">Recommended Price</p>
+                            <p className="dark:text-white text-black font-semibold text-sm sm:text-base truncate">{item.recommended_price}</p>
+                          </div>
+                        )}
 
-                      {/* Confidence Meter */}
-                      <div className="pt-3 border-t border-white/10 dark:border-black/10">
-                        <ConfidenceMeter item={item} />
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                          <div>
+                            <p className="dark:text-white/60 text-black/60 text-xs sm:text-sm">TCG Price</p>
+                            <p className="dark:text-green-400 text-green-600 font-semibold text-sm sm:text-base truncate">
+                              £{item.tcg_price?.toFixed(2) || '0.00'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="dark:text-white/60 text-black/60 text-xs sm:text-sm">eBay Average</p>
+                            <p className="dark:text-blue-400 text-blue-600 font-semibold text-sm sm:text-base truncate">
+                              £{item.ebay_average?.toFixed(2) || '0.00'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Confidence Meter and Additional Metrics Below */}
+                    <div className="space-y-3 pt-3 border-t border-white/10 dark:border-black/10">
+                      <ConfidenceMeter item={item} />
 
                       <div className="dark:text-white/40 text-black/40 text-xs">
                         Saved {new Date(item.saved_at).toLocaleDateString()}
