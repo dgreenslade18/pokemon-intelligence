@@ -225,6 +225,200 @@ const FALLBACK_DATA = [
   }
 ]
 
+// Enhanced set name mapping for TCGDx API
+const SET_NAME_MAPPING: Record<string, string> = {
+  // Sword & Shield era
+  'swsh1': 'Sword & Shield',
+  'swsh2': 'Rebel Clash',
+  'swsh3': 'Darkness Ablaze',
+  'swsh4': 'Champions Path',
+  'swsh5': 'Vivid Voltage',
+  'swsh6': 'Shining Fates',
+  'swsh7': 'Battle Styles',
+  'swsh8': 'Chilling Reign',
+  'swsh9': 'Evolving Skies',
+  'swsh10': 'Fusion Strike',
+  'swsh11': 'Celebrations',
+  'swsh12': 'Brilliant Stars',
+  'swsh12pt5': 'Astral Radiance',
+  'swsh13': 'Lost Origin',
+  'swsh13pt5': 'Silver Tempest',
+  'swsh14': 'Crown Zenith',
+  
+  // Scarlet & Violet era
+  'sv1': 'Scarlet & Violet',
+  'sv2': 'Paldea Evolved',
+  'sv3': 'Obsidian Flames',
+  'sv4': '151',
+  'sv4pt5': 'Paldean Fates',
+  'sv5': 'Temporal Forces',
+  
+  // Sun & Moon era
+  'sm1': 'Sun & Moon',
+  'sm2': 'Guardians Rising',
+  'sm3': 'Burning Shadows',
+  'sm4': 'Crimson Invasion',
+  'sm5': 'Ultra Prism',
+  'sm6': 'Forbidden Light',
+  'sm7': 'Celestial Storm',
+  'sm8': 'Dragon Majesty',
+  'sm9': 'Lost Thunder',
+  'sm10': 'Team Up',
+  'sm11': 'Detective Pikachu',
+  'sm12': 'Unbroken Bonds',
+  'sm12pt5': 'Unified Minds',
+  'sm13': 'Hidden Fates',
+  'sm14': 'Cosmic Eclipse',
+  
+  // XY era
+  'xy1': 'XY',
+  'xy2': 'Flashfire',
+  'xy3': 'Furious Fists',
+  'xy4': 'Phantom Forces',
+  'xy5': 'Primal Clash',
+  'xy6': 'Double Crisis',
+  'xy7': 'Roaring Skies',
+  'xy8': 'Ancient Origins',
+  'xy9': 'Breakthrough',
+  'xy10': 'Breakpoint',
+  'xy11': 'Fates Collide',
+  'xy12': 'Steam Siege',
+  'xy12pt5': 'Evolutions',
+  
+  // Black & White era
+  'bw1': 'Black & White',
+  'bw2': 'Emerging Powers',
+  'bw3': 'Noble Victories',
+  'bw4': 'Next Destinies',
+  'bw5': 'Dark Explorers',
+  'bw6': 'Dragons Exalted',
+  'bw7': 'Dragon Vault',
+  'bw8': 'Boundaries Crossed',
+  'bw9': 'Plasma Storm',
+  'bw10': 'Plasma Freeze',
+  'bw11': 'Plasma Blast',
+  'bw12': 'Legendary Treasures',
+  
+  // HeartGold & SoulSilver era
+  'hgss1': 'HeartGold & SoulSilver',
+  'hgss2': 'Unleashed',
+  'hgss3': 'Undaunted',
+  'hgss4': 'Triumphant',
+  'hgss5': 'Call of Legends',
+  
+  // Diamond & Pearl era
+  'dp1': 'Diamond & Pearl',
+  'dp2': 'Mysterious Treasures',
+  'dp3': 'Secret Wonders',
+  'dp4': 'Great Encounters',
+  'dp5': 'Majestic Dawn',
+  'dp6': 'Legends Awakened',
+  'dp7': 'Stormfront',
+  'dp8': 'Platinum',
+  'dp9': 'Rising Rivals',
+  'dp10': 'Supreme Victors',
+  'dp11': 'Arceus',
+  
+  // Base sets
+  'base1': 'Base Set',
+  'base2': 'Jungle',
+  'base3': 'Fossil',
+  'base4': 'Base Set 2',
+  'base5': 'Team Rocket',
+  'base6': 'Gym Heroes',
+  'base7': 'Gym Challenge',
+  'base8': 'Neo Genesis',
+  'base9': 'Neo Discovery',
+  'base10': 'Neo Revelation',
+  'base11': 'Neo Destiny',
+  'base12': 'Legendary Collection',
+  
+  // Promos
+  'swshp': 'SWSH Black Star Promos',
+  'smp': 'SM Black Star Promos',
+  'xyp': 'XY Black Star Promos',
+  'bwp': 'BW Black Star Promos',
+  'hgssp': 'HGSS Black Star Promos',
+  'dpp': 'DP Black Star Promos',
+  'basep': 'Base Set Promos',
+  
+  // Special sets
+  'swsh9tg': 'Brilliant Stars Trainer Gallery',
+  'swsh10tg': 'Astral Radiance Trainer Gallery',
+  'swsh11tg': 'Lost Origin Trainer Gallery',
+  'swsh12tg': 'Silver Tempest Trainer Gallery',
+  'swsh13tg': 'Crown Zenith Trainer Gallery',
+  
+  // Common abbreviations
+  'swsh': 'Sword & Shield',
+  'sv': 'Scarlet & Violet',
+  'sm': 'Sun & Moon',
+  'xy': 'XY',
+  'bw': 'Black & White',
+  'hgss': 'HeartGold & SoulSilver',
+  'dp': 'Diamond & Pearl',
+  'base': 'Base Set'
+}
+
+// Enhanced set name extraction function
+function extractSetName(card: any): string {
+  // First try to get the set name directly
+  if (card.set?.name) {
+    return card.set.name
+  }
+  
+  // Try to get set name from ID
+  if (card.set?.id) {
+    const setId = card.set.id.toLowerCase()
+    
+    // Check our mapping first
+    if (SET_NAME_MAPPING[setId]) {
+      return SET_NAME_MAPPING[setId]
+    }
+    
+    // Handle trainer gallery cards
+    if (setId.includes('tg')) {
+      const baseSetId = setId.replace('tg', '')
+      const baseSetName = SET_NAME_MAPPING[baseSetId]
+      if (baseSetName) {
+        return `${baseSetName} Trainer Gallery`
+      }
+    }
+    
+    // Try to extract from ID format
+    if (setId.includes('-')) {
+      const parts = setId.split('-')
+      if (parts.length >= 2) {
+        const era = parts[0].toUpperCase()
+        const setNum = parts[1]
+        
+        // Map common eras
+        const eraMapping: Record<string, string> = {
+          'swsh': 'Sword & Shield',
+          'sv': 'Scarlet & Violet',
+          'sm': 'Sun & Moon',
+          'xy': 'XY',
+          'bw': 'Black & White',
+          'hgss': 'HeartGold & SoulSilver',
+          'dp': 'Diamond & Pearl',
+          'base': 'Base Set'
+        }
+        
+        if (eraMapping[era]) {
+          return `${eraMapping[era]} ${setNum}`
+        }
+      }
+    }
+    
+    // Fallback: capitalize and format the ID
+    return setId.split('-').map((part: string) => 
+      part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(' ')
+  }
+  
+  return 'Unknown Set'
+}
+
 // Optimized TCGDx API call with faster timeout and early filtering
 async function searchTCGDxAPI(query: string): Promise<any> {
   const controller = new AbortController()
@@ -274,21 +468,8 @@ async function searchTCGDxAPI(query: string): Promise<any> {
     if (filteredCards.length > 0) {
       const limitedResults = filteredCards.slice(0, 8)
       return limitedResults.map((card: any) => {
-        // Better set name extraction from TCGDx
-        let setName = 'Unknown Set'
-        if (card.set?.name) {
-          setName = card.set.name
-        } else if (card.set?.id) {
-          // Try to extract set name from ID
-          const setId = card.set.id
-          if (setId.includes('-')) {
-            setName = setId.split('-').map((part: string) => 
-              part.charAt(0).toUpperCase() + part.slice(1)
-            ).join(' ')
-          } else {
-            setName = setId.charAt(0).toUpperCase() + setId.slice(1)
-          }
-        }
+        // Use enhanced set name extraction
+        const setName = extractSetName(card)
         
         // Better image extraction
         let imageUrl = ''
