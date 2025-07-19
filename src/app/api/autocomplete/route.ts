@@ -44,6 +44,36 @@ const FALLBACK_DATA = [
     searchValue: 'Charizard ex 223'
   },
   {
+    id: 'gengar-tg06',
+    name: 'Gengar',
+    set: 'Brilliant Stars',
+    number: 'TG06',
+    image: 'https://images.pokemontcg.io/swsh9/TG06.png',
+    rarity: 'Trainer Gallery',
+    display: 'Gengar (Brilliant Stars)',
+    searchValue: 'Gengar TG06'
+  },
+  {
+    id: 'gengar-base-5',
+    name: 'Gengar',
+    set: 'Base Set',
+    number: '5',
+    image: 'https://images.pokemontcg.io/base1/5.png',
+    rarity: 'Rare Holo',
+    display: 'Gengar (Base Set)',
+    searchValue: 'Gengar 5'
+  },
+  {
+    id: 'gengar-fossil-5',
+    name: 'Gengar',
+    set: 'Fossil',
+    number: '5',
+    image: 'https://images.pokemontcg.io/fossil/5.png',
+    rarity: 'Rare Holo',
+    display: 'Gengar (Fossil)',
+    searchValue: 'Gengar 5'
+  },
+  {
     id: 'pikachu-base-58',
     name: 'Pikachu',
     set: 'Base Set',
@@ -218,16 +248,25 @@ async function searchTCGDxAPI(query: string): Promise<any> {
     const data = await response.json()
     console.log(`📦 TCGDx API found ${data.length} total cards`)
     
-    // Early filtering during JSON parsing to reduce memory usage
+    // Enhanced filtering with better pattern matching
     const queryLower = query.toLowerCase()
+    const queryWords = queryLower.split(' ')
+    
     const filteredCards = data.filter((card: any) => {
       const cardName = card.name?.toLowerCase() || ''
       const setId = card.set?.id?.toLowerCase() || ''
       const localId = card.localId?.toString() || ''
+      const cardNumber = card.number?.toString() || ''
       
-      return cardName.includes(queryLower) || 
-             setId.includes(queryLower) || 
-             localId.includes(queryLower)
+      // Check if all query words are found in any of the card fields
+      return queryWords.every(word => {
+        return cardName.includes(word) || 
+               setId.includes(word) || 
+               localId.includes(word) ||
+               cardNumber.includes(word) ||
+               // Handle trainer gallery format
+               (word.startsWith('tg') && cardName.includes(word.toUpperCase()))
+      })
     })
     
     console.log(`📦 TCGDx API filtered to ${filteredCards.length} matching cards`)
@@ -341,11 +380,17 @@ function searchFallbackData(query: string) {
 function buildSearchStrategies(query: string): string[] {
   const strategies: string[] = []
   
-  // "pokemon number" format (e.g., "charizard 223")
-  const numberMatch = query.match(/^(.+?)\s+(\d+)$/)
+  // "pokemon number" format (e.g., "charizard 223", "gengar tg06")
+  const numberMatch = query.match(/^(.+?)\s+(\d+|[a-z]+\d+)$/i)
   if (numberMatch) {
     const [, name, number] = numberMatch
-    strategies.push(`name:*${name}* AND number:${number}`)
+    // Handle trainer gallery format (tg06, tg07, etc.)
+    if (number.toLowerCase().startsWith('tg')) {
+      strategies.push(`name:*${name}* AND name:*${number.toUpperCase()}*`)
+      strategies.push(`name:*${name}* AND number:${number}`)
+    } else {
+      strategies.push(`name:*${name}* AND number:${number}`)
+    }
     return strategies // Return early for number searches
   }
   
