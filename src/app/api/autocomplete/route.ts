@@ -222,6 +222,46 @@ const FALLBACK_DATA = [
     rarity: 'Rare Holo V',
     display: 'Lucario V (Astral Radiance)',
     searchValue: 'Lucario V 78'
+  },
+  {
+    id: 'moltres-zapdos-articuno-gx-sm210',
+    name: 'Moltres & Zapdos & Articuno GX',
+    set: 'SM Black Star Promos',
+    number: 'SM210',
+    image: 'https://images.pokemontcg.io/smp/SM210.png',
+    rarity: 'Promo',
+    display: 'Moltres & Zapdos & Articuno GX (SM Black Star Promos)',
+    searchValue: 'Moltres & Zapdos & Articuno GX SM210'
+  },
+  {
+    id: 'moltres-zapdos-articuno-gx-44',
+    name: 'Moltres & Zapdos & Articuno GX',
+    set: 'Detective Pikachu',
+    number: '44',
+    image: 'https://images.pokemontcg.io/det1/44.png',
+    rarity: 'Rare Holo GX',
+    display: 'Moltres & Zapdos & Articuno GX (Detective Pikachu)',
+    searchValue: 'Moltres & Zapdos & Articuno GX 44'
+  },
+  {
+    id: 'moltres-zapdos-articuno-gx-66',
+    name: 'Moltres & Zapdos & Articuno GX',
+    set: 'Detective Pikachu',
+    number: '66',
+    image: 'https://images.pokemontcg.io/det1/66.png',
+    rarity: 'Rare Holo GX',
+    display: 'Moltres & Zapdos & Articuno GX (Detective Pikachu)',
+    searchValue: 'Moltres & Zapdos & Articuno GX 66'
+  },
+  {
+    id: 'moltres-zapdos-articuno-gx-69',
+    name: 'Moltres & Zapdos & Articuno GX',
+    set: 'Detective Pikachu',
+    number: '69',
+    image: 'https://images.pokemontcg.io/det1/69.png',
+    rarity: 'Rare Holo GX',
+    display: 'Moltres & Zapdos & Articuno GX (Detective Pikachu)',
+    searchValue: 'Moltres & Zapdos & Articuno GX 69'
   }
 ]
 
@@ -557,9 +597,18 @@ function searchFallbackData(query: string) {
   }).slice(0, 8) // Limit to 8 results
 }
 
-// Simplified search strategy builder
+// Enhanced search strategy builder
 function buildSearchStrategies(query: string): string[] {
   const strategies: string[] = []
+  
+  // Handle promo cards with alphanumeric numbers (e.g., "SM210", "SWSH284")
+  const promoMatch = query.match(/^(.+?)\s+([A-Z]+\d+)$/)
+  if (promoMatch) {
+    const [, name, promoNumber] = promoMatch
+    strategies.push(`name:*${name}* AND number:${promoNumber}`)
+    strategies.push(`name:*${name}*`)
+    return strategies
+  }
   
   // "pokemon number" format (e.g., "charizard 223", "gengar tg06")
   const numberMatch = query.match(/^(.+?)\s+(\d+|[a-z]+\d+)$/i)
@@ -590,6 +639,22 @@ function buildSearchStrategies(query: string): string[] {
       }
       return strategies // Return early for type searches
     }
+  }
+  
+  // Handle complex names with special characters (like "Moltres & Zapdos & Articuno GX")
+  if (query.includes('&') || query.includes('and')) {
+    // For complex names, try multiple strategies
+    strategies.push(`name:*${query}*`)
+    strategies.push(`name:*${query.replace(/&/g, 'and')}*`)
+    strategies.push(`name:*${query.replace(/and/g, '&')}*`)
+    
+    // Also try without the card type suffix
+    const withoutType = query.replace(/\s+(ex|gx|v|vmax|vstar)$/i, '')
+    if (withoutType !== query) {
+      strategies.push(`name:*${withoutType}*`)
+    }
+    
+    return strategies
   }
   
   // Simple wildcard search for everything else
