@@ -10,6 +10,7 @@ interface User {
   created_at: string
   subscription_status: string
   user_level: 'tester' | 'super_admin'
+  last_login?: string
 }
 
 interface EmailSubmission {
@@ -19,6 +20,7 @@ interface EmailSubmission {
   status: 'pending' | 'approved' | 'rejected'
   assigned_user_id?: string
   notes?: string
+  email_sent_at?: string
 }
 
 export default function UsersPage() {
@@ -121,6 +123,29 @@ export default function UsersPage() {
     }
   }
 
+  const grantAccess = async (email: string) => {
+    try {
+      const response = await fetch('/api/email/access-granted', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      if (response.ok) {
+        await loadData() // Reload data
+        alert('Access granted email sent successfully!')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error granting access:', error)
+      alert('Failed to grant access')
+    }
+  }
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
@@ -178,6 +203,7 @@ export default function UsersPage() {
                     <th className="text-left py-3 px-4">Level</th>
                     <th className="text-left py-3 px-4">Status</th>
                     <th className="text-left py-3 px-4">Created</th>
+                    <th className="text-left py-3 px-4">Last Login</th>
                     <th className="text-left py-3 px-4">Actions</th>
                   </tr>
                 </thead>
@@ -204,7 +230,20 @@ export default function UsersPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm">
-                        {new Date(user.created_at).toLocaleDateString()}
+                        {new Date(user.created_at).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        {user.last_login 
+                          ? new Date(user.last_login).toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })
+                          : 'Never'
+                        }
                       </td>
                       <td className="py-3 px-4">
                         <select
@@ -235,6 +274,7 @@ export default function UsersPage() {
                     <th className="text-left py-3 px-4">Email</th>
                     <th className="text-left py-3 px-4">Status</th>
                     <th className="text-left py-3 px-4">Submitted</th>
+                    <th className="text-left py-3 px-4">Email Sent</th>
                     <th className="text-left py-3 px-4">Actions</th>
                   </tr>
                 </thead>
@@ -254,18 +294,40 @@ export default function UsersPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm">
-                        {new Date(submission.created_at).toLocaleDateString()}
+                        {new Date(submission.created_at).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        {submission.email_sent_at 
+                          ? new Date(submission.email_sent_at).toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : 'Not sent'
+                        }
                       </td>
                       <td className="py-3 px-4">
-                        <select
-                          value={submission.status}
-                          onChange={(e) => updateEmailStatus(submission.id, e.target.value as 'pending' | 'approved' | 'rejected')}
-                          className="bg-white/20 text-white border border-white/30 rounded px-2 py-1 text-sm"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="approved">Approved</option>
-                          <option value="rejected">Rejected</option>
-                        </select>
+                        <div className="flex space-x-2">
+                          <select
+                            value={submission.status}
+                            onChange={(e) => updateEmailStatus(submission.id, e.target.value as 'pending' | 'approved' | 'rejected')}
+                            className="bg-white/20 text-white border border-white/30 rounded px-2 py-1 text-sm"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                          {submission.status === 'pending' && (
+                            <button
+                              onClick={() => grantAccess(submission.email)}
+                              className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                            >
+                              Grant Access
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

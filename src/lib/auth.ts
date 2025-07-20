@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { getUserByEmail, createUser, getUserById } from './db'
+import { getUserByEmail, createUser, getUserById, updateLastLogin } from './db'
 
 export const authOptions = {
   providers: [
@@ -49,6 +49,9 @@ export const authOptions = {
             if (!isValid) {
               throw new Error('Invalid password')
             }
+
+            // Update last login time
+            await updateLastLogin(user.id)
 
             return {
               id: user.id,

@@ -23,13 +23,23 @@ export default function UserHeader() {
     if (session?.user?.email) {
       const checkUserLevel = async () => {
         try {
-          const response = await fetch('/api/user-level')
+          const response = await fetch('/api/user-level', {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
           if (response.ok) {
             const data = await response.json()
             setUserLevel(data.userLevel)
+          } else {
+            // Fallback: set to tester if API fails
+            setUserLevel('tester')
           }
         } catch (error) {
           console.error('Error checking user level:', error)
+          // Fallback: set to tester if API fails
+          setUserLevel('tester')
         }
       }
       checkUserLevel()
@@ -144,6 +154,8 @@ export default function UserHeader() {
                 Users
               </button>
             )}
+            
+
             
             <button
               onClick={() => {

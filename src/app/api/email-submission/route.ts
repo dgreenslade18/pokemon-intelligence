@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { submitEmail } from '../../../lib/db'
+import { submitEmail, markEmailSent } from '../../../lib/db'
+import { sendWelcomeEmail } from '../../../lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +24,16 @@ export async function POST(request: NextRequest) {
 
     // Submit email to database
     const submission = await submitEmail(email)
+
+    // Send welcome email
+    try {
+      await sendWelcomeEmail(email)
+      await markEmailSent(submission.id)
+      console.log('Welcome email sent successfully to:', email)
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError)
+      // Don't fail the whole request if email fails
+    }
 
     return NextResponse.json(
       { 

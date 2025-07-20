@@ -9,6 +9,10 @@ export interface User {
   created_at: Date
   subscription_status: 'testing' | 'pro' | 'enterprise'
   user_level: 'tester' | 'super_admin'
+  last_login?: Date
+  password_reset_token?: string
+  password_reset_expires?: Date
+  email_verified?: boolean
 }
 
 export interface UserPreferences {
@@ -61,6 +65,7 @@ export interface EmailSubmission {
   status: 'pending' | 'approved' | 'rejected'
   assigned_user_id?: string
   notes?: string
+  email_sent_at?: Date
 }
 
 // Initialize database tables
@@ -74,7 +79,8 @@ export async function initDb() {
         password_hash VARCHAR(255) NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         subscription_status VARCHAR(50) DEFAULT 'testing' CHECK (subscription_status IN ('testing', 'pro', 'enterprise')),
-        user_level VARCHAR(20) DEFAULT 'tester' CHECK (user_level IN ('tester', 'super_admin'))
+        user_level VARCHAR(20) DEFAULT 'tester' CHECK (user_level IN ('tester', 'super_admin')),
+        last_login TIMESTAMP WITH TIME ZONE
       );
     `
 
@@ -236,6 +242,59 @@ export async function initDb() {
       console.log('⚠️  user_level column migration failed (might already exist):', migrationError.message)
     }
 
+    // Add last_login column if it doesn't exist (migration)
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE;
+      `
+      console.log('✅ last_login column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  last_login column migration failed (might already exist):', migrationError.message)
+    }
+
+    // Add password reset columns if they don't exist (migration)
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(255);
+      `
+      console.log('✅ password_reset_token column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  password_reset_token column migration failed (might already exist):', migrationError.message)
+    }
+
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMP WITH TIME ZONE;
+      `
+      console.log('✅ password_reset_expires column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  password_reset_expires column migration failed (might already exist):', migrationError.message)
+    }
+
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
+      `
+      console.log('✅ email_verified column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  email_verified column migration failed (might already exist):', migrationError.message)
+    }
+
+    // Add email_sent_at column to email_submissions if it doesn't exist (migration)
+    try {
+      await sql`
+        ALTER TABLE email_submissions 
+        ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP WITH TIME ZONE;
+      `
+      console.log('✅ email_sent_at column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  email_sent_at column migration failed (might already exist):', migrationError.message)
+    }
+
     // Set super admin for domgreenslade@me.com
     try {
       await sql`
@@ -351,7 +410,8 @@ export async function createUser(email: string, passwordHash: string): Promise<U
 
 export async function getUserByEmail(email: string): Promise<User | null> {
   const result = await sql`
-    SELECT id, email, password_hash, created_at, subscription_status
+    SELECT id, email, password_hash, created_at, subscription_status, user_level, last_login, 
+           password_reset_token, password_reset_expires, email_verified
     FROM users
     WHERE email = ${email}
   `
@@ -361,7 +421,8 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 
 export async function getUserById(id: string): Promise<User | null> {
   const result = await sql`
-    SELECT id, email, password_hash, created_at, subscription_status
+    SELECT id, email, password_hash, created_at, subscription_status, user_level, last_login,
+           password_reset_token, password_reset_expires, email_verified
     FROM users
     WHERE id = ${id}
   `
@@ -692,7 +753,7 @@ export async function updateEmailSubmissionStatus(
 
 export async function getAllUsers(): Promise<User[]> {
   const result = await sql`
-    SELECT id, email, created_at, subscription_status, user_level 
+    SELECT id, email, created_at, subscription_status, user_level, last_login, email_verified
     FROM users 
     ORDER BY created_at DESC
   `
@@ -707,4 +768,63 @@ export async function updateUserLevel(userId: string, userLevel: 'tester' | 'sup
     RETURNING *
   `
   return result.rows[0] as User
+}
+
+export async function updateLastLogin(userId: string): Promise<void> {
+  await sql`
+    UPDATE users 
+    SET last_login = CURRENT_TIMESTAMP
+    WHERE id = ${userId}
+  `
+}
+
+export async function createPasswordResetToken(email: string): Promise<string | null> {
+  const resetToken = crypto.randomUUID()
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+
+  const result = await sql`
+    UPDATE users 
+    SET password_reset_token = ${resetToken}, password_reset_expires = ${expiresAt.toISOString()}
+    WHERE email = ${email}
+    RETURNING id
+  `
+
+  return result.rows.length > 0 ? resetToken : null
+}
+
+export async function verifyPasswordResetToken(token: string): Promise<string | null> {
+  const result = await sql`
+    SELECT id FROM users 
+    WHERE password_reset_token = ${token} 
+    AND password_reset_expires > CURRENT_TIMESTAMP
+  `
+
+  return result.rows.length > 0 ? result.rows[0].id : null
+}
+
+export async function resetPassword(userId: string, newPasswordHash: string): Promise<void> {
+  await sql`
+    UPDATE users 
+    SET password_hash = ${newPasswordHash}, 
+        password_reset_token = NULL, 
+        password_reset_expires = NULL
+    WHERE id = ${userId}
+  `
+}
+
+export async function markEmailSent(submissionId: string): Promise<void> {
+  await sql`
+    UPDATE email_submissions 
+    SET email_sent_at = CURRENT_TIMESTAMP
+    WHERE id = ${submissionId}
+  `
+}
+
+export async function generateTempPassword(): Promise<string> {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 } 

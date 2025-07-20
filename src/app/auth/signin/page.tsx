@@ -99,7 +99,7 @@ export default function SignIn() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             <p className="text-white/70">
               Need access?{' '}
               <Link
@@ -107,6 +107,14 @@ export default function SignIn() {
                 className="text-blue-300 hover:text-blue-200 font-semibold transition-colors"
               >
                 Request an invitation
+              </Link>
+            </p>
+            <p className="text-white/70">
+              <Link
+                href="/auth/forgot-password"
+                className="text-blue-300 hover:text-blue-200 font-semibold transition-colors"
+              >
+                Forgot your password?
               </Link>
             </p>
           </div>
