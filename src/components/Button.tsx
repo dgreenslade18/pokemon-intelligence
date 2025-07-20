@@ -55,6 +55,23 @@ export const Button = memo(({
     disabled && 'opacity-50 cursor-not-allowed'
   )
 
+  // Check if children contains SVG elements
+  const hasSVG = (children: React.ReactNode): boolean => {
+    if (typeof children === 'string') return false
+    if (Array.isArray(children)) {
+      return children.some(child => hasSVG(child))
+    }
+    if (children && typeof children === 'object' && 'props' in children) {
+      const childProps = children as { props: { children?: React.ReactNode } }
+      return hasSVG(childProps.props.children)
+    }
+    if (children && typeof children === 'object' && 'type' in children) {
+      const childType = children as { type: string }
+      return childType.type === 'svg' || hasSVG(children)
+    }
+    return false
+  }
+
   // Extract text content from children
   const getTextContent = (children: React.ReactNode): string => {
     if (typeof children === 'string') return children
@@ -68,6 +85,7 @@ export const Button = memo(({
     return ''
   }
 
+  const containsSVG = hasSVG(children)
   const text = getTextContent(children)
   const words = text.split(' ')
   
@@ -88,32 +106,38 @@ export const Button = memo(({
         type={type}
         {...other}
       >
-        <span className="pointer-events-none relative flex items-center gap-2 overflow-hidden">
-          <span>
-            {words.map((word, i) => (
-              <Fragment key={`${contentKey}-${i}`}>
-                <span
-                  style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
-                  className="inline-block translate-y-0 transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-[200%]"
-                >
-                  {word === ' ' ? '\u00A0' : word}
-                </span>{' '}
-              </Fragment>
-            ))}
+        {containsSVG ? (
+          // Render mixed content (SVGs + text) normally
+          children
+        ) : (
+          // Apply text animation for pure text content
+          <span className="pointer-events-none relative flex items-center gap-2 overflow-hidden">
+            <span>
+              {words.map((word, i) => (
+                <Fragment key={`${contentKey}-${i}`}>
+                  <span
+                    style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
+                    className="inline-block translate-y-0 transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-[200%]"
+                  >
+                    {word === ' ' ? '\u00A0' : word}
+                  </span>{' '}
+                </Fragment>
+              ))}
+            </span>
+            <span className="absolute inset-0">
+              {words.map((word, i) => (
+                <Fragment key={`${contentKey}-${i}-clone`}>
+                  <span
+                    style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
+                    className="inline-block -translate-y-[200%] transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-0"
+                  >
+                    {word === ' ' ? '\u00A0' : word}
+                  </span>{' '}
+                </Fragment>
+              ))}
+            </span>
           </span>
-          <span className="absolute inset-0">
-            {words.map((word, i) => (
-              <Fragment key={`${contentKey}-${i}-clone`}>
-                <span
-                  style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
-                  className="inline-block -translate-y-[200%] transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-0"
-                >
-                  {word === ' ' ? '\u00A0' : word}
-                </span>{' '}
-              </Fragment>
-            ))}
-          </span>
-        </span>
+        )}
       </button>
       
       <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-800 ease-in-out group-hover:opacity-100">
