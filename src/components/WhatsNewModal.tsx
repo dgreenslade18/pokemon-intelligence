@@ -18,6 +18,22 @@ interface WhatsNewModalProps {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'v2.4.0',
+    date: '2025-07-20',
+    title: 'Email System Integration',
+    description: 'Complete email system with Resend integration. Welcome emails sent automatically on submission, access granted emails with temporary passwords, password reset functionality, and email tracking in admin panel.',
+    type: 'feature',
+    icon: '📧'
+  },
+  {
+    version: 'v2.3.1',
+    date: '2025-07-20',
+    title: 'Date Format Updates',
+    description: 'Updated all date displays to UK format (DD/MM/YYYY) for better user experience and consistency across the application.',
+    type: 'improvement',
+    icon: '📅'
+  },
+  {
     version: 'v2.3.0',
     date: '2024-01-15',
     title: 'Mobile Layout Overhaul',
