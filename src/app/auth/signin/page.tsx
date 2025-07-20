@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Button } from '../../../components/Button'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -90,13 +91,14 @@ export default function SignIn() {
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              size="large"
+              className="w-full"
             >
               {loading ? 'Signing In...' : 'Sign In'}
-            </button>
+            </Button>
           </form>
 
           <div className="mt-6 text-center space-y-2">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { Button } from './Button'
 
 interface CompListPanelProps {
   onBack: () => void
@@ -348,10 +349,11 @@ export default function CompListPanel({ onBack, hideBackButton = false }: CompLi
               
               <div className="flex flex-col sm:flex-row gap-3">
                 {compList.length > 0 && (
-                  <button
+                  <Button
                     onClick={handleRefreshPrices}
                     disabled={refreshing}
-                    className="flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+                    color="warning"
+                    size="medium"
                   >
                     {refreshing ? (
                       <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,7 +365,7 @@ export default function CompListPanel({ onBack, hideBackButton = false }: CompLi
                       </svg>
                     )}
                     {refreshing ? 'Refreshing...' : 'Refresh Prices'}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -391,12 +393,13 @@ export default function CompListPanel({ onBack, hideBackButton = false }: CompLi
               <p className="text-black/60 dark:text-white/60 mb-8">
                 Start building your comp list by analyzing cards in Script 7
               </p>
-              <button
+              <Button
                 onClick={onBack}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105"
+                color="primary"
+                size="medium"
               >
                 Go to Script 7
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="space-y-6">
@@ -437,10 +440,11 @@ export default function CompListPanel({ onBack, hideBackButton = false }: CompLi
                           )}
                         </div>
                         
-                        <button
+                        <Button
                           onClick={() => handleDelete(item.id)}
                           disabled={deletingId === item.id}
-                          className="flex items-center px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 rounded-xl transition-all duration-200 text-sm font-medium mt-4 md:mt-0"
+                          color="danger"
+                          size="small"
                         >
                           {deletingId === item.id ? (
                             <>
@@ -457,7 +461,7 @@ export default function CompListPanel({ onBack, hideBackButton = false }: CompLi
                               Remove
                             </>
                           )}
-                        </button>
+                        </Button>
                       </div>
 
                       {/* Pricing Info */}

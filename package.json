@@ -15,6 +15,7 @@
     "@vercel/postgres": "^0.10.0",
     "autoprefixer": "^10.4.21",
     "bcryptjs": "^3.0.2",
+    "clsx": "^2.1.1",
     "next": "^14.2.30",
     "next-auth": "^4.24.11",
     "postcss": "^8.5.6",

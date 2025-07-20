@@ -7,6 +7,7 @@ import { useTheme } from './ThemeProvider'
 import { useApiStatus } from '../hooks/useApiStatus'
 import ApiStatusModal from './ApiStatusModal'
 import WhatsNewModal from './WhatsNewModal'
+import { Button } from './Button'
 
 export default function UserHeader() {
   const { data: session, status } = useSession()
@@ -85,12 +86,13 @@ export default function UserHeader() {
   // Show Sign In button for non-authenticated users
   if (!session) {
     return (
-      <a 
-        href="/auth/signin" 
-        className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg transition-colors"
+      <Button 
+        color="outline"
+        size="medium"
+        onClick={() => window.location.href = '/auth/signin'}
       >
         Sign In
-      </a>
+      </Button>
     )
   }
 

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Button } from '../../../components/Button'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -85,13 +86,14 @@ export default function ForgotPasswordPage() {
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={status === 'loading'}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                size="large"
+                className="w-full"
               >
                 {status === 'loading' ? 'Sending...' : 'Send reset link'}
-              </button>
+              </Button>
 
               <div className="text-center">
                 <Link 

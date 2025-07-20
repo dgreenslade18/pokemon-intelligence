@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { Button } from './Button'
 import AddToListModal from './AddToListModal'
 
 interface Script7PanelProps {
@@ -782,10 +783,12 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                 )}
               </div>
               
-              <button
+              <Button
                 onClick={handleAnalyze}
                 disabled={loading || !searchTerm.trim()}
-                className="px-4 md:px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 md:text-left text-center hover:from-blue-400 hover:to-purple-400 text-white font-semibold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-2xl hover:shadow-blue-500/30"
+                color="primary"
+                size="large"
+                className="px-4 md:px-8 py-4"
               >
                 {loading ? (
                   <div className="flex items-center justify-center md:justify-start">
@@ -802,7 +805,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                     Analyse
                   </div>
                 )}
-              </button>
+              </Button>
             </div>
 
 
@@ -848,10 +851,11 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
                 {/* Save to Comp List Button */}
                 <div className="mb-8 flex justify-center">
-                  <button
+                  <Button
                     onClick={handleSaveToCompList}
                     disabled={saving}
-                    className="flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    color="secondary"
+                    size="large"
                   >
                     {saving ? (
                       <>
@@ -868,7 +872,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                         Save to Comp List
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Save message */}
