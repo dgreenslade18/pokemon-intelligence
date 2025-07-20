@@ -2,11 +2,19 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm ci",
+  "installCommand": "corepack enable && pnpm install --frozen-lockfile",
   "framework": "nextjs",
+  "nodeVersion": "18.x",
+  "crons": [],
   "functions": {
     "src/app/api/ebay-notifications/route.ts": {
       "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1",
+      "SKIP_ENV_VALIDATION": "1"
     }
   },
   "headers": [

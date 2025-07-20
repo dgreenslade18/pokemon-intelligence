@@ -2,11 +2,16 @@
   "name": "pokemon-arbitrage-ui",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next"
   },
   "dependencies": {
     "@types/node": "^24.0.10",
@@ -29,5 +34,9 @@
   "devDependencies": {
     "eslint": "^8",
     "eslint-config-next": "14.2.30"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
   }
 }

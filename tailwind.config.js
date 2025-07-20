@@ -8,14 +8,28 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
-      screens: {
-        'sm': '640px',
-        'md': '768px',
-        'lg': '1024px',
-        'xl': '1280px',
-        '2xl': '1536px',
+      fontFamily: {
+        'lay-grotesk': ['var(--font-lay-grotesk)', 'system-ui', 'sans-serif'],
+        'lay-grotesk-heading': ['var(--font-lay-grotesk-heading)', 'system-ui', 'sans-serif'],
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic':
+          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+      },
+      colors: {
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
       },
     },
   },
   plugins: [],
+  // Performance optimizations
+  experimental: {
+    optimizeUniversalDefaults: true,
+  },
+  // Reduce CSS output size
+  corePlugins: {
+    preflight: true,
+  },
 } 
