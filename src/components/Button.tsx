@@ -70,6 +70,9 @@ export const Button = memo(({
 
   const text = getTextContent(children)
   const words = text.split(' ')
+  
+  // Create a key based on the text content to force re-render when content changes
+  const contentKey = text.trim()
 
   return (
     <div
@@ -88,7 +91,7 @@ export const Button = memo(({
         <span className="pointer-events-none relative flex items-center gap-2 overflow-hidden">
           <span>
             {words.map((word, i) => (
-              <Fragment key={i}>
+              <Fragment key={`${contentKey}-${i}`}>
                 <span
                   style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
                   className="inline-block translate-y-0 transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-[200%]"
@@ -100,7 +103,7 @@ export const Button = memo(({
           </span>
           <span className="absolute inset-0">
             {words.map((word, i) => (
-              <Fragment key={i}>
+              <Fragment key={`${contentKey}-${i}-clone`}>
                 <span
                   style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
                   className="inline-block -translate-y-[200%] transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-0"
