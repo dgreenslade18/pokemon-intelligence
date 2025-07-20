@@ -24,14 +24,6 @@ const nextConfig = {
     cpus: 1,
   },
   
-  // Compiler optimizations
-  compiler: {
-    // Remove console logs in production
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error']
-    } : false,
-  },
-  
   // Bundle analyzer (only in development)
   ...(process.env.ANALYZE === 'true' && {
     experimental: {
