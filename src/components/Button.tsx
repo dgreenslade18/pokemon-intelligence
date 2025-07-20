@@ -64,9 +64,6 @@ export const Button = memo(({
         'group relative inline-block overflow-hidden rounded-lg transition-[scale] duration-300 group-active:scale-[0.975] active:scale-[0.975] hover:scale-105',
         containerClassName
       )}
-      style={{
-        transform: 'translateZ(0)', // Force hardware acceleration
-      }}
     >
       <button 
         className={classes} 
@@ -118,12 +115,7 @@ export const Button = memo(({
       </button>
       
       {/* Pattern overlay effect for ALL buttons */}
-      <div 
-        className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-500 ease-in-out group-hover:opacity-100"
-        style={{
-          zIndex: 10,
-        }}
-      >
+      <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-500 ease-in-out group-hover:opacity-100">
         <div className="pointer-events-none absolute inset-0 h-full w-full">
           <div className="absolute inset-0 w-full">
             <div
