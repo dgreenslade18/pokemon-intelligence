@@ -8,6 +8,7 @@ export type ButtonColor =
   | 'success' 
   | 'warning'
   | 'outline'
+  | 'danger'
   | 'ghost'
 
 export type ButtonSize = 'small' | 'medium' | 'large'
@@ -43,6 +44,7 @@ export const Button = memo(({
     color === 'primary' && 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
     color === 'secondary' && 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white',
     color === 'white' && 'bg-white text-black rounded-full',
+    color === 'danger' && 'bg-red-700 text-white rounded-full',
     color === 'success' && 'bg-green-600 text-white hover:bg-green-700',
     color === 'warning' && 'bg-yellow-600 text-white hover:bg-yellow-700',
     color === 'outline' && 'bg-transparent text-white border border-white/20 hover:bg-white/10',
