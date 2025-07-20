@@ -38,13 +38,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(newTheme)
   }
 
-  // Prevent hydration mismatch
+  // Provide a default context even before mount to prevent build errors
+  const contextValue = {
+    theme,
+    toggleTheme
+  }
+
+  // During SSR/build phase, still provide the context but hide the content
   if (!mounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>
+    return (
+      <ThemeContext.Provider value={contextValue}>
+        <div style={{ visibility: 'hidden' }}>{children}</div>
+      </ThemeContext.Provider>
+    )
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   )
