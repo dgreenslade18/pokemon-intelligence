@@ -9,6 +9,7 @@ import { Button } from "../components/Button";
 import { CrossIcon } from "../components/CrossIcon";
 import { AnimatePresence, LazyMotion, domMax, m } from "motion/react";
 import clsx from "clsx";
+import Link from "next/link";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -120,13 +121,15 @@ export default function HomePage() {
               Card Intelligence
             </h1>
 
-            <Button
-              color="outline"
-              size="medium"
-              onClick={() => (window.location.href = "/auth/signin")}
-            >
-              Sign In
-            </Button>
+            <Link href="/auth/signin">
+              <Button
+                color="outline"
+                size="medium"
+                onClick={() => (window.location.href = "/auth/signin")}
+              >
+                Sign In
+              </Button>
+            </Link>
           </div>
         </header>
 
