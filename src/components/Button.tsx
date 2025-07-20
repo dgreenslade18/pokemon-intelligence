@@ -58,78 +58,6 @@ export const Button = memo(({
   // Check if children is purely text
   const isPureText = typeof children === 'string' || (Array.isArray(children) && children.every(child => typeof child === 'string'))
   
-  // Only apply text animation if content is purely text
-  if (isPureText) {
-    const text = typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : ''
-    const words = text.split(' ')
-
-    return (
-      <div
-        className={clsx(
-          'group relative inline-block overflow-hidden rounded-lg transition-[scale] duration-300 group-active:scale-[0.975] active:scale-[0.975]',
-          containerClassName
-        )}
-      >
-        <button 
-          className={classes} 
-          disabled={disabled}
-          onClick={onClick}
-          type={type}
-          {...other}
-        >
-          <span className="pointer-events-none relative flex items-center gap-2 overflow-hidden">
-            <span>
-              {words.map((word, i) => (
-                <Fragment key={i}>
-                  <span
-                    style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
-                    className="inline-block translate-y-0 transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-[200%]"
-                  >
-                    {word === ' ' ? '\u00A0' : word}
-                  </span>{' '}
-                </Fragment>
-              ))}
-            </span>
-            <span className="absolute inset-0">
-              {words.map((word, i) => (
-                <Fragment key={i}>
-                  <span
-                    style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
-                    className="inline-block -translate-y-[200%] transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-0"
-                  >
-                    {word === ' ' ? '\u00A0' : word}
-                  </span>{' '}
-                </Fragment>
-              ))}
-            </span>
-          </span>
-        </button>
-        
-        {/* Pattern overlay effect */}
-        <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-800 ease-in-out group-hover:opacity-100">
-          <div className="pointer-events-none absolute inset-0 h-full w-full">
-            <div className="absolute inset-0 w-full">
-              <div
-                className={clsx(
-                  'absolute inset-0 -left-[45%] w-[200%]',
-                  'animate-pulse',
-                  color === 'primary' && 'opacity-20',
-                  color === 'secondary' && 'opacity-15',
-                  color === 'danger' && 'opacity-20',
-                  color === 'success' && 'opacity-20',
-                  color === 'warning' && 'opacity-20',
-                  color === 'outline' && 'opacity-15',
-                  color === 'ghost' && 'opacity-10'
-                )}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // For mixed content (text + React elements), render normally without text animation
   return (
     <div
       className={clsx(
@@ -144,10 +72,49 @@ export const Button = memo(({
         type={type}
         {...other}
       >
-        {children}
+        {isPureText ? (
+          // Text animation for pure text content
+          <span className="pointer-events-none relative flex items-center gap-2 overflow-hidden">
+            <span>
+              {(() => {
+                const text = typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : ''
+                const words = text.split(' ')
+                return words.map((word, i) => (
+                  <Fragment key={i}>
+                    <span
+                      style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
+                      className="inline-block translate-y-0 transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-[200%]"
+                    >
+                      {word === ' ' ? '\u00A0' : word}
+                    </span>{' '}
+                  </Fragment>
+                ))
+              })()}
+            </span>
+            <span className="absolute inset-0">
+              {(() => {
+                const text = typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : ''
+                const words = text.split(' ')
+                return words.map((word, i) => (
+                  <Fragment key={i}>
+                    <span
+                      style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
+                      className="inline-block -translate-y-[200%] transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-0"
+                    >
+                      {word === ' ' ? '\u00A0' : word}
+                    </span>{' '}
+                  </Fragment>
+                ))
+              })()}
+            </span>
+          </span>
+        ) : (
+          // Normal rendering for mixed content (icons + text)
+          children
+        )}
       </button>
       
-      {/* Pattern overlay effect */}
+      {/* Pattern overlay effect for all buttons */}
       <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-800 ease-in-out group-hover:opacity-100">
         <div className="pointer-events-none absolute inset-0 h-full w-full">
           <div className="absolute inset-0 w-full">
