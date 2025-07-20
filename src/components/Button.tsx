@@ -1,10 +1,10 @@
-import React, { Fragment, memo } from 'react'
+import React, { Fragment, memo, useRef, useState } from 'react'
 import clsx from 'clsx'
 
 export type ButtonColor = 
   | 'primary' 
   | 'secondary' 
-  | 'danger' 
+  | 'white' 
   | 'success' 
   | 'warning'
   | 'outline'
@@ -37,12 +37,12 @@ export const Button = memo(({
   const buttonSize = size
 
   const classes = clsx(
-    'font-medium relative ease-in-out transition-[color,background-color,border-color,scale] whitespace-nowrap text-center items-center group duration-500 justify-center select-none appearance-none inline-flex gap-3 rounded-lg text-[1rem] px-4.5 leading-[1.1]',
+		"font-body font-medium relative cursor-pointer overflow-hidden ease-in-out transition-[scale,color,background-color] whitespace-nowrap  text-center items-center  group duration-400 justify-center select-none appearance-none group-active:scale-[0.975] active:scale-[0.975] inline-flex gap-2 rounded-full text-[0.938rem] px-5 leading-[0.9] tracking-[0.01em] ",
     className,
     // Color variants
     color === 'primary' && 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
-    color === 'secondary' && 'bg-white/10 text-white hover:bg-white/20',
-    color === 'danger' && 'bg-red-600 text-white hover:bg-red-700',
+    color === 'secondary' && 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white',
+    color === 'white' && 'bg-white text-black rounded-full',
     color === 'success' && 'bg-green-600 text-white hover:bg-green-700',
     color === 'warning' && 'bg-yellow-600 text-white hover:bg-yellow-700',
     color === 'outline' && 'bg-transparent text-white border border-white/20 hover:bg-white/10',
@@ -50,7 +50,7 @@ export const Button = memo(({
     // Size variants
     buttonSize === 'small' && 'py-2 px-3 text-sm',
     buttonSize === 'medium' && 'py-3 px-4',
-    buttonSize === 'large' && 'py-4 px-6 text-lg',
+    buttonSize === 'large' && 'py-4 px-6 text-[15px]',
     // Disabled state
     disabled && 'opacity-50 cursor-not-allowed'
   )
@@ -89,82 +89,59 @@ export const Button = memo(({
   const text = getTextContent(children)
   const words = text.split(' ')
   
+	const [isAnimating, setIsAnimating] = useState(false);
+	const timeoutRef = useRef<any>(null);
+
+
   // Create a key based on the text content to force re-render when content changes
   const contentKey = text.trim()
 
+
+  const handleMouseEnter = (e) => {
+		const svg = e.currentTarget.querySelector("svg");
+		if (svg) {
+			const animations = svg?.querySelectorAll("animate");
+			animations.forEach((anim) => {
+				anim.beginElement();
+			});
+		}
+
+		if (!isAnimating) {
+			setIsAnimating(true);
+
+			if (timeoutRef.current) {
+				clearTimeout(timeoutRef.current);
+			}
+
+			const totalTime = 800 + characters.length * 30;
+			timeoutRef.current = setTimeout(() => {
+				setIsAnimating(false);
+			}, totalTime);
+		}
+	};
+
+  const characters = text.split("");
+
   return (
-    <div
-      className={clsx(
-        'group relative inline-block overflow-hidden rounded-lg transition-[scale] duration-300 group-active:scale-[0.975] active:scale-[0.975] hover:scale-105',
-        containerClassName
-      )}
-    >
-      <button 
-        className={classes} 
-        disabled={disabled}
-        onClick={onClick}
-        type={type}
-        {...other}
-      >
-        {containsSVG ? (
-          // Render mixed content (SVGs + text) normally
-          children
-        ) : (
-          // Apply text animation for pure text content
-          <span className="pointer-events-none relative flex items-center gap-2 overflow-hidden">
-            <span>
-              {words.map((word, i) => (
-                <Fragment key={`${contentKey}-${i}`}>
-                  <span
-                    style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
-                    className="inline-block translate-y-0 transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-[200%]"
-                  >
-                    {word === ' ' ? '\u00A0' : word}
-                  </span>{' '}
-                </Fragment>
-              ))}
-            </span>
-            <span className="absolute inset-0">
-              {words.map((word, i) => (
-                <Fragment key={`${contentKey}-${i}-clone`}>
-                  <span
-                    style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
-                    className="inline-block -translate-y-[200%] transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-0"
-                  >
-                    {word === ' ' ? '\u00A0' : word}
-                  </span>{' '}
-                </Fragment>
-              ))}
-            </span>
-          </span>
-        )}
-      </button>
-      
-      <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-800 ease-in-out group-hover:opacity-100">
-        <div className="pointer-events-none absolute inset-0 h-full w-full">
-          <div className="absolute inset-0 w-full">
-            <div
-              className={clsx(
-                'absolute inset-0 -left-[45%] w-[200%]',
-                'animate-pulse',
-                color === 'primary' && 'opacity-40',
-                color === 'secondary' && 'opacity-35',
-                color === 'danger' && 'opacity-40',
-                color === 'success' && 'opacity-40',
-                color === 'warning' && 'opacity-40',
-                color === 'outline' && 'opacity-35',
-                color === 'ghost' && 'opacity-30'
-              )}
-              style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)',
-                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+		<button onMouseEnter={handleMouseEnter} type="button" className={clsx(classes)} {...other}>
+			
+			<span className="pointer-events-none relative z-5">
+				<span className="inline-block">
+					{characters.map((char, index) => (
+						<span
+							key={index}
+							className="inline-block"
+							style={{
+								animation: isAnimating ? `deleteType 1s ease-in-out forwards ${index * 0.03}s` : "none",
+							}}
+						>
+							{char === " " ? "\u00A0" : char}
+						</span>
+					))}
+				</span>
+			</span>
+		</button>
+	);
 })
 
 Button.displayName = 'Button' 

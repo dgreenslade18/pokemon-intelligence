@@ -24,7 +24,7 @@ export default function Header() {
       <div className="max-w-[1280px] mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center">
-          <h1 className="text-2xl font-semibold dark:text-white text-black">
+          <h1 className="text-xl md:text-2xl font-semibold dark:text-white text-black">
             Card Intelligence
           </h1>
         </Link>

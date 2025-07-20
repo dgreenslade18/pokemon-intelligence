@@ -568,16 +568,29 @@ async function searchPokemonAPI(query: string): Promise<any> {
     console.log(`📦 Pokemon TCG API found ${data.data?.length || 0} cards`)
     
     if (data.data && data.data.length > 0) {
-      return data.data.map((card: any) => ({
-        id: card.id,
-        name: card.name,
-        set: card.set?.name || 'Unknown Set',
-        number: card.number || '',
-        image: card.images?.small || card.images?.large || '',
-        rarity: card.rarity || 'Unknown',
-        display: `${card.name} (${card.set?.name || 'Unknown Set'})`,
-        searchValue: card.number ? `${card.name} ${card.number}` : card.name
-      }))
+      // Map and filter results to exclude ones with unknown sets
+      const mappedResults = data.data.map((card: any) => {
+        // Use enhanced set name extraction
+        const setName = extractSetName(card)
+        
+        // Only include results where we can determine a proper set name
+        if (setName === 'Unknown Set') {
+          return null // Filter out this result
+        }
+        
+        return {
+          id: card.id,
+          name: card.name,
+          set: setName,
+          number: card.number || '',
+          image: card.images?.small || card.images?.large || '',
+          rarity: card.rarity || 'Unknown',
+          display: `${card.name} (${setName})`,
+          searchValue: card.number ? `${card.name} ${card.number}` : card.name
+        }
+      }).filter(Boolean) // Remove null entries
+      
+      return mappedResults.length > 0 ? mappedResults : null
     }
     
     return null

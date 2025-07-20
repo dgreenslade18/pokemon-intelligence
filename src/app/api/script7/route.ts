@@ -803,7 +803,7 @@ async function searchPokemonTcgApi(
         
         if (data.data && Array.isArray(data.data) && data.data.length > 0) {
           const card = data.data[0]
-          console.log(`🎯 First card: ${card.name} (${card.set?.name || 'Unknown Set'})`)
+          console.log(`🎯 First card: ${card.name}${card.set?.name ? ` (${card.set.name})` : ''}`)
           
           // Extract card details
           const cardDetails: CardDetails = {

@@ -696,7 +696,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
           <div className="bento-card rounded-3xl p-6 md:p-10 mb-8 relative z-10 !overflow-visible">
             <h2 className="text-xl md:text-2xl font-regular text-black dark:text-white mb-8 text-center md:text-left">Enter Pokemon Card Name</h2>
             
-            <div className="flex gap-4 mb-6 flex-col md:flex-row">
+            <div className="flex gap-4 mb-6 flex-col md:flex-row items-center">
               <div className="flex-1 relative" ref={autocompleteRef}>
                 <input
                   ref={searchInputRef}
@@ -757,10 +757,16 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                           <div className="text-white font-medium truncate">
                             {suggestion.name}
                           </div>
-                          <div className="text-white/60 text-sm truncate">
-                            {suggestion.set} {suggestion.number && `• ${suggestion.number}`}
-                          </div>
-                          {suggestion.rarity && (
+                          {suggestion.set && suggestion.set !== 'Unknown Set' ? (
+                            <div className="text-white/60 text-sm truncate">
+                              {suggestion.set} {suggestion.number && `• ${suggestion.number}`}
+                            </div>
+                          ) : suggestion.number ? (
+                            <div className="text-white/60 text-sm truncate">
+                              Card #{suggestion.number}
+                            </div>
+                          ) : null}
+                          {suggestion.rarity && suggestion.rarity !== 'Unknown' && (
                             <div className="text-white/40 text-xs truncate">
                               {suggestion.rarity}
                             </div>
@@ -802,7 +808,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    Analyse
+                    Analyse Card
                   </div>
                 )}
               </Button>
@@ -1245,20 +1251,20 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             <div className="grid grid-cols-1 gap-2 text-sm">
                               <div className="flex justify-between">
                                 <span className="dark:text-white/50 text-black/50">Standard:</span>
-                                <span className={`${result.card_details.legalities?.standard === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
-                                  {result.card_details.legalities?.standard || 'Unknown'}
+                                <span className={`${result.card_details.legalities?.standard === 'Legal' ? 'dark:text-green-300 text-green-700' : result.card_details.legalities?.standard ? 'dark:text-red-300 text-red-700' : 'dark:text-white/40 text-black/40'}`}>
+                                  {result.card_details.legalities?.standard || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="dark:text-white/50 text-black/50">Expanded:</span>
-                                <span className={`${result.card_details.legalities?.expanded === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
-                                  {result.card_details.legalities?.expanded || 'Unknown'}
+                                <span className={`${result.card_details.legalities?.expanded === 'Legal' ? 'dark:text-green-300 text-green-700' : result.card_details.legalities?.expanded ? 'dark:text-red-300 text-red-700' : 'dark:text-white/40 text-black/40'}`}>
+                                  {result.card_details.legalities?.expanded || 'N/A'}
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="dark:text-white/50 text-black/50">Unlimited:</span>
-                                <span className={`${result.card_details.legalities?.unlimited === 'Legal' ? 'dark:text-green-300 text-green-700' : 'dark:text-red-300 text-red-700'}`}>
-                                  {result.card_details.legalities?.unlimited || 'Unknown'}
+                                <span className={`${result.card_details.legalities?.unlimited === 'Legal' ? 'dark:text-green-300 text-green-700' : result.card_details.legalities?.unlimited ? 'dark:text-red-300 text-red-700' : 'dark:text-white/40 text-black/40'}`}>
+                                  {result.card_details.legalities?.unlimited || 'N/A'}
                                 </span>
                               </div>
                             </div>
