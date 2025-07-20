@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import { useState } from 'react'
 import Script7Panel from '../components/Script7Panel'
+import Header from '../components/Header'
 
 export default function HomePage() {
   const { data: session, status } = useSession()
@@ -21,7 +22,28 @@ export default function HomePage() {
   }
 
   if (session) {
-    return <Script7Panel onBack={() => {}} hideBackButton={true} />
+    return (
+      <main className="min-h-screen relative overflow-hidden">
+        {/* Background Images - Theme Specific */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat block dark:hidden"
+          style={{ backgroundImage: 'url(/lightBg2.png)' }}
+        />
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat dark:block hidden"
+          style={{ backgroundImage: 'url(/bg.jpg)' }}
+        />
+        
+        {/* Content */}
+        <div className="relative z-10">
+          {/* Header */}
+          <Header />
+          <div className="max-w-[1280px] mx-auto px-4 py-8">
+            <Script7Panel onBack={() => {}} hideBackButton={true} />
+          </div>
+        </div>
+      </main>
+    )
   }
 
   // Landing page for non-authenticated users
