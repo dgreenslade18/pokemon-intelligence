@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { getUserByEmail, createUser, getUserById, updateLastLogin } from './db'
 
-export const authOptions = {
+export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -17,19 +17,21 @@ export const authOptions = {
           return null
         }
 
-        const isSignup = credentials.isSignup === 'true'
+        const email = credentials.email as string
+        const password = credentials.password as string
+        const isSignup = (credentials.isSignup as string) === 'true'
 
         try {
           if (isSignup) {
             // Sign up flow
-            const existingUser = await getUserByEmail(credentials.email)
+            const existingUser = await getUserByEmail(email)
             
             if (existingUser) {
               throw new Error('User already exists')
             }
 
-            const hashedPassword = await bcrypt.hash(credentials.password, 12)
-            const user = await createUser(credentials.email, hashedPassword)
+            const hashedPassword = await bcrypt.hash(password, 12)
+            const user = await createUser(email, hashedPassword)
 
             return {
               id: user.id,
@@ -38,13 +40,13 @@ export const authOptions = {
             }
           } else {
             // Sign in flow
-            const user = await getUserByEmail(credentials.email)
+            const user = await getUserByEmail(email)
 
             if (!user) {
               throw new Error('No user found')
             }
 
-            const isValid = await bcrypt.compare(credentials.password, user.password_hash)
+            const isValid = await bcrypt.compare(password, user.password_hash)
 
             if (!isValid) {
               throw new Error('Invalid password')
@@ -84,14 +86,13 @@ export const authOptions = {
   },
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup'
   },
   session: {
     strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET
-}
+})
 
 declare module 'next-auth' {
   interface User {
@@ -107,13 +108,4 @@ declare module 'next-auth' {
       subscriptionStatus: string
     }
   }
-}
-
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string
-    subscriptionStatus: string
-  }
-}
-
-// Export only authOptions for Next.js 13+ App Router 
+} 

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../lib/auth'
+import { auth } from '../../../lib/auth'
 import { 
   saveToCompList, 
   getCompList, 
@@ -10,7 +9,7 @@ import { capitalizeCardName } from '../../../lib/utils'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -59,89 +58,77 @@ export async function POST(request: NextRequest) {
       recommendedPrice, 
       tcgPrice, 
       ebayAverage, 
-      cardImageUrl, 
+      cardImageUrl,
       setName,
       listId
     } = body
 
-    // Handle saving card to comp list
     if (!cardName) {
       return NextResponse.json({ error: 'Card name is required' }, { status: 400 })
     }
 
-    const savedItem = await saveToCompList(
+    // Capitalize card name
+    const capitalizedCardName = capitalizeCardName(cardName)
+
+    // Save to comp list
+    const compListItem = await saveToCompList(
       session.user.id,
-      capitalizeCardName(cardName),
+      capitalizedCardName,
       cardNumber || '',
       recommendedPrice || '',
-      tcgPrice,
-      ebayAverage,
+      tcgPrice ? Number(tcgPrice) : null,
+      ebayAverage ? Number(ebayAverage) : null,
       cardImageUrl,
       setName,
       listId
     )
 
-    // Check if this was an update to an existing card
-    const existingItems = await getCompList(session.user.id)
-    const isUpdate = existingItems.some(item => 
-      item.card_name === cardName && 
-      item.card_number === (cardNumber || '') &&
-      item.id !== savedItem.id
-    )
-
     return NextResponse.json({
       success: true,
-      item: savedItem,
-      isUpdate,
-      message: isUpdate ? 'Card updated in your comp list!' : 'Card saved to your comp list!'
+      compListItem,
+      message: `${capitalizedCardName} saved to comp list!`
     })
-
   } catch (error) {
     console.error('Error saving to comp list:', error)
     
-    if (error instanceof Error) {
-      if (error.message.includes('already exists')) {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Card already exists in your comp list' 
-        }, { status: 409 })
-      }
+    if (error.message?.includes('already exists')) {
+      return NextResponse.json(
+        { error: 'This card is already in your comp list' },
+        { status: 409 }
+      )
     }
     
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to save card' 
-    }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to save to comp list' },
+      { status: 500 }
+    )
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { itemId } = body
+    const { searchParams } = new URL(request.url)
+    const itemId = searchParams.get('id')
 
     if (!itemId) {
       return NextResponse.json({ error: 'Item ID is required' }, { status: 400 })
     }
 
-    await removeFromCompList(session.user.id, itemId)
+    // Remove from comp list
+    await removeFromCompList(itemId, session.user.id)
 
     return NextResponse.json({
       success: true,
       message: 'Item removed from comp list'
     })
-
   } catch (error) {
     console.error('Error removing from comp list:', error)
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to remove item' 
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to remove from comp list' }, { status: 500 })
   }
 } 

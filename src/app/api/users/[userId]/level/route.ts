@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../../../lib/auth'
+import { auth } from '../../../../../lib/auth'
 import { updateUserLevel } from '../../../../../lib/db'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -29,6 +28,7 @@ export async function PUT(
     }
 
     const { userLevel } = await request.json()
+    const { userId } = await params
 
     if (!userLevel || !['tester', 'super_admin'].includes(userLevel)) {
       return NextResponse.json(
@@ -37,7 +37,7 @@ export async function PUT(
       )
     }
 
-    const updatedUser = await updateUserLevel(params.userId, userLevel)
+    const updatedUser = await updateUserLevel(userId, userLevel)
 
     return NextResponse.json({
       success: true,

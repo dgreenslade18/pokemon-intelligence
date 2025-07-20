@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../../../lib/auth'
+import { auth } from '../../../../../lib/auth'
 import { getUserByEmail, manualPasswordReset, getUserById } from '../../../../../lib/db'
 import { sendManualPasswordResetEmail } from '../../../../../lib/email'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -28,7 +27,7 @@ export async function POST(
       )
     }
 
-    const { userId } = params
+    const { userId } = await params
 
     if (!userId) {
       return NextResponse.json(

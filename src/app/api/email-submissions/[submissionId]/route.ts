@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../../lib/auth'
+import { auth } from '../../../../lib/auth'
 import { updateEmailSubmissionStatus } from '../../../../lib/db'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { submissionId: string } }
+  { params }: { params: Promise<{ submissionId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -29,6 +28,7 @@ export async function PUT(
     }
 
     const { status, assignedUserId } = await request.json()
+    const { submissionId } = await params
 
     if (!status || !['pending', 'approved', 'rejected'].includes(status)) {
       return NextResponse.json(
@@ -38,7 +38,7 @@ export async function PUT(
     }
 
     const updatedSubmission = await updateEmailSubmissionStatus(
-      params.submissionId,
+      submissionId,
       status,
       assignedUserId
     )

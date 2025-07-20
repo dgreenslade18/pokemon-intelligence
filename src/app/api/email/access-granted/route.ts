@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../../lib/auth'
+import { auth } from '../../../../lib/auth'
 import { getUserByEmail, createUser, generateTempPassword } from '../../../../lib/db'
 import { sendAccessGrantedEmail } from '../../../../lib/email'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -65,15 +64,14 @@ export async function POST(request: NextRequest) {
       message: 'User created and access granted email sent',
       user: {
         id: newUser.id,
-        email: newUser.email,
-        user_level: newUser.user_level
+        email: newUser.email
       }
     })
 
   } catch (error) {
     console.error('Error granting access:', error)
     return NextResponse.json(
-      { error: 'Failed to grant access' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

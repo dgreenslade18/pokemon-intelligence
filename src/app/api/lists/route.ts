@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../lib/auth'
+import { auth } from '../../../lib/auth'
 import { 
   createUserList,
   getUserLists,
@@ -12,7 +11,7 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -41,77 +40,72 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { name, description, isDefault } = body
+    const { name, description } = await request.json()
 
-    if (!name) {
+    if (!name || name.trim().length === 0) {
       return NextResponse.json({ error: 'List name is required' }, { status: 400 })
     }
 
-    const newList = await createUserList(session.user.id, name, description, isDefault)
-    
-    return NextResponse.json({ 
-      success: true, 
-      list: newList,
-      message: 'List created successfully' 
+    const list = await createUserList(session.user.id, name.trim(), description?.trim())
+
+    return NextResponse.json({
+      success: true,
+      list,
+      message: 'List created successfully'
     })
   } catch (error) {
     console.error('Error creating list:', error)
-    
-    if (error instanceof Error && error.message.includes('UNIQUE constraint')) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'A list with this name already exists' 
-      }, { status: 409 })
-    }
-    
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to create list' 
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create list' }, { status: 500 })
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { listId, updates } = body
+    const { listId, name, description } = await request.json()
 
     if (!listId) {
       return NextResponse.json({ error: 'List ID is required' }, { status: 400 })
     }
 
-    const updatedList = await updateUserList(listId, session.user.id, updates)
-    
-    return NextResponse.json({ 
-      success: true, 
-      list: updatedList,
-      message: 'List updated successfully' 
+    if (!name || name.trim().length === 0) {
+      return NextResponse.json({ error: 'List name is required' }, { status: 400 })
+    }
+
+    const list = await updateUserList(listId, session.user.id, {
+      name: name.trim(),
+      description: description?.trim()
+    })
+
+    if (!list) {
+      return NextResponse.json({ error: 'List not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      list,
+      message: 'List updated successfully'
     })
   } catch (error) {
     console.error('Error updating list:', error)
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to update list' 
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update list' }, { status: 500 })
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -125,16 +119,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await deleteUserList(listId, session.user.id)
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       success: true,
-      message: 'List deleted successfully' 
+      message: 'List deleted successfully'
     })
   } catch (error) {
     console.error('Error deleting list:', error)
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Failed to delete list' 
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete list' }, { status: 500 })
   }
 } 
