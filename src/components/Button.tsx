@@ -61,7 +61,7 @@ export const Button = memo(({
   return (
     <div
       className={clsx(
-        'group relative inline-block overflow-hidden rounded-lg transition-[scale] duration-300 group-active:scale-[0.975] active:scale-[0.975]',
+        'group relative inline-block overflow-hidden rounded-lg transition-[scale] duration-300 group-active:scale-[0.975] active:scale-[0.975] hover:scale-105',
         containerClassName
       )}
     >
@@ -114,21 +114,21 @@ export const Button = memo(({
         )}
       </button>
       
-      {/* Pattern overlay effect for all buttons */}
-      <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-800 ease-in-out group-hover:opacity-100">
+      {/* Pattern overlay effect for ALL buttons */}
+      <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-500 ease-in-out group-hover:opacity-100">
         <div className="pointer-events-none absolute inset-0 h-full w-full">
           <div className="absolute inset-0 w-full">
             <div
               className={clsx(
                 'absolute inset-0 -left-[45%] w-[200%]',
                 'animate-pulse',
-                color === 'primary' && 'opacity-20',
-                color === 'secondary' && 'opacity-15',
-                color === 'danger' && 'opacity-20',
-                color === 'success' && 'opacity-20',
-                color === 'warning' && 'opacity-20',
-                color === 'outline' && 'opacity-15',
-                color === 'ghost' && 'opacity-10'
+                color === 'primary' && 'opacity-30',
+                color === 'secondary' && 'opacity-25',
+                color === 'danger' && 'opacity-30',
+                color === 'success' && 'opacity-30',
+                color === 'warning' && 'opacity-30',
+                color === 'outline' && 'opacity-25',
+                color === 'ghost' && 'opacity-20'
               )}
             />
           </div>
