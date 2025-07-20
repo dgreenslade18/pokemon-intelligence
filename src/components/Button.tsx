@@ -125,7 +125,7 @@ export const Button = memo(({
   const characters = text.split("");
 
   return (
-		<button onMouseEnter={handleMouseEnter} type="button" className={clsx(classes)} {...other}>
+		<button {...other} onMouseEnter={handleMouseEnter} type={type} className={clsx(classes)}>
 			
 			<span className="pointer-events-none relative z-5">
 				<span className="inline-block">
