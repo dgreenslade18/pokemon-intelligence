@@ -1,4 +1,5 @@
 import { sql } from '@vercel/postgres'
+import bcrypt from 'bcryptjs'
 
 export { sql }
 
@@ -13,6 +14,9 @@ export interface User {
   password_reset_token?: string
   password_reset_expires?: Date
   email_verified?: boolean
+  is_active?: boolean
+  deactivated_at?: Date
+  deactivated_by?: string
 }
 
 export interface UserPreferences {
@@ -295,6 +299,37 @@ export async function initDb() {
       console.log('⚠️  email_sent_at column migration failed (might already exist):', migrationError.message)
     }
 
+    // Add user management columns if they don't exist (migration)
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+      `
+      console.log('✅ is_active column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  is_active column migration failed (might already exist):', migrationError.message)
+    }
+
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMP WITH TIME ZONE;
+      `
+      console.log('✅ deactivated_at column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  deactivated_at column migration failed (might already exist):', migrationError.message)
+    }
+
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS deactivated_by VARCHAR(255);
+      `
+      console.log('✅ deactivated_by column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  deactivated_by column migration failed (might already exist):', migrationError.message)
+    }
+
     // Set super admin for domgreenslade@me.com
     try {
       await sql`
@@ -411,7 +446,7 @@ export async function createUser(email: string, passwordHash: string): Promise<U
 export async function getUserByEmail(email: string): Promise<User | null> {
   const result = await sql`
     SELECT id, email, password_hash, created_at, subscription_status, user_level, last_login, 
-           password_reset_token, password_reset_expires, email_verified
+           password_reset_token, password_reset_expires, email_verified, is_active, deactivated_at, deactivated_by
     FROM users
     WHERE email = ${email}
   `
@@ -422,7 +457,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 export async function getUserById(id: string): Promise<User | null> {
   const result = await sql`
     SELECT id, email, password_hash, created_at, subscription_status, user_level, last_login,
-           password_reset_token, password_reset_expires, email_verified
+           password_reset_token, password_reset_expires, email_verified, is_active, deactivated_at, deactivated_by
     FROM users
     WHERE id = ${id}
   `
@@ -753,7 +788,8 @@ export async function updateEmailSubmissionStatus(
 
 export async function getAllUsers(): Promise<User[]> {
   const result = await sql`
-    SELECT id, email, created_at, subscription_status, user_level, last_login, email_verified
+    SELECT id, email, created_at, subscription_status, user_level, last_login, email_verified, 
+           is_active, deactivated_at, deactivated_by
     FROM users 
     ORDER BY created_at DESC
   `
@@ -827,4 +863,52 @@ export async function generateTempPassword(): Promise<string> {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return result
+}
+
+export async function deactivateUser(userId: string, deactivatedBy: string): Promise<void> {
+  await sql`
+    UPDATE users 
+    SET is_active = false, 
+        deactivated_at = CURRENT_TIMESTAMP,
+        deactivated_by = ${deactivatedBy}
+    WHERE id = ${userId}
+  `
+}
+
+export async function reactivateUser(userId: string): Promise<void> {
+  await sql`
+    UPDATE users 
+    SET is_active = true, 
+        deactivated_at = NULL,
+        deactivated_by = NULL
+    WHERE id = ${userId}
+  `
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  await sql`
+    DELETE FROM users 
+    WHERE id = ${userId}
+  `
+}
+
+export async function updateUserPassword(userId: string, newPasswordHash: string): Promise<void> {
+  await sql`
+    UPDATE users 
+    SET password_hash = ${newPasswordHash}
+    WHERE id = ${userId}
+  `
+}
+
+export async function manualPasswordReset(userId: string): Promise<string> {
+  const tempPassword = await generateTempPassword()
+  const hashedPassword = await bcrypt.hash(tempPassword, 12)
+  
+  await sql`
+    UPDATE users 
+    SET password_hash = ${hashedPassword}
+    WHERE id = ${userId}
+  `
+  
+  return tempPassword
 } 

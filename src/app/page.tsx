@@ -78,7 +78,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
       {/* Header */}
       <header className="flex justify-between items-center p-6">
-        <div className="text-white text-2xl font-bold">Pokemon Intelligence</div>
+        <div className="text-white text-2xl font-bold">Card Intelligence</div>
         <a 
           href="/auth/signin" 
           className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg transition-colors"
@@ -96,17 +96,17 @@ export default function HomePage() {
           </h1>
           
           <p className="text-xl md:text-2xl text-gray-200 mb-8">
-            Join the exclusive beta for Pokemon Intelligence
+            Join the exclusive beta for Card Intelligence
           </p>
           
           <p className="text-lg text-gray-300 mb-12 max-w-xl mx-auto">
-            Get early access to advanced Pokemon card price analysis, market trends, and trading insights. 
-            Be among the first to experience the future of Pokemon card trading.
+            Get early access to advanced Pokemon UK card price analysis, market trends, and trading insights. 
+            Be among the first to experience the future of UK Pokemon card trading.
           </p>
 
           {/* Email Collection Form */}
           {!submitted ? (
-            <form onSubmit={handleEmailSubmit} className="max-w-md mx-auto">
+            <form onSubmit={handleEmailSubmit} className="max-w-lg mx-auto">
               <div className="flex flex-col sm:flex-row gap-4">
                 <input
                   type="email"
@@ -137,7 +137,7 @@ export default function HomePage() {
           )}
 
           {/* Features */}
-          <div className="mt-16 grid md:grid-cols-3 gap-8">
+          <div className="mt-16 grid md:grid-cols-3 gap-8 pb-12">
             <div className="text-center">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📊</span>

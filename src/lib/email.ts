@@ -144,4 +144,45 @@ export async function sendPasswordResetEmail(email: string, resetToken: string) 
   `
 
   return sendEmail({ to: email, subject, html })
+}
+
+export async function sendManualPasswordResetEmail(email: string, newPassword: string) {
+  const subject = 'Password Reset - Card Intelligence'
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #6366f1; margin: 0;">Card Intelligence</h1>
+        <p style="color: #6b7280; margin: 10px 0 0 0;">Made for sellers. Updated for today.</p>
+      </div>
+      
+      <div style="background: #fef3c7; padding: 30px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f59e0b;">
+        <h2 style="color: #111827; margin: 0 0 20px 0;">Password Reset by Administrator</h2>
+        <p style="color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
+          An administrator has reset your password for your Card Intelligence account. Here are your new login credentials:
+        </p>
+        
+        <div style="background: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0;">
+          <h3 style="color: #111827; margin: 0 0 15px 0;">New Password:</h3>
+          <p style="color: #6366f1; margin: 0; font-family: monospace; font-size: 16px; background-color: #f3f4f6; padding: 10px; border-radius: 3px;">${newPassword}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="http://localhost:3000/auth/signin" 
+             style="background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
+            Sign In Now
+          </a>
+        </div>
+        
+        <p style="color: #374151; line-height: 1.6; margin: 20px 0 0 0;">
+          <strong>Important:</strong> Please change your password after signing in for security purposes.
+        </p>
+      </div>
+      
+      <div style="text-align: center; color: #6b7280; font-size: 14px;">
+        <p>This is an automated message. Please do not reply to this email.</p>
+      </div>
+    </div>
+  `
+
+  return sendEmail({ to: email, subject, html })
 } 

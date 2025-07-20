@@ -11,6 +11,9 @@ interface User {
   subscription_status: string
   user_level: 'tester' | 'super_admin'
   last_login?: string
+  is_active?: boolean
+  deactivated_at?: string
+  deactivated_by?: string
 }
 
 interface EmailSubmission {
@@ -146,6 +149,88 @@ export default function UsersPage() {
     }
   }
 
+  const deactivateUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to deactivate this user?')) return
+    
+    try {
+      const response = await fetch(`/api/users/${userId}/deactivate`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        await loadData()
+        alert('User deactivated successfully')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deactivating user:', error)
+      alert('Failed to deactivate user')
+    }
+  }
+
+  const reactivateUser = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}/reactivate`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        await loadData()
+        alert('User reactivated successfully')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error reactivating user:', error)
+      alert('Failed to reactivate user')
+    }
+  }
+
+  const deleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone.')) return
+    
+    try {
+      const response = await fetch(`/api/users/${userId}/delete`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        await loadData()
+        alert('User deleted successfully')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      alert('Failed to delete user')
+    }
+  }
+
+  const resetPassword = async (userId: string) => {
+    if (!confirm('Are you sure you want to reset this user\'s password? A new password will be generated and sent to their email.')) return
+    
+    try {
+      const response = await fetch(`/api/users/${userId}/password-reset`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        alert(`Password reset successfully. New password: ${result.newPassword}`)
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error)
+      alert('Failed to reset password')
+    }
+  }
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
@@ -221,13 +306,23 @@ export default function UsersPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                          user.subscription_status === 'pro' 
-                            ? 'bg-green-600 text-white' 
-                            : 'bg-yellow-600 text-white'
-                        }`}>
-                          {user.subscription_status}
-                        </span>
+                        <div className="space-y-1">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            user.subscription_status === 'pro' 
+                              ? 'bg-green-600 text-white' 
+                              : 'bg-yellow-600 text-white'
+                          }`}>
+                            {user.subscription_status}
+                          </span>
+                          {user.is_active === false && (
+                            <div className="text-xs text-red-400">
+                              Deactivated
+                              {user.deactivated_at && (
+                                <div>on {new Date(user.deactivated_at).toLocaleDateString('en-GB')}</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-sm">
                         {new Date(user.created_at).toLocaleDateString('en-GB')}
@@ -246,14 +341,52 @@ export default function UsersPage() {
                         }
                       </td>
                       <td className="py-3 px-4">
-                        <select
-                          value={user.user_level}
-                          onChange={(e) => updateUserLevel(user.id, e.target.value as 'tester' | 'super_admin')}
-                          className="bg-white/20 text-white border border-white/30 rounded px-2 py-1 text-sm"
-                        >
-                          <option value="tester">Tester</option>
-                          <option value="super_admin">Super Admin</option>
-                        </select>
+                        <div className="flex flex-col space-y-2">
+                          <select
+                            value={user.user_level}
+                            onChange={(e) => updateUserLevel(user.id, e.target.value as 'tester' | 'super_admin')}
+                            className="bg-white/20 text-white border border-white/30 rounded px-2 py-1 text-sm"
+                          >
+                            <option value="tester">Tester</option>
+                            <option value="super_admin">Super Admin</option>
+                          </select>
+                          
+                          <div className="flex space-x-1">
+                            {user.is_active === false ? (
+                              <button
+                                onClick={() => reactivateUser(user.id)}
+                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                                title="Reactivate user"
+                              >
+                                Reactivate
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => deactivateUser(user.id)}
+                                className="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs"
+                                title="Deactivate user"
+                              >
+                                Deactivate
+                              </button>
+                            )}
+                            
+                            <button
+                              onClick={() => resetPassword(user.id)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                              title="Reset password"
+                            >
+                              Reset PW
+                            </button>
+                            
+                            <button
+                              onClick={() => deleteUser(user.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                              title="Delete user permanently"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ))}
