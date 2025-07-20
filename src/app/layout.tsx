@@ -5,8 +5,8 @@ import { ThemeProvider } from '../components/ThemeProvider'
 import { layGrotesk, layGroteskHeading } from './fonts'
 
 export const metadata = {
-  title: 'Pokemon Card Intelligence',
-  description: 'Advanced market analysis tools for profitable Pokemon card trading opportunities by Dom Greenslade',
+  title: 'Card Intelligence | UK Pokémon Card Prices, Trends & eBay Sold Listings',
+  description: 'Card Intelligence helps UK collectors and sellers track Pokémon card values. Explore real-time price trends, eBay sold data, and in-depth card analysis to buy and sell smarter.',
 }
 
 export default function RootLayout({
