@@ -101,12 +101,12 @@ export default function SignIn() {
 
           <div className="mt-6 text-center">
             <p className="text-white/70">
-              Don't have an account?{' '}
+              Need access?{' '}
               <Link
-                href="/auth/signup"
+                href="/"
                 className="text-blue-300 hover:text-blue-200 font-semibold transition-colors"
               >
-                Sign up here
+                Request an invitation
               </Link>
             </p>
           </div>

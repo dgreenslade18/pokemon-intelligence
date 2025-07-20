@@ -8,6 +8,7 @@ export interface User {
   password_hash: string
   created_at: Date
   subscription_status: 'testing' | 'pro' | 'enterprise'
+  user_level: 'tester' | 'super_admin'
 }
 
 export interface UserPreferences {
@@ -53,6 +54,15 @@ export interface UserList {
   is_default: boolean
 }
 
+export interface EmailSubmission {
+  id: string
+  email: string
+  created_at: Date
+  status: 'pending' | 'approved' | 'rejected'
+  assigned_user_id?: string
+  notes?: string
+}
+
 // Initialize database tables
 export async function initDb() {
   try {
@@ -63,7 +73,20 @@ export async function initDb() {
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        subscription_status VARCHAR(50) DEFAULT 'testing' CHECK (subscription_status IN ('testing', 'pro', 'enterprise'))
+        subscription_status VARCHAR(50) DEFAULT 'testing' CHECK (subscription_status IN ('testing', 'pro', 'enterprise')),
+        user_level VARCHAR(20) DEFAULT 'tester' CHECK (user_level IN ('tester', 'super_admin'))
+      );
+    `
+
+    // Create email_submissions table
+    await sql`
+      CREATE TABLE IF NOT EXISTS email_submissions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+        assigned_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        notes TEXT
       );
     `
 
@@ -200,6 +223,29 @@ export async function initDb() {
       console.log('✅ list_id column migration completed')
     } catch (migrationError) {
       console.log('⚠️  list_id column migration failed (might already exist):', migrationError.message)
+    }
+
+    // Add user_level column if it doesn't exist (migration)
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS user_level VARCHAR(20) DEFAULT 'tester' CHECK (user_level IN ('tester', 'super_admin'));
+      `
+      console.log('✅ user_level column migration completed')
+    } catch (migrationError) {
+      console.log('⚠️  user_level column migration failed (might already exist):', migrationError.message)
+    }
+
+    // Set super admin for domgreenslade@me.com
+    try {
+      await sql`
+        UPDATE users 
+        SET user_level = 'super_admin' 
+        WHERE email = 'domgreenslade@me.com';
+      `
+      console.log('✅ Super admin assignment completed')
+    } catch (migrationError) {
+      console.log('⚠️  Super admin assignment failed:', migrationError.message)
     }
 
     // Create default lists for existing users and migrate existing cards
@@ -607,4 +653,58 @@ export async function removeFromCompList(userId: string, itemId: string): Promis
     DELETE FROM comp_list 
     WHERE id = ${itemId} AND user_id = ${userId}
   `
+}
+
+// Email submission functions
+export async function submitEmail(email: string): Promise<EmailSubmission> {
+  const result = await sql`
+    INSERT INTO email_submissions (email)
+    VALUES (${email})
+    RETURNING *
+  `
+  return result.rows[0] as EmailSubmission
+}
+
+export async function getEmailSubmissions(): Promise<EmailSubmission[]> {
+  const result = await sql`
+    SELECT * FROM email_submissions 
+    ORDER BY created_at DESC
+  `
+  return result.rows as EmailSubmission[]
+}
+
+export async function updateEmailSubmissionStatus(
+  submissionId: string, 
+  status: 'pending' | 'approved' | 'rejected',
+  assignedUserId?: string,
+  notes?: string
+): Promise<EmailSubmission> {
+  const result = await sql`
+    UPDATE email_submissions 
+    SET status = ${status}, 
+        assigned_user_id = ${assignedUserId || null},
+        notes = ${notes || null}
+    WHERE id = ${submissionId}
+    RETURNING *
+  `
+  return result.rows[0] as EmailSubmission
+}
+
+export async function getAllUsers(): Promise<User[]> {
+  const result = await sql`
+    SELECT id, email, created_at, subscription_status, user_level 
+    FROM users 
+    ORDER BY created_at DESC
+  `
+  return result.rows as User[]
+}
+
+export async function updateUserLevel(userId: string, userLevel: 'tester' | 'super_admin'): Promise<User> {
+  const result = await sql`
+    UPDATE users 
+    SET user_level = ${userLevel}
+    WHERE id = ${userId}
+    RETURNING *
+  `
+  return result.rows[0] as User
 } 
