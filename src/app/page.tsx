@@ -199,7 +199,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
       >
         <span className="text-white font-semibold text-lg">{question}</span>
         <svg
-          className={`w-6 h-6 text-white transition-transform duration-200 ${
+          className={`w-6 h-6 text-white transition-transform duration-300 ease-in-out ${
             isOpen ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -210,11 +210,15 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
         </svg>
       </button>
       
-      {isOpen && (
-        <div className="px-6 pb-4">
+      <div 
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="px-6 py-4 text-left">
           <p className="text-gray-300 leading-relaxed">{answer}</p>
         </div>
-      )}
+      </div>
     </div>
   )
 }
