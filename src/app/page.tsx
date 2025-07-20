@@ -143,7 +143,7 @@ export default function HomePage() {
                 Join the exclusive beta for Card Intelligence
               </p>
 
-              <p className="text-black/60 dark:text-white/60 block text-l md:text-xl font-regular md:mx-0 mx-auto mb-12">
+              <p className="text-black/60 dark:text-white/60 block text-md md:text-l font-regular md:mx-0 mx-auto mb-12">
                 Get early access to advanced Pokemon UK card price analysis,
                 market trends, and trading insights. Be among the first to
                 experience the future of UK Pokemon card trading.
