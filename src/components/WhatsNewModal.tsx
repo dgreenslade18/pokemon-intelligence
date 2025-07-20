@@ -18,6 +18,14 @@ interface WhatsNewModalProps {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'v2.4.1',
+    date: '2025-01-27',
+    title: 'UI Updates',
+    description: 'Enhanced FAQ section with clean, minimal design featuring improved animations and better mobile responsiveness. Updated button components with sophisticated hover effects.',
+    type: 'improvement',
+    icon: '🎨'
+  },
+  {
     version: 'v2.4.0',
     date: '2025-07-20',
     title: 'Email System Integration',
