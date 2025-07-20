@@ -55,9 +55,22 @@ export const Button = memo(({
     disabled && 'opacity-50 cursor-not-allowed'
   )
 
-  // Check if children is purely text
-  const isPureText = typeof children === 'string' || (Array.isArray(children) && children.every(child => typeof child === 'string'))
-  
+  // Extract text content from children
+  const getTextContent = (children: React.ReactNode): string => {
+    if (typeof children === 'string') return children
+    if (Array.isArray(children)) {
+      return children.map(child => getTextContent(child)).join('')
+    }
+    if (children && typeof children === 'object' && 'props' in children) {
+      const childProps = children as { props: { children?: React.ReactNode } }
+      return getTextContent(childProps.props.children)
+    }
+    return ''
+  }
+
+  const text = getTextContent(children)
+  const words = text.split(' ')
+
   return (
     <div
       className={clsx(
@@ -72,46 +85,32 @@ export const Button = memo(({
         type={type}
         {...other}
       >
-        {isPureText ? (
-          // Text animation for pure text content
-          <span className="pointer-events-none relative flex items-center gap-2 overflow-hidden">
-            <span>
-              {(() => {
-                const text = typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : ''
-                const words = text.split(' ')
-                return words.map((word, i) => (
-                  <Fragment key={i}>
-                    <span
-                      style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
-                      className="inline-block translate-y-0 transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-[200%]"
-                    >
-                      {word === ' ' ? '\u00A0' : word}
-                    </span>{' '}
-                  </Fragment>
-                ))
-              })()}
-            </span>
-            <span className="absolute inset-0">
-              {(() => {
-                const text = typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : ''
-                const words = text.split(' ')
-                return words.map((word, i) => (
-                  <Fragment key={i}>
-                    <span
-                      style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
-                      className="inline-block -translate-y-[200%] transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-0"
-                    >
-                      {word === ' ' ? '\u00A0' : word}
-                    </span>{' '}
-                  </Fragment>
-                ))
-              })()}
-            </span>
+        <span className="pointer-events-none relative flex items-center gap-2 overflow-hidden">
+          <span>
+            {words.map((word, i) => (
+              <Fragment key={i}>
+                <span
+                  style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
+                  className="inline-block translate-y-0 transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-[200%]"
+                >
+                  {word === ' ' ? '\u00A0' : word}
+                </span>{' '}
+              </Fragment>
+            ))}
           </span>
-        ) : (
-          // Normal rendering for mixed content (icons + text) - no text animation
-          children
-        )}
+          <span className="absolute inset-0">
+            {words.map((word, i) => (
+              <Fragment key={i}>
+                <span
+                  style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
+                  className="inline-block -translate-y-[200%] transition-transform [transition-delay:var(--delay)] duration-[400ms] ease-[cubic-bezier(.94,-0.11,.35,.93)] group-hover:translate-y-0"
+                >
+                  {word === ' ' ? '\u00A0' : word}
+                </span>{' '}
+              </Fragment>
+            ))}
+          </span>
+        </span>
       </button>
       
       <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-0 transition-[opacity] duration-800 ease-in-out group-hover:opacity-100">
