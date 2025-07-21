@@ -186,6 +186,11 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   const searchInputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<HTMLDivElement>(null)
 
+  // New state for multiple search results
+  const [multipleSearchResults, setMultipleSearchResults] = useState<any[]>([])
+  const [showMultipleResults, setShowMultipleResults] = useState(false)
+  const [selectedCardForAnalysis, setSelectedCardForAnalysis] = useState<any>(null)
+
   // Function to format price with trailing zeros
   const formatPrice = (price: number | string): string => {
     const num = typeof price === 'string' ? parseFloat(price) : price
@@ -314,6 +319,107 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     }
   }
 
+  const handleMultipleResultsFound = (results: any[]) => {
+    setMultipleSearchResults(results)
+    setShowMultipleResults(true)
+    setLoading(false)
+    setShowProgressOverlay(false)
+  }
+
+  const handleCardSelection = (selectedCard: any) => {
+    setSelectedCardForAnalysis(selectedCard)
+    setShowMultipleResults(false)
+    setMultipleSearchResults([])
+    // Proceed with analysis using the selected card
+    performAnalysis(selectedCard.searchValue || selectedCard.name)
+  }
+
+  const performAnalysis = async (cardName: string, refresh: boolean = false) => {
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    setProgress(null)
+    setProgressStages(new Set())
+    setShowProgressOverlay(true)
+
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setError('Request timed out. Please try again.')
+        setLoading(false)
+        setShowProgressOverlay(false)
+      }
+    }, 30000) // 30 second timeout
+
+    try {
+      // Use EventSource for real-time progress updates
+      const response = await fetch('/api/script7', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          searchTerm: cardName.trim(),
+          streamProgress: true,
+          refresh: refresh
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`)
+      }
+
+      if (!response.body) {
+        throw new Error('No response body')
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) break
+        
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.type === 'progress') {
+                setProgress(data)
+                setProgressStages(prev => new Set([...prev, data.stage]))
+              } else if (data.type === 'complete') {
+                setResult(data.data)
+                setLoading(false)
+                setShowProgressOverlay(false)
+                clearTimeout(timeoutId)
+                return
+              } else if (data.type === 'error') {
+                setError(data.message)
+                setLoading(false)
+                setShowProgressOverlay(false)
+                clearTimeout(timeoutId)
+                return
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Analysis error:', error)
+      setError(error instanceof Error ? error.message : 'An error occurred during analysis')
+      setLoading(false)
+      setShowProgressOverlay(false)
+      clearTimeout(timeoutId)
+    }
+  }
+
   const getProgressIcon = (stage: string) => {
     switch (stage) {
       case 'starting':
@@ -381,107 +487,27 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     }, 30000) // 30 second timeout
 
     try {
-      // Use EventSource for real-time progress updates
-      const response = await fetch('/api/script7', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          searchTerm: searchTerm.trim(),
-          streamProgress: true 
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`)
-      }
-
-      if (!response.body) {
-        throw new Error('No response body')
-      }
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          
-          if (done) break
-
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n')
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.substring(6))
-                
-                if (data.type === 'progress') {
-                  console.log('Progress update:', data.stage, data.message)
-                  setProgressStages(prev => new Set(Array.from(prev).concat(data.stage)))
-                  setProgress({
-                    stage: data.stage,
-                    message: data.message,
-                    timestamp: data.timestamp
-                  })
-                } else if (data.type === 'complete') {
-                  console.log('Setting result data:', data.data)
-                  setResult(data.data)
-                  setShowProgressOverlay(false)
-                } else if (data.type === 'error') {
-                  setError(data.message)
-                  setShowProgressOverlay(false)
-                }
-              } catch (e) {
-                // Ignore parsing errors for SSE data
-                console.warn('Failed to parse SSE data:', line)
-              }
-            }
-          }
+      // First, check if we have multiple search results
+      const searchResponse = await fetch(`/api/autocomplete?q=${encodeURIComponent(searchTerm.trim())}`)
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json()
+        
+        // If we have multiple results (more than 1), show the "Did You Mean" interface
+        if (searchData.suggestions && searchData.suggestions.length > 1) {
+          clearTimeout(timeoutId)
+          handleMultipleResultsFound(searchData.suggestions)
+          return
         }
-      } finally {
-        reader.releaseLock()
       }
 
-    } catch (err) {
-      console.error('Streaming error, falling back to synchronous request:', err)
-      
-      // Clear the timeout since we're switching to fallback
-      clearTimeout(timeoutId)
-      
-      // Fallback to synchronous request
-      try {
-        const response = await fetch('/api/script7', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ searchTerm: searchTerm.trim() }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}`)
-        }
-
-        const data = await response.json()
-
-        if (data.success) {
-          console.log('Setting result data:', data.data)
-          setResult(data.data)
-          setShowProgressOverlay(false)
-        } else {
-          setError(data.message || 'Analysis failed')
-          setShowProgressOverlay(false)
-        }
-      } catch (fallbackErr) {
-        setError(`Network error: ${fallbackErr instanceof Error ? fallbackErr.message : 'Unknown error'}`)
-        setShowProgressOverlay(false)
-      }
-    } finally {
-      clearTimeout(timeoutId)
+      // If no multiple results or only one result, proceed with normal analysis
+      performAnalysis(searchTerm.trim())
+    } catch (error) {
+      console.error('Analysis error:', error)
+      setError(error instanceof Error ? error.message : 'An error occurred during analysis')
       setLoading(false)
+      setShowProgressOverlay(false)
+      clearTimeout(timeoutId)
     }
   }
 
@@ -587,6 +613,39 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     saveCardToList(listId)
   }
 
+  const handleRefresh = async () => {
+    if (!searchTerm.trim()) {
+      setError('Please enter a Pokemon card name')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    setProgress(null)
+    setProgressStages(new Set())
+    setShowProgressOverlay(true)
+
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setError('Request timed out. Please try again.')
+        setLoading(false)
+        setShowProgressOverlay(false)
+      }
+    }, 30000) // 30 second timeout
+
+    try {
+      // Force fresh analysis bypassing cache
+      performAnalysis(searchTerm.trim(), true)
+    } catch (error) {
+      console.error('Refresh analysis error:', error)
+      setError(error instanceof Error ? error.message : 'An error occurred during refresh analysis')
+      setLoading(false)
+      setShowProgressOverlay(false)
+      clearTimeout(timeoutId)
+    }
+  }
 
 
   return (
@@ -736,7 +795,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       <div
                         key={suggestion.id || index}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className={`flex items-center p-3 md:Fbento-card rounded-3xl p-10p-4 cursor-pointer transition-colors duration-200 border-b border-white/10 last:border-b-0 ${
+                        className={`flex items-center p-3 md:p-4 cursor-pointer transition-colors duration-200 border-b border-white/10 last:border-b-0 ${
                           selectedSuggestionIndex === index 
                             ? 'bg-white/20 border-blue-400/30' 
                             : 'hover:bg-white/10'
@@ -789,33 +848,143 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                 )}
               </div>
               
-              <Button
-                onClick={handleAnalyze}
-                disabled={loading || !searchTerm.trim()}
-                color="primary"
-                size="large"
-                className="px-4 md:px-8 py-4"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center md:justify-start">
-                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Analysing...
-                  </div>
-                ) : (
+              <div className="flex gap-3 flex-col md:flex-row w-full md:w-auto">
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={loading || !searchTerm.trim()}
+                  color="primary"
+                  size="large"
+                  className="px-4 md:px-8 py-4"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center md:justify-start">
+                      <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Analysing...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center md:justify-start">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Analyse Card
+                    </div>
+                  )}
+                </Button>
+                
+                <Button
+                  onClick={handleRefresh}
+                  disabled={loading || !searchTerm.trim()}
+                  color="secondary"
+                  size="large"
+                  className="px-4 md:px-8 py-4"
+                >
                   <div className="flex items-center justify-center md:justify-start">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Analyse Card
+                    Force Refresh
                   </div>
-                )}
-              </Button>
+                </Button>
+              </div>
             </div>
 
 
           </div>
+
+          {/* Multiple Results - "Did You Mean" Interface */}
+          {showMultipleResults && multipleSearchResults.length > 0 && (
+            <div className="bento-card rounded-3xl p-6 md:p-10 mb-8">
+              <div className="text-center mb-8">
+                <h2 className="text-xl md:text-2xl font-semibold text-black dark:text-white mb-4">
+                  🎯 Did You Mean?
+                </h2>
+                <p className="text-black/60 dark:text-white/60">
+                  Multiple cards found for "{searchTerm}". Please select the one you want to analyze:
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {multipleSearchResults.map((card, index) => (
+                  <div
+                    key={card.id || index}
+                    onClick={() => handleCardSelection(card)}
+                    className="group cursor-pointer bg-black/10 dark:bg-white/10 rounded-2xl p-4 md:p-6 border border-white/20 hover:border-blue-400/50 hover:bg-white/15 dark:hover:bg-black/15 transition-all duration-300 transform hover:scale-105"
+                  >
+                    {/* Card Image */}
+                    {card.image && (
+                      <div className="mb-4 flex justify-center">
+                        <img 
+                          src={card.image} 
+                          alt={card.name}
+                          className="w-20 h-28 md:w-24 md:h-32 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-shadow"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Card Info */}
+                    <div className="text-center">
+                      <h3 className="font-semibold text-black dark:text-white text-sm md:text-base mb-2 group-hover:text-blue-400 transition-colors">
+                        {card.name}
+                      </h3>
+                      
+                      {/* Set Information - Made more prominent */}
+                      {card.set && card.set !== 'Unknown Set' ? (
+                        <div className="mb-2">
+                          <p className="text-black/80 dark:text-white/80 text-xs md:text-sm font-medium bg-black/10 dark:bg-white/10 px-2 py-1 rounded-lg inline-block">
+                            {card.set}
+                          </p>
+                        </div>
+                      ) : card.set?.id ? (
+                        <div className="mb-2">
+                          <p className="text-black/70 dark:text-white/70 text-xs md:text-sm bg-black/10 dark:bg-white/10 px-2 py-1 rounded-lg inline-block">
+                            Set: {card.set.id}
+                          </p>
+                        </div>
+                      ) : null}
+                      
+                      {/* Card Number */}
+                      {card.number && (
+                        <p className="text-black/50 dark:text-white/50 text-xs mb-1">
+                          #{card.number}
+                        </p>
+                      )}
+                      
+                      {/* Rarity */}
+                      {card.rarity && card.rarity !== 'Unknown' && (
+                        <p className="text-black/40 dark:text-white/40 text-xs">
+                          {card.rarity}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Selection Indicator */}
+                    <div className="mt-4 flex justify-center">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Back Button */}
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => {
+                    setShowMultipleResults(false)
+                    setMultipleSearchResults([])
+                  }}
+                  className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors font-medium"
+                >
+                  ← Back to search
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Error Display */}
           {error && (
@@ -982,7 +1151,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                             className="inline-flex items-center text-purple-400 hover:text-purple-300 text-sm transition-colors duration-200"
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                             View Listing
                           </a>
@@ -1417,7 +1586,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                               className="inline-flex items-center dark:text-blue-400 text-blue-700 hover:text-blue-300 text-sm mt-3 transition-colors duration-200"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
                               View on CardMarket
                             </a>

@@ -231,6 +231,27 @@ export default function UsersPage() {
     }
   }
 
+  const deleteEmailSubmission = async (submissionId: string) => {
+    if (!confirm('Are you sure you want to delete this email submission? This action cannot be undone.')) return
+    
+    try {
+      const response = await fetch(`/api/email-submissions/${submissionId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        await loadData()
+        alert('Email submission deleted successfully')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting email submission:', error)
+      alert('Failed to delete email submission')
+    }
+  }
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
@@ -460,6 +481,13 @@ export default function UsersPage() {
                               Grant Access
                             </button>
                           )}
+                          <button
+                            onClick={() => deleteEmailSubmission(submission.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                            title="Delete email submission"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>

@@ -911,4 +911,11 @@ export async function manualPasswordReset(userId: string): Promise<string> {
   `
   
   return tempPassword
+}
+
+export async function deleteEmailSubmission(submissionId: string): Promise<void> {
+  await sql`
+    DELETE FROM email_submissions 
+    WHERE id = ${submissionId}
+  `
 } 

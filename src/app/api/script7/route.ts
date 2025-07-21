@@ -153,7 +153,7 @@ function setCachedResult(cardName: string, data: AnalysisResult): void {
 
 export async function POST(request: NextRequest) {
   try {
-    const { searchTerm, streamProgress = false } = await request.json()
+    const { searchTerm, streamProgress = false, refresh = false } = await request.json()
     
     if (!searchTerm) {
       return NextResponse.json({ error: 'Search term is required' }, { status: 400 })
@@ -168,41 +168,55 @@ export async function POST(request: NextRequest) {
 
     const userPreferences = await getUserPreferences(session.user.id)
 
-    // Check cache first
-    const cachedResult = getCachedResult(searchTerm)
-    if (cachedResult) {
-      return NextResponse.json({
-        success: true,
-        data: cachedResult,
-        message: `Analysis completed for ${searchTerm} (cached)`,
-        timestamp: new Date().toISOString()
-      })
+    // Check cache first (unless refresh is requested)
+    if (!refresh) {
+      const cachedResult = getCachedResult(searchTerm)
+      if (cachedResult) {
+        return NextResponse.json({
+          success: true,
+          data: cachedResult,
+          message: `Analysis completed for ${searchTerm} (cached)`,
+          timestamp: new Date().toISOString()
+        })
+      }
+    } else {
+      // Clear cache for this search term if refresh is requested
+      const key = searchTerm.toLowerCase().trim()
+      cache.delete(key)
+      console.log(`🗑️  Cache cleared for: ${searchTerm}`)
     }
 
     if (streamProgress) {
-      // Check cache first for streaming too
-      const cachedResult = getCachedResult(searchTerm)
-      if (cachedResult) {
-        const stream = new ReadableStream({
-          start(controller) {
-            const encoder = new TextEncoder()
-            
-            const completeData = {
-              type: 'complete',
-              data: cachedResult
+      // Check cache first for streaming too (unless refresh is requested)
+      if (!refresh) {
+        const cachedResult = getCachedResult(searchTerm)
+        if (cachedResult) {
+          const stream = new ReadableStream({
+            start(controller) {
+              const encoder = new TextEncoder()
+              
+              const completeData = {
+                type: 'complete',
+                data: cachedResult
+              }
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(completeData)}\n\n`))
+              controller.close()
             }
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(completeData)}\n\n`))
-            controller.close()
-          }
-        })
-        
-        return new Response(stream, {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-          }
-        })
+          })
+          
+          return new Response(stream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            }
+          })
+        }
+      } else {
+        // Clear cache for this search term if refresh is requested
+        const key = searchTerm.toLowerCase().trim()
+        cache.delete(key)
+        console.log(`🗑️  Cache cleared for streaming: ${searchTerm}`)
       }
 
       // Streaming response
@@ -403,8 +417,12 @@ async function searchEbaySoldItems(
   } catch (error) {
     console.error('eBay search failed:', error)
     // If RapidAPI fails, try web scraping as fallback
-    console.log('⚠️  RapidAPI failed, falling back to web scraping')
-    return await searchEbayWithScraping(cardName)
+    const rapidApiKey = process.env.RAPID_API_KEY
+    if (rapidApiKey) {
+      console.log('⚠️  RapidAPI failed, falling back to web scraping')
+      return await searchEbayWithApi(cardName, '', rapidApiKey)
+    }
+    return []
   }
 }
 
@@ -432,9 +450,12 @@ function simplifyCardNameForEbay(cardName: string): string[] {
     const pokemonName = cardName.replace(/\s+\d+$/, '').trim()
     const cardNumber = cardName.match(/\d+$/)?.[0] || ''
     
-    // Optimized search strategy - try most likely variations first
-    variations.push(`${cardName} pokemon card`) // Most common format
-    variations.push(`${pokemonName} ${cardNumber} stellar crown`) // Current popular set
+    // Try variations that match actual eBay listing formats
+    variations.push(`${pokemonName} ${cardNumber}/191`) // Surging Sparks set format
+    variations.push(`${pokemonName} ${cardNumber}/165`) // 151 set format
+    variations.push(`${pokemonName} ${cardNumber} pokemon card`) // Generic format
+    variations.push(`${pokemonName} ${cardNumber} scarlet violet`) // Set-specific
+    variations.push(`${pokemonName} ${cardNumber} 151`) // Set number
     variations.push(cardName.trim()) // Exact match
     variations.push(pokemonName) // Fallback
   } else {
@@ -482,14 +503,20 @@ async function searchEbayWithApi(
     
     // Try each search variation until we find results
     for (const searchTerm of simplifiedSearches) {
-      // Don't add "pokemon card" if the search term already contains "pokemon"
-      const searchQuery = searchTerm.toLowerCase().includes('pokemon') 
-        ? searchTerm 
-        : `${searchTerm} pokemon card`
+      // Don't add "pokemon card" if the search term already contains specific card info
+      const hasCardInfo = searchTerm.toLowerCase().includes('pokemon') || 
+                         searchTerm.includes('/165') || 
+                         searchTerm.includes('/191') ||
+                         searchTerm.includes('151') ||
+                         searchTerm.includes('scarlet violet')
+      
+      const searchQuery = hasCardInfo ? searchTerm : `${searchTerm} pokemon card`
       
       console.log(`🔍 Trying eBay search: "${searchQuery}"`)
       
       const results = await performEbaySearch(searchQuery)
+      console.log(`📊 Search "${searchQuery}" returned ${results.length} results`)
+      
       if (results.length > 0) {
         console.log(`✅ Found ${results.length} results with search: "${searchQuery}"`)
         return results
@@ -512,17 +539,23 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
     
     const requestBody = {
       keywords: searchQuery,
-      max_search_results: 15, // Increased to get more results for better average
-      excluded_keywords: "graded psa bgs cgc ace sgc hga gma gem mint 10 mint 9 pristine perfect", // Exclude all graded items
-      site_id: "3", // UK eBay site
+      max_search_results: 15,
+      excluded_keywords: "graded psa bgs cgc ace sgc hga gma gem mint 10 mint 9 pristine perfect",
+      site_id: "3", // UK site
       remove_outliers: true,
       aspects: [
-        {
-          name: "LH_Auction",
-          value: "1" // Auction only
-        }
+        { name: "LH_Auction", value: "1" },
+        { name: "LH_Sold", value: "1" },
+        { name: "LH_Complete", value: "1" },
+        { name: "LH_PrefLoc", value: "1" } // UK location only
       ]
     }
+    
+    console.log('🔍 DEBUG - API Request Filters:')
+    console.log('Keywords:', searchQuery)
+    console.log('Excluded keywords:', requestBody.excluded_keywords)
+    console.log('Site ID:', requestBody.site_id)
+    console.log('Aspects:', JSON.stringify(requestBody.aspects, null, 2))
     
     console.log(`📡 eBay Sold Items API Request:`, JSON.stringify(requestBody, null, 2))
     
@@ -555,19 +588,91 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
     console.log(`📦 eBay Sold Items API Response: ${data.results || 0} sold items found`)
     console.log(`💰 Average sold price: £${data.average_price || 0}`)
     
+    // Debug: Log the raw API response
+    console.log('🔍 DEBUG - Raw API Response:')
+    console.log(JSON.stringify(data, null, 2))
+    
     if (!data.success || !data.products || data.products.length === 0) {
       return [] // Return empty array if no results
     }
+    
+    // Debug: Log each product with details (sorted)
+    console.log('🔍 DEBUG - Individual Products (Sorted by Date):')
+    const sortedForDebug = data.products
+      .sort((a: any, b: any) => new Date(b.date_sold).getTime() - new Date(a.date_sold).getTime())
+      .slice(0, 15)
+    
+    sortedForDebug.forEach((item: any, index: number) => {
+      console.log(`${index + 1}. Title: "${item.title}"`)
+      console.log(`   Price: £${item.sale_price}`)
+      console.log(`   Date: ${item.date_sold}`)
+      console.log(`   URL: ${item.link}`)
+      console.log(`   Full item data:`, JSON.stringify(item, null, 2))
+      console.log('---')
+    })
+    
+    // Debug: Log the sorting process
+    console.log('🔍 DEBUG - Sorting Process:')
+    console.log('Raw items before sorting:')
+    data.products.slice(0, 5).forEach((item: any, index: number) => {
+      console.log(`${index + 1}. Date: "${item.date_sold}" -> Timestamp: ${new Date(item.date_sold).getTime()}`)
+    })
     
     // Sort by date sold (most recent first) and take top 4
     const sortedProducts = data.products
       .sort((a: any, b: any) => new Date(b.date_sold).getTime() - new Date(a.date_sold).getTime())
       .slice(0, 4)
     
-    const results = sortedProducts.map((item: any) => ({
+    // Additional filtering to remove graded items and non-UK items that the API didn't filter
+    const filteredProducts = sortedProducts.filter((item: any) => {
+      const title = item.title.toLowerCase()
+      const url = item.link.toLowerCase()
+      
+      // Check for graded keywords in title
+      const gradedKeywords = ['graded', 'psa', 'bgs', 'cgc', 'ace', 'sgc', 'hga', 'gma', 'gem', 'mint 10', 'mint 9', 'pristine', 'perfect']
+      const hasGradedKeywords = gradedKeywords.some(keyword => title.includes(keyword))
+      
+      // Check if it's a UK listing (should contain ebay.co.uk)
+      const isUKListing = url.includes('ebay.co.uk')
+      
+      // Check if it's an auction (should contain LH_Auction=1)
+      const isAuction = url.includes('lh_auction=1')
+      
+      // Check if URL is malformed (contains search parameters that redirect to product pages)
+      const hasSearchParams = url.includes('_skw=') || url.includes('epid=')
+      const isMalformedUrl = hasSearchParams
+      
+      // Check for suspiciously low prices (likely graded or different market)
+      const price = parseFloat(item.sale_price)
+      const isSuspiciouslyLow = price < 8.0 // Lowered from £12 to £8 to allow more legitimate listings
+      
+      console.log(`🔍 Filtering item: "${item.title}"`)
+      console.log(`   Price: £${item.sale_price} (suspiciously low: ${isSuspiciouslyLow})`)
+      console.log(`   Has graded keywords: ${hasGradedKeywords}`)
+      console.log(`   Is UK listing: ${isUKListing}`)
+      console.log(`   Is auction: ${isAuction}`)
+      console.log(`   Is malformed URL: ${isMalformedUrl}`)
+      
+      // Filter out suspiciously low-priced items that are likely graded or from different markets
+      return !hasGradedKeywords && isUKListing && isAuction && !isSuspiciouslyLow
+    })
+    
+    console.log(`🔍 Filtered ${sortedProducts.length} items down to ${filteredProducts.length} valid items`)
+    
+    // Debug: Log the final results being returned
+    console.log('🔍 DEBUG - Final Results Being Returned:')
+    filteredProducts.forEach((item: any, index: number) => {
+      console.log(`${index + 1}. Title: "${item.title}"`)
+      console.log(`   Price: £${item.sale_price}`)
+      console.log(`   Date: ${item.date_sold}`)
+      console.log(`   Link: ${item.link}`)
+      console.log('---')
+    })
+    
+    const results = filteredProducts.map((item: any) => ({
       title: item.title,
       price: parseFloat(item.sale_price),
-      url: item.link,
+      url: `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(item.title)}&LH_Sold=1&LH_Complete=1&LH_Auction=1&Graded=No&LH_PrefLoc=1`,
       source: 'eBay (Sold)',
       condition: 'Used/Ungraded',
       soldDate: item.date_sold
@@ -590,116 +695,93 @@ async function searchEbayWithScraping(cardName: string): Promise<EbayItem[]> {
   try {
     console.log('🕷️  eBay Web Scraping: Starting scraping for:', cardName)
     
-    // Try multiple search variations
-    const searchVariations = [
-      `${cardName} pokemon card`,
-      `${cardName} pokemon`,
-      cardName
-    ]
+    // Use the exact same search URL as the user's manual search
+    const encodedSearch = encodeURIComponent(cardName)
+    const url = `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&_from=R40&LH_Auction=1&LH_PrefLoc=1&LH_Complete=1&LH_Sold=1&rt=nc&Graded=No&_dcat=183454&_sop=13`
     
-    for (const searchTerm of searchVariations) {
-      const encodedSearch = encodeURIComponent(searchTerm)
-      
-      // UK eBay sold items search
-      const url = `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&rt=nc&_ipg=25&_sop=13` // Sort by ended recently
-      
-      console.log(`🌐 Scraping eBay URL: ${url}`)
-      
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1',
-        }
-      })
+    console.log('🔗 Scraping URL:', url)
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-GB,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0'
+      }
+    })
 
-      if (!response.ok) {
-        console.log(`❌ Scraping failed for ${searchTerm}: ${response.status}`)
-        continue
-      }
+    if (!response.ok) {
+      console.log(`❌ Scraping failed: ${response.status}`)
+      throw new Error(`HTTP ${response.status}`)
+    }
 
-      const html = await response.text()
-      
-      // More robust patterns for modern eBay structure
-      const pricePatterns = [
-        /(?:£|GBP\s?)([0-9,]+\.?[0-9]*)/gi,
-        /(?:Price|Sold for|Final bid)[^£]*£([0-9,]+\.?[0-9]*)/gi,
-        /([0-9,]+\.?[0-9]*)\s*(?:GBP|£)/gi
-      ]
-      
-      const titlePatterns = [
-        /<h3[^>]*class="[^"]*s-item__title[^"]*"[^>]*>([^<]+)/gi,
-        /<span[^>]*class="[^"]*clipped[^"]*"[^>]*>([^<]+)/gi,
-        /<a[^>]*class="[^"]*s-item__link[^"]*"[^>]*title="([^"]+)"/gi
-      ]
-      
-      const prices: number[] = []
-      const titles: string[] = []
-      
-      // Extract prices using multiple patterns
-      for (const pattern of pricePatterns) {
-        let match
-        while ((match = pattern.exec(html)) !== null && prices.length < 10) {
-          const price = parseFloat(match[1].replace(/,/g, ''))
-          if (price > 0 && price < 10000) {
-            prices.push(price)
-          }
-        }
-        if (prices.length > 0) break
-      }
-      
-      // Extract titles using multiple patterns
-      for (const pattern of titlePatterns) {
-        let match
-        while ((match = pattern.exec(html)) !== null && titles.length < 10) {
-          const title = match[1]
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&#39;/g, "'")
-            .replace(/&quot;/g, '"')
-            .trim()
-          
-          if (title && title.length > 5) {
-            titles.push(title)
-          }
-        }
-        if (titles.length > 0) break
-      }
-      
-      console.log(`📊 Scraping results for "${searchTerm}": ${prices.length} prices, ${titles.length} titles`)
-      
-      if (prices.length > 0) {
-        const items: EbayItem[] = []
-        
-        // Create items from scraped data
-        for (let i = 0; i < Math.min(prices.length, 4); i++) {
-          const title = titles[i] || `${cardName} - eBay Sold Item`
-          const price = prices[i]
-          
-          items.push({
-            title,
-            price,
-            url: 'https://www.ebay.co.uk',
-            source: 'eBay UK (Sold Items - Scraped)',
-            condition: 'Various'
-          })
-        }
-        
-        console.log(`✅ Web scraping found ${items.length} items for "${searchTerm}"`)
-        return items
-      }
+    const html = await response.text()
+    console.log(`📄 HTML length: ${html.length} characters`)
+    
+    if (html.length < 1000 || !html.includes('ebay')) {
+      console.log('❌ Invalid HTML response')
+      throw new Error('Invalid HTML response')
     }
     
-    console.log('❌ No items found through web scraping')
-    return []
+    // Extract sold items using modern eBay selectors
+    const results: EbayItem[] = []
+    
+    // Pattern to match sold item containers
+    const itemPattern = /<li[^>]*class="[^"]*s-item[^"]*"[^>]*>([\s\S]*?)<\/li>/gi
+    const pricePattern = /(?:£|GBP\s?)([0-9,]+\.?[0-9]*)/gi
+    const titlePattern = /<span[^>]*class="[^"]*clipped[^"]*"[^>]*>([^<]+)/gi
+    const linkPattern = /<a[^>]*class="[^"]*s-item__link[^"]*"[^>]*href="([^"]+)"/gi
+    
+    let itemMatch
+    let count = 0
+    
+    while ((itemMatch = itemPattern.exec(html)) !== null && count < 10) {
+      const itemHtml = itemMatch[1]
+      
+      // Extract price
+      const priceMatch = pricePattern.exec(itemHtml)
+      if (!priceMatch) continue
+      
+      const price = parseFloat(priceMatch[1].replace(/,/g, ''))
+      if (price <= 0 || price > 10000) continue
+      
+      // Extract title
+      const titleMatch = titlePattern.exec(itemHtml)
+      if (!titleMatch) continue
+      
+      const title = titleMatch[1].trim()
+      if (!title.toLowerCase().includes(cardName.toLowerCase())) continue
+      
+      // Extract link
+      const linkMatch = linkPattern.exec(itemHtml)
+      const link = linkMatch ? linkMatch[1] : `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(title)}&LH_Sold=1&LH_Complete=1&LH_Auction=1&Graded=No`
+      
+      results.push({
+        title: title,
+        price: price,
+        url: link,
+        source: 'eBay (Sold)',
+        condition: 'Used/Ungraded',
+        soldDate: new Date().toISOString().split('T')[0] // Approximate date
+      })
+      
+      count++
+      console.log(`✅ Found item: "${title}" - £${price}`)
+    }
+    
+    console.log(`🎯 Web scraping found ${results.length} items`)
+    return results.slice(0, 4) // Return top 4 like the API
     
   } catch (error) {
-    console.error('❌ eBay scraping failed:', error)
-    return []
+    console.error('❌ Web scraping error:', error)
+    throw error
   }
 }
 
@@ -842,9 +924,8 @@ async function searchPokemonTcgApi(
           if (card.tcgplayer && card.tcgplayer.prices) {
             const prices = card.tcgplayer.prices
             console.log(`💰 TCGPlayer prices available:`, Object.keys(prices))
-            console.log(`🔍 Full TCGPlayer prices object:`, JSON.stringify(prices, null, 2))
             
-            // Try different price types with better debugging
+            // Try different price types
             let usdPrice = null
             let priceType = null
             

@@ -292,6 +292,16 @@ const SET_NAME_MAPPING: Record<string, string> = {
   'sv4': '151',
   'sv4pt5': 'Paldean Fates',
   'sv5': 'Temporal Forces',
+  'sv6': 'Twilight Masquerade',
+  'sv07': 'Stellar Crown',
+  'sv8': 'Cyber Judge',
+  'sv9': 'Wild Force',
+  'sv10': 'Ancient Roar',
+  'sv11': 'Future Flash',
+  'sv12': 'Shrouded Fable',
+  'sv13': 'Paradox Rift',
+  'sv14': 'Crimson Haze',
+  'sv15': 'Indigo Disk',
   
   // Sun & Moon era
   'sm1': 'Sun & Moon',
@@ -365,6 +375,9 @@ const SET_NAME_MAPPING: Record<string, string> = {
   'base3': 'Fossil',
   'base4': 'Base Set 2',
   'base5': 'Team Rocket',
+  
+  // Generations
+  'g1': 'Generations',
   'base6': 'Gym Heroes',
   'base7': 'Gym Challenge',
   'base8': 'Neo Genesis',
@@ -456,6 +469,59 @@ function extractSetName(card: any): string {
     ).join(' ')
   }
   
+  // Try to extract set from card ID (for TCGDx API)
+  if (card.id && !card.set) {
+    // Handle TCGDx format: "sv07-001", "xy1-1", etc.
+    const idParts = card.id.split('-')
+    if (idParts.length >= 2) {
+      const setId = idParts[0].toLowerCase()
+      
+      // Check our mapping first
+      if (SET_NAME_MAPPING[setId]) {
+        return SET_NAME_MAPPING[setId]
+      }
+      
+      // Handle trainer gallery cards
+      if (setId.includes('tg')) {
+        const baseSetId = setId.replace('tg', '')
+        const baseSetName = SET_NAME_MAPPING[baseSetId]
+        if (baseSetName) {
+          return `${baseSetName} Trainer Gallery`
+        }
+      }
+      
+      // Try to extract from ID format
+      if (setId.includes('-')) {
+        const parts = setId.split('-')
+        if (parts.length >= 2) {
+          const era = parts[0].toUpperCase()
+          const setNum = parts[1]
+          
+          // Map common eras
+          const eraMapping: Record<string, string> = {
+            'swsh': 'Sword & Shield',
+            'sv': 'Scarlet & Violet',
+            'sm': 'Sun & Moon',
+            'xy': 'XY',
+            'bw': 'Black & White',
+            'hgss': 'HeartGold & SoulSilver',
+            'dp': 'Diamond & Pearl',
+            'base': 'Base Set'
+          }
+          
+          if (eraMapping[era]) {
+            return `${eraMapping[era]} ${setNum}`
+          }
+        }
+      }
+      
+      // Fallback: capitalize and format the ID
+      return setId.split('-').map((part: string) => 
+        part.charAt(0).toUpperCase() + part.slice(1)
+      ).join(' ')
+    }
+  }
+  
   return 'Unknown Set'
 }
 
@@ -506,7 +572,7 @@ async function searchTCGDxAPI(query: string): Promise<any> {
     console.log(`📦 TCGDx API filtered to ${filteredCards.length} matching cards`)
     
     if (filteredCards.length > 0) {
-      const limitedResults = filteredCards.slice(0, 8)
+      const limitedResults = filteredCards.slice(0, 15)
       return limitedResults.map((card: any) => {
         // Use enhanced set name extraction
         const setName = extractSetName(card)
@@ -550,7 +616,7 @@ async function searchPokemonAPI(query: string): Promise<any> {
   const startTime = Date.now()
   
   try {
-    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=8`
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=15`
     const response = await fetch(url, {
       signal: controller.signal,
       headers: { 'Accept': 'application/json' }
@@ -607,7 +673,7 @@ function searchFallbackData(query: string) {
   return FALLBACK_DATA.filter(card => {
     const cardText = `${card.name} ${card.number} ${card.searchValue}`.toLowerCase()
     return queryWords.every(word => cardText.includes(word))
-  }).slice(0, 8) // Limit to 8 results
+  }).slice(0, 15) // Limit to 15 results
 }
 
 // Enhanced search strategy builder
