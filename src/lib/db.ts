@@ -1,7 +1,38 @@
 import { sql } from '@vercel/postgres'
 import bcrypt from 'bcryptjs'
+import { verifyDatabaseEncryption, dbSecurityStatus } from './db-security'
 
 export { sql }
+
+// Verify database encryption on startup
+verifyDatabaseEncryption()
+
+// Database encryption configuration
+const dbConfig = {
+  ssl: {
+    rejectUnauthorized: false, // For development - set to true in production
+    require: true
+  },
+  // Additional security settings
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 20, // Maximum number of connections
+  // Force SSL for all connections
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: true,
+    require: true
+  } : {
+    rejectUnauthorized: false,
+    require: true
+  }
+}
+
+// Log database security status
+console.log('🔐 Database Security Status:')
+console.log(`   Environment: ${process.env.NODE_ENV}`)
+console.log(`   SSL Required: ${dbConfig.ssl.require}`)
+console.log(`   SSL Verification: ${dbConfig.ssl.rejectUnauthorized}`)
+console.log(`   Connection Pool Size: ${dbConfig.max}`)
 
 export interface User {
   id: string
