@@ -824,86 +824,56 @@ function correctSpelling(term: string): string {
   return words.map(word => SPELLING_CORRECTIONS[word] || word).join(' ')
 }
 
-// Build search strategies (same as autocomplete)
 function buildSearchStrategies(query: string): string[] {
-  const strategies: string[] = []
-  
-  // Handle complex multi-word card names (like "Pikachu with grey felt hat")
-  const words = query.split(' ')
-  if (words.length > 3) {
-    // For very complex names, try multiple strategies
-    strategies.push(`name:*${query}*`) // Exact phrase match
-    
-    // Try with just the first two words (usually the Pokemon name)
-    if (words.length >= 2) {
-      const pokemonName = `${words[0]} ${words[1]}`
-      strategies.push(`name:*${pokemonName}*`)
-    }
-    
-    // Try with just the first word (Pokemon name)
-    strategies.push(`name:*${words[0]}*`)
-    
-    // Try with key descriptive words
-    const keyWords = words.filter(word => 
-      !['with', 'the', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 'of', 'a', 'an'].includes(word.toLowerCase())
-    )
-    if (keyWords.length > 1) {
-      strategies.push(`name:*${keyWords.join(' ')}*`)
-    }
-    
-    return strategies
+  const strategies = new Set<string>()
+  const cleanedQuery = query.toLowerCase().trim()
+  const words = cleanedQuery.split(' ').filter(w => w)
+
+  if (words.length === 0) {
+    return []
   }
-  
-  // "pokemon number" format (e.g., "charizard 223")
-  const numberMatch = query.match(/^(.+?)\s+(\d+)$/)
+
+  // 1. Exact phrase match (highest priority)
+  strategies.add(`name:"${cleanedQuery}"`)
+
+  // 2. For queries with numbers, try name + number
+  // This helps with things like "Charizard ex 105"
+  const numberMatch = cleanedQuery.match(/(.+) (\w*\d+\w*)$/)
   if (numberMatch) {
-    const [, name, number] = numberMatch
-    // Handle multi-word names properly
-    if (name.includes(' ')) {
-      // For multi-word names like "mew ex", use proper wildcard syntax
-      const words = name.split(' ')
-      const nameQueries = words.map(word => `name:*${word}*`).join(' AND ')
-      strategies.push(`(${nameQueries}) AND number:${number}`)
-    } else {
-      strategies.push(`name:*${name}* AND number:${number}`)
-    }
-    return strategies // Return early for number searches
+      const namePart = numberMatch[1].trim()
+      const numberPart = numberMatch[2]
+      strategies.add(`name:"${namePart}" AND number:"${numberPart}"`)
   }
-  
-  // "pokemon type" format (e.g., "charizard ex", "rayquaza v")  
-  const cardTypes = ['ex', 'gx', 'v', 'vmax', 'vstar']
-  if (words.length === 2) {
-    const [name, type] = words
-    if (cardTypes.includes(type.toLowerCase())) {
-      if (type.toLowerCase() === 'ex') {
-        strategies.push(`name:*${name}*EX*`)
-      } else if (type.toLowerCase() === 'gx') {
-        strategies.push(`name:*${name}*GX*`)
-      } else {
-        strategies.push(`name:*${name}* AND name:*${type.toUpperCase()}*`)
-      }
-      return strategies // Return early for type searches
-    }
+
+  // 3. All significant keywords match using AND logic
+  const stopWords = ['with', 'the', 'of', 'and', 'in', 'on', 'at', 'for', 'to', 'from', 'ex', 'gx', 'v', 'vmax', 'vstar']
+  const keyWords = words.filter(word => !stopWords.includes(word))
+  if (keyWords.length > 1 && keyWords.join(' ') !== cleanedQuery) {
+    strategies.add(keyWords.map(word => `name:*${word}*`).join(' AND '))
   }
-  
-  // Handle 3-word combinations (like "Pikachu with hat")
-  if (words.length === 3) {
-    // Try exact match first
-    strategies.push(`name:*${query}*`)
-    
-    // Try with just the Pokemon name
-    strategies.push(`name:*${words[0]}*`)
-    
-    // Try with Pokemon name + last word
-    strategies.push(`name:*${words[0]}* AND name:*${words[2]}*`)
-    
-    return strategies
+
+  // 4. Fallback to just the name part if there was a number
+  if (numberMatch) {
+    strategies.add(`name:"${numberMatch[1].trim()}"`)
   }
-  
-  // Simple wildcard search for everything else
-  strategies.push(`name:*${query}*`)
-  
-  return strategies
+
+  // 5. Fallback for common types like 'charizard ex', 'mew v'
+  if (words.length === 2 && ['ex', 'gx', 'v', 'vmax', 'vstar'].includes(words[1])) {
+    strategies.add(`name:"${words[0]}" AND subtypes:"${words[1]}"`)
+  }
+
+  // 6. Broadest fallback: just the first word (the Pokemon name)
+  if (words.length > 1) {
+    strategies.add(`name:"${words[0]}"`)
+  }
+
+  // 7. Last resort: wildcard search on the whole query
+  strategies.add(`name:*${cleanedQuery}*`)
+
+  // Remove the initial query if it's the same as the wildcard one
+  strategies.delete(cleanedQuery)
+
+  return Array.from(strategies)
 }
 
 async function searchPokemonTcgApi(
