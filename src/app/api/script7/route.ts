@@ -126,7 +126,24 @@ interface AnalysisResult {
       price_to_charge_for_market: string
       fees_percentage: number
     }
+    // Promo and Sealed info
+    promo_info?: PromoInfo
+    filtered_ebay_results?: FilteredEbayResults
   }
+}
+
+// Add new interfaces for promo detection and filtering
+interface PromoInfo {
+  isPromo: boolean
+  promoType?: 'black_star' | 'cosmic_eclipse' | 'other'
+  isSealed: boolean
+  sealedKeywords: string[]
+}
+
+interface FilteredEbayResults {
+  sealed: EbayItem[]
+  unsealed: EbayItem[]
+  promoInfo: PromoInfo
 }
 
 // Simple in-memory cache (resets when server restarts)
@@ -312,17 +329,21 @@ export async function analyzeCard(
   const pokemonTcgData = pokemonTcgResult.priceSource
   const cardDetails = pokemonTcgResult.cardDetails
 
+  // Detect promo and sealed status
+  const promoInfo = detectPromoCard(cardDetails, cardName)
+  const filteredEbayResults = filterEbayResultsBySealed(ebayPrices, promoInfo)
+
   // Calculate analysis
   const allPrices: number[] = []
   
   // Add eBay prices
-  ebayPrices.forEach(item => allPrices.push(item.price))
+  filteredEbayResults.unsealed.forEach(item => allPrices.push(item.price))
   
   // Add Pokemon TCG API price
   if (pokemonTcgData) allPrices.push(pokemonTcgData.price)
 
-  const ebayAverage = ebayPrices.length > 0 
-    ? ebayPrices.reduce((sum, item) => sum + item.price, 0) / ebayPrices.length
+  const ebayAverage = filteredEbayResults.unsealed.length > 0 
+    ? filteredEbayResults.unsealed.reduce((sum, item) => sum + item.price, 0) / filteredEbayResults.unsealed.length
     : 0
 
   const finalAverage = allPrices.length > 0 
@@ -384,7 +405,10 @@ export async function analyzeCard(
       // New pricing strategy
       pricing_strategy: pricingStrategy,
       // Whatnot pricing strategy
-      whatnot_pricing: whatnotPricing
+      whatnot_pricing: whatnotPricing,
+      // Promo and Sealed info
+      promo_info: promoInfo,
+      filtered_ebay_results: filteredEbayResults
     }
   }
 
@@ -1129,5 +1153,107 @@ async function searchPokemonTcgApi(
   } catch (error) {
     console.error('❌ Pokemon TCG API search failed:', error)
     return { priceSource: null, cardDetails: null }
+  }
+}
+
+// Function to detect if a card is a promo
+function detectPromoCard(cardDetails: CardDetails | null, cardName: string): PromoInfo {
+  const sealedKeywords = [
+    'sealed', 'unopened', 'factory sealed', 'original sealed', 'mint sealed',
+    'pack fresh', 'pack fresh sealed', 'never opened', 'brand new sealed'
+  ]
+  
+  const promoKeywords = [
+    'promo', 'promotional', 'black star', 'cosmic eclipse', 'swsh', 'sm', 'xy',
+    'black star promo', 'cosmic eclipse promo'
+  ]
+  
+  // Check card details from Pokemon TCG API
+  if (cardDetails) {
+    const set = cardDetails.set?.name?.toLowerCase() || ''
+    const rarity = cardDetails.rarity?.toLowerCase() || ''
+    const subtypes = cardDetails.subtypes || []
+    const number = cardDetails.number || ''
+    
+    // Check if it's a promo based on set name
+    const isPromoSet = set.includes('promo') || 
+                      set.includes('black star') || 
+                      set.includes('cosmic eclipse') ||
+                      set.includes('swsh') ||
+                      set.includes('sm') ||
+                      set.includes('xy')
+    
+    // Check if it's a promo based on rarity
+    const isPromoRarity = rarity.includes('promo')
+    
+    // Check if it's a promo based on subtypes
+    const isPromoSubtype = subtypes.some(subtype => 
+      subtype.toLowerCase().includes('promo')
+    )
+    
+    // Check if it's a promo based on card number (promos often have special numbering)
+    const isPromoNumber = /^[A-Z]+\d+$/.test(number) || // Like "SWSH284", "SM210"
+                         /^[A-Z]+$/.test(number) || // Like "TG06", "TG07"
+                         number.includes('promo')
+    
+    const isPromo = isPromoSet || isPromoRarity || isPromoSubtype || isPromoNumber
+    
+    // Determine promo type
+    let promoType: 'black_star' | 'cosmic_eclipse' | 'other' | undefined
+    if (isPromo) {
+      if (set.includes('black star')) {
+        promoType = 'black_star'
+      } else if (set.includes('cosmic eclipse')) {
+        promoType = 'cosmic_eclipse'
+      } else {
+        promoType = 'other'
+      }
+    }
+    
+    return {
+      isPromo,
+      promoType,
+      isSealed: false, // Will be determined by eBay results
+      sealedKeywords
+    }
+  }
+  
+  // Fallback: check card name for promo keywords
+  const cardNameLower = cardName.toLowerCase()
+  const isPromo = promoKeywords.some(keyword => cardNameLower.includes(keyword))
+  
+  return {
+    isPromo,
+    promoType: isPromo ? 'other' : undefined,
+    isSealed: false,
+    sealedKeywords
+  }
+}
+
+// Function to filter eBay results into sealed and unsealed
+function filterEbayResultsBySealed(items: EbayItem[], promoInfo: PromoInfo): FilteredEbayResults {
+  const sealed: EbayItem[] = []
+  const unsealed: EbayItem[] = []
+  
+  items.forEach(item => {
+    const title = item.title.toLowerCase()
+    const isSealed = promoInfo.sealedKeywords.some(keyword => 
+      title.includes(keyword.toLowerCase())
+    )
+    
+    if (isSealed) {
+      sealed.push(item)
+    } else {
+      unsealed.push(item)
+    }
+  })
+  
+  return {
+    sealed,
+    unsealed,
+    promoInfo: {
+      ...promoInfo,
+      isSealed: sealed.length > 0
+    }
   }
 }

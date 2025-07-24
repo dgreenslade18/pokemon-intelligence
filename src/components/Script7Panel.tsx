@@ -16,6 +16,29 @@ interface ProgressUpdate {
   timestamp: string
 }
 
+interface PromoInfo {
+  isPromo: boolean
+  promoType?: 'black_star' | 'cosmic_eclipse' | 'other'
+  isSealed: boolean
+  sealedKeywords: string[]
+}
+
+interface FilteredEbayResults {
+  sealed: Array<{
+    title: string
+    price: number
+    source: string
+    url?: string
+  }>
+  unsealed: Array<{
+    title: string
+    price: number
+    source: string
+    url?: string
+  }>
+  promoInfo: PromoInfo
+}
+
 interface AnalysisResult {
   card_name: string
   timestamp: string
@@ -51,6 +74,9 @@ interface AnalysisResult {
       price_to_charge_for_market: string
       fees_percentage: number
     }
+    // Promo and Sealed info
+    promo_info?: PromoInfo
+    filtered_ebay_results?: FilteredEbayResults
   }
 }
 
@@ -190,6 +216,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   const [multipleSearchResults, setMultipleSearchResults] = useState<any[]>([])
   const [showMultipleResults, setShowMultipleResults] = useState(false)
   const [selectedCardForAnalysis, setSelectedCardForAnalysis] = useState<any>(null)
+  
+  // State for sealed/unsealed filtering
+  const [showSealedOnly, setShowSealedOnly] = useState(false)
+  const [showUnsealedOnly, setShowUnsealedOnly] = useState(false)
 
   // Function to format price with trailing zeros
   const formatPrice = (price: number | string): string => {
@@ -1074,10 +1104,96 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                     
                     {result.ebay_prices.length > 0 ? (
                       <div>
+                        {/* Promo and Sealed Filtering */}
+                        {result.analysis.promo_info?.isPromo && (
+                          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <span className="text-yellow-600 dark:text-yellow-400 mr-2">🎁</span>
+                                <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                                  Promo Card Detected
+                                </span>
+                              </div>
+                              <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                {result.analysis.promo_info.promoType?.replace('_', ' ').toUpperCase()}
+                              </span>
+                            </div>
+                            
+                            {/* Sealed/Unsealed Filter Buttons */}
+                            {result.analysis.filtered_ebay_results && (
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={() => {
+                                    setShowSealedOnly(!showSealedOnly)
+                                    setShowUnsealedOnly(false)
+                                  }}
+                                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                    showSealedOnly 
+                                      ? 'bg-yellow-500 text-white' 
+                                      : 'bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300'
+                                  }`}
+                                >
+                                  Sealed ({result.analysis.filtered_ebay_results.sealed.length})
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShowUnsealedOnly(!showUnsealedOnly)
+                                    setShowSealedOnly(false)
+                                  }}
+                                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                    showUnsealedOnly 
+                                      ? 'bg-yellow-500 text-white' 
+                                      : 'bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300'
+                                  }`}
+                                >
+                                  Unsealed ({result.analysis.filtered_ebay_results.unsealed.length})
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShowSealedOnly(false)
+                                    setShowUnsealedOnly(false)
+                                  }}
+                                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                    !showSealedOnly && !showUnsealedOnly
+                                      ? 'bg-yellow-500 text-white' 
+                                      : 'bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300'
+                                  }`}
+                                >
+                                  All ({result.ebay_prices.length})
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Dynamic price display based on filtering */}
                         <div className="text-2xl font-bold dark:text-blue-300 text-blue-700 mb-3">
-                          £{formatPrice(result.analysis.ebay_average || 0)}
+                          £{(() => {
+                            if (result.analysis.filtered_ebay_results) {
+                              if (showSealedOnly && result.analysis.filtered_ebay_results.sealed.length > 0) {
+                                const sealedAvg = result.analysis.filtered_ebay_results.sealed.reduce((sum, item) => sum + item.price, 0) / result.analysis.filtered_ebay_results.sealed.length
+                                return formatPrice(sealedAvg)
+                              } else if (showUnsealedOnly && result.analysis.filtered_ebay_results.unsealed.length > 0) {
+                                const unsealedAvg = result.analysis.filtered_ebay_results.unsealed.reduce((sum, item) => sum + item.price, 0) / result.analysis.filtered_ebay_results.unsealed.length
+                                return formatPrice(unsealedAvg)
+                              }
+                            }
+                            return formatPrice(result.analysis.ebay_average || 0)
+                          })()}
                         </div>
-                        <p className="dark:text-white/50 text-black/50 text-sm mb-4">Average of {result.ebay_prices.length} recent sales</p>
+                        
+                        <p className="dark:text-white/50 text-black/50 text-sm mb-4">
+                          {(() => {
+                            if (result.analysis.filtered_ebay_results) {
+                              if (showSealedOnly) {
+                                return `Average of ${result.analysis.filtered_ebay_results.sealed.length} sealed sales`
+                              } else if (showUnsealedOnly) {
+                                return `Average of ${result.analysis.filtered_ebay_results.unsealed.length} unsealed sales`
+                              }
+                            }
+                            return `Average of ${result.ebay_prices.length} recent sales`
+                          })()}
+                        </p>
                         
                         {/* Accordion for eBay listings */}
                         <div className="border border-black/10 dark:border-white/10 rounded-lg">
@@ -1099,25 +1215,38 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                           {isEbayAccordionOpen && (
                             <div className="border-t border-black/10 dark:border-white/10 p-3">
                               <div className="space-y-2">
-                                {result.ebay_prices.map((item, index) => (
-                                  <div key={index} className="text-xs dark:text-white/40 text-black/40 bg-black/5 dark:bg-white/5 rounded p-2">
-                                    <div className="font-medium">£{formatPrice(item.price)}</div>
-                                    <div className="mb-1">{item.title}</div>
-                                    {item.url && (
-                                      <a 
-                                        href={item.url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center text-blue-400 hover:text-blue-300 text-xs transition-colors duration-200"
-                                      >
-                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg>
-                                        View Listing
-                                      </a>
-                                    )}
-                                  </div>
-                                ))}
+                                {(() => {
+                                  // Determine which items to show based on filtering
+                                  let itemsToShow = result.ebay_prices
+                                  
+                                  if (result.analysis.filtered_ebay_results) {
+                                    if (showSealedOnly) {
+                                      itemsToShow = result.analysis.filtered_ebay_results.sealed
+                                    } else if (showUnsealedOnly) {
+                                      itemsToShow = result.analysis.filtered_ebay_results.unsealed
+                                    }
+                                  }
+                                  
+                                                                     return itemsToShow.map((item, index) => (
+                                    <div key={index} className="text-xs dark:text-white/40 text-black/40 bg-black/5 dark:bg-white/5 rounded p-2">
+                                      <div className="font-medium">£{formatPrice(item.price)}</div>
+                                      <div className="mb-1">{item.title}</div>
+                                      {item.url && (
+                                        <a 
+                                          href={item.url} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center text-blue-400 hover:text-blue-300 text-xs transition-colors duration-200"
+                                        >
+                                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                          </svg>
+                                          View Listing
+                                        </a>
+                                      )}
+                                    </div>
+                                  ))
+                                })()}}
                               </div>
                             </div>
                           )}
