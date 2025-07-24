@@ -336,14 +336,15 @@ export async function analyzeCard(
   // Calculate analysis
   const allPrices: number[] = []
   
-  // Add eBay prices
-  filteredEbayResults.unsealed.forEach(item => allPrices.push(item.price))
+  // Add all eBay prices (both sealed and unsealed) for base calculation
+  ebayPrices.forEach(item => allPrices.push(item.price))
   
   // Add Pokemon TCG API price
   if (pokemonTcgData) allPrices.push(pokemonTcgData.price)
 
-  const ebayAverage = filteredEbayResults.unsealed.length > 0 
-    ? filteredEbayResults.unsealed.reduce((sum, item) => sum + item.price, 0) / filteredEbayResults.unsealed.length
+  // Calculate eBay average from all results (not just unsealed)
+  const ebayAverage = ebayPrices.length > 0 
+    ? ebayPrices.reduce((sum, item) => sum + item.price, 0) / ebayPrices.length
     : 0
 
   const finalAverage = allPrices.length > 0 
