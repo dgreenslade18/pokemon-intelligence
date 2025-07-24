@@ -376,41 +376,41 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
 
-      while (true) {
-        const { done, value } = await reader.read()
-        
-        if (done) break
-        
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
+        while (true) {
+          const { done, value } = await reader.read()
+          
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
               const data = JSON.parse(line.slice(6))
-              
-              if (data.type === 'progress') {
+                
+                if (data.type === 'progress') {
                 setProgress(data)
                 setProgressStages(prev => new Set([...prev, data.stage]))
-              } else if (data.type === 'complete') {
-                setResult(data.data)
+                } else if (data.type === 'complete') {
+                  setResult(data.data)
                 setLoading(false)
-                setShowProgressOverlay(false)
+                  setShowProgressOverlay(false)
                 clearTimeout(timeoutId)
                 return
-              } else if (data.type === 'error') {
-                setError(data.message)
+                } else if (data.type === 'error') {
+                  setError(data.message)
                 setLoading(false)
-                setShowProgressOverlay(false)
+                  setShowProgressOverlay(false)
                 clearTimeout(timeoutId)
                 return
-              }
-            } catch (e) {
+                }
+              } catch (e) {
               console.error('Error parsing SSE data:', e)
+              }
             }
           }
         }
-      }
     } catch (error) {
       console.error('Analysis error:', error)
       setError(error instanceof Error ? error.message : 'An error occurred during analysis')
@@ -494,7 +494,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
         
         // If we have multiple results (more than 1), show the "Did You Mean" interface
         if (searchData.suggestions && searchData.suggestions.length > 1) {
-          clearTimeout(timeoutId)
+      clearTimeout(timeoutId)
           handleMultipleResultsFound(searchData.suggestions)
           return
         }
@@ -849,29 +849,29 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
               </div>
               
               <div className="flex gap-3 flex-col md:flex-row w-full md:w-auto">
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={loading || !searchTerm.trim()}
-                  color="primary"
-                  size="large"
-                  className="px-4 md:px-8 py-4"
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center md:justify-start">
-                      <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Analysing...
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center md:justify-start">
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      Analyse Card
-                    </div>
-                  )}
-                </Button>
+              <Button
+                onClick={handleAnalyze}
+                disabled={loading || !searchTerm.trim()}
+                color="primary"
+                size="large"
+                className="px-4 md:px-8 py-4"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center md:justify-start">
+                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Analysing...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center md:justify-start">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Analyse Card
+                  </div>
+                )}
+              </Button>
                 
                 <Button
                   onClick={handleRefresh}
