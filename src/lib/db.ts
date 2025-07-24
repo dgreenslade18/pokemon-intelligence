@@ -9,22 +9,18 @@ verifyDatabaseEncryption()
 
 // Database encryption configuration
 const dbConfig = {
-  ssl: {
-    rejectUnauthorized: false, // For development - set to true in production
-    require: true
-  },
-  // Additional security settings
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000,
-  max: 20, // Maximum number of connections
-  // Force SSL for all connections
+  // SSL configuration based on environment
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: true,
     require: true
   } : {
     rejectUnauthorized: false,
     require: true
-  }
+  },
+  // Additional security settings
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 20 // Maximum number of connections
 }
 
 // Log database security status
