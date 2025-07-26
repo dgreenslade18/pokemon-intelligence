@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import pokemonDB from '../../../../lib/pokemon-database'
 
 // Spelling corrections for common misspellings
 const SPELLING_CORRECTIONS: Record<string, string> = {
@@ -753,13 +754,38 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ suggestions: [] })
   }
 
-  // Early return for very short queries with fallback data
-  if (query.length <= 3) {
-    const fallbackResults = searchFallbackData(query.trim())
-    return NextResponse.json({ suggestions: fallbackResults })
-  }
-
   try {
+    // Initialize database if not already done
+    await pokemonDB.initialize()
+    
+    // Try local database first (lightning fast)
+    const localResults = pokemonDB.search(query, 8)
+    
+    if (localResults.length > 0) {
+      console.log(`⚡ Local search found ${localResults.length} results for "${query}"`)
+      
+      const suggestions = localResults.map(result => ({
+        id: result.card.id,
+        name: result.card.name,
+        set: result.card.set?.name || 'Unknown Set',
+        number: result.card.number || '',
+        image: result.card.images?.small,
+        rarity: result.card.rarity || 'Unknown',
+        relevanceScore: result.relevanceScore,
+        source: 'local'
+      }))
+      
+      return NextResponse.json({ suggestions })
+    }
+    
+    // Fallback to API if local search has no results
+    console.log(`🔄 No local results for "${query}", trying API fallback...`)
+
+    // Early return for very short queries with fallback data
+    if (query.length <= 3) {
+      const fallbackResults = searchFallbackData(query.trim())
+      return NextResponse.json({ suggestions: fallbackResults })
+    }
     // Check cache first
     const cacheKey = query.toLowerCase().trim()
     const cached = cache.get(cacheKey)

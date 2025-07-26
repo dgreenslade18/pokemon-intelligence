@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from './Button'
 import AddToListModal from './AddToListModal'
+import { PriceShimmer, CardShimmer, ListingShimmer } from './LoadingShimmer'
 
 interface Script7PanelProps {
   onBack: () => void
@@ -274,7 +275,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
   // Debounced autocomplete search
   useEffect(() => {
-    if (searchTerm.length < 2) {
+    if ((searchTerm || '').length < 2) {
       setAutocompleteResults([])
       setShowAutocomplete(false)
       setSelectedSuggestionIndex(-1)
@@ -282,11 +283,11 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     }
 
     const debounceTimer = setTimeout(async () => {
-      if (searchTerm.length >= 2) {
+      if ((searchTerm || '').length >= 2) {
         setAutocompleteLoading(true)
         setSelectedSuggestionIndex(-1)
         try {
-          const response = await fetch(`/api/autocomplete?q=${encodeURIComponent(searchTerm)}`)
+          const response = await fetch(`/api/autocomplete?q=${encodeURIComponent(searchTerm || '')}`)
           if (response.ok) {
             const data = await response.json()
             setAutocompleteResults(data.suggestions || [])
@@ -340,13 +341,21 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
   // Handle suggestion selection
   const handleSuggestionClick = (suggestion: any) => {
-    setSearchTerm(suggestion.searchValue)
+    // Create specific search term with card name and number
+    let specificSearchTerm = suggestion.name || ''
+    if (suggestion.number) {
+      specificSearchTerm += ` ${suggestion.number}`
+    }
+    
+    setSearchTerm(specificSearchTerm)
     setShowAutocomplete(false)
     setAutocompleteResults([])
-    // Focus back on input
-    if (searchInputRef.current) {
-      searchInputRef.current.focus()
-    }
+    
+    // Immediately start analysis of the specific card - bypass "Did You Mean" modal
+    console.log(`🎯 Autocomplete selected: ${specificSearchTerm}`)
+    setTimeout(() => {
+      performAnalysis(specificSearchTerm)
+    }, 100) // Small delay to let state update
   }
 
   const handleMultipleResultsFound = (results: any[]) => {
@@ -360,26 +369,47 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
     setSelectedCardForAnalysis(selectedCard)
     setShowMultipleResults(false)
     setMultipleSearchResults([])
-    // Proceed with analysis using the selected card
-    performAnalysis(selectedCard.searchValue || selectedCard.name)
+    
+    // Create a specific search term using the card ID or detailed name
+    let specificSearchTerm = selectedCard.name
+    
+    // If we have set and number info, create a more specific search
+    if (selectedCard.set && selectedCard.number) {
+      specificSearchTerm = `${selectedCard.name} ${selectedCard.set} ${selectedCard.number}`
+    } else if (selectedCard.id) {
+      // Use the card ID as it's the most specific identifier
+      specificSearchTerm = selectedCard.id
+    }
+    
+    console.log(`🎯 Selected specific card: ${specificSearchTerm}`)
+    
+    // Proceed with analysis using the specific card identifier
+    performAnalysis(specificSearchTerm)
   }
 
   const performAnalysis = async (cardName: string, refresh: boolean = false) => {
     setLoading(true)
     setError(null)
-    setResult(null)
+    // Don't clear the result - we'll update it progressively
     setProgress(null)
     setProgressStages(new Set())
-    setShowProgressOverlay(true)
+    // Show empty result structure immediately
+    setResult({
+      card_name: cardName,
+      timestamp: new Date().toISOString(),
+      ebay_prices: [],
+      cardmarket: null,
+      card_details: undefined,
+      analysis: {}
+    })
 
     // Add a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       if (loading) {
         setError('Request timed out. Please try again.')
         setLoading(false)
-        setShowProgressOverlay(false)
       }
-    }, 30000) // 30 second timeout
+    }, 120000) // 2 minute timeout (longer since TCG API is slow)
 
     try {
       // Use EventSource for real-time progress updates
@@ -422,16 +452,20 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                 if (data.type === 'progress') {
                 setProgress(data)
                 setProgressStages(prev => new Set([...prev, data.stage]))
+                } else if (data.type === 'partial') {
+                  // Update result with partial data
+                  setResult(prevResult => ({
+                    ...prevResult,
+                    ...data.data
+                  }))
                 } else if (data.type === 'complete') {
                   setResult(data.data)
                 setLoading(false)
-                  setShowProgressOverlay(false)
                 clearTimeout(timeoutId)
                 return
                 } else if (data.type === 'error') {
                   setError(data.message)
                 setLoading(false)
-                  setShowProgressOverlay(false)
                 clearTimeout(timeoutId)
                 return
                 }
@@ -445,7 +479,6 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
       console.error('Analysis error:', error)
       setError(error instanceof Error ? error.message : 'An error occurred during analysis')
       setLoading(false)
-      setShowProgressOverlay(false)
       clearTimeout(timeoutId)
     }
   }
@@ -495,7 +528,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   }
 
   const handleAnalyze = async () => {
-    if (!searchTerm.trim()) {
+    if (!(searchTerm || '').trim()) {
       setError('Please enter a Pokemon card name')
       return
     }
@@ -518,7 +551,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
     try {
       // First, check if we have multiple search results
-      const searchResponse = await fetch(`/api/autocomplete?q=${encodeURIComponent(searchTerm.trim())}`)
+      const searchResponse = await fetch(`/api/autocomplete?q=${encodeURIComponent((searchTerm || '').trim())}`)
       if (searchResponse.ok) {
         const searchData = await searchResponse.json()
         
@@ -531,7 +564,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
       }
 
       // If no multiple results or only one result, proceed with normal analysis
-      performAnalysis(searchTerm.trim())
+      performAnalysis((searchTerm || '').trim())
     } catch (error) {
       console.error('Analysis error:', error)
       setError(error instanceof Error ? error.message : 'An error occurred during analysis')
@@ -644,7 +677,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   }
 
   const handleRefresh = async () => {
-    if (!searchTerm.trim()) {
+    if (!(searchTerm || '').trim()) {
       setError('Please enter a Pokemon card name')
       return
     }
@@ -667,7 +700,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
     try {
       // Force fresh analysis bypassing cache
-      performAnalysis(searchTerm.trim(), true)
+      performAnalysis((searchTerm || '').trim(), true)
     } catch (error) {
       console.error('Refresh analysis error:', error)
       setError(error instanceof Error ? error.message : 'An error occurred during refresh analysis')
@@ -680,86 +713,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
   return (
     <div className="min-h-screen relative">
-      {/* Progress Overlay */}
-      {showProgressOverlay && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-12 max-w-md mx-4 border border-white/20">
-            <div className="text-center">
-              <div className="mb-8">
-                <div className="text-6xl mb-4 animate-bounce">
-                  {progress ? getProgressIcon(progress.stage) : '🚀'}
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  Analysing Card Prices
-                </h3>
-                <p className="text-white/60">
-                  Please wait while we search multiple sources...
-                </p>
-              </div>
 
-              {progress && (
-                <div className="space-y-4">
-                  <div className={`bg-gradient-to-r ${getProgressColor(progress.stage)} rounded-2xl p-4`}>
-                    <div className="flex items-center space-x-3">
-                      <div className="text-2xl">
-                        {getProgressIcon(progress.stage)}
-                      </div>
-                      <div className="text-left">
-                        <div className="font-semibold text-white capitalize">
-                          {progress.stage.replace('_', ' ')}
-                        </div>
-                        <div className="text-white/80 text-sm">
-                          {progress.message}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Progress Steps */}
-                  <div className="grid grid-cols-2 gap-3 mt-6">
-                    <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      progress.stage === 'ebay' ? 'bg-blue-500/30 scale-105' : 
-                      progressStages.has('ebay') ? 'bg-blue-500/50' : 'bg-white/10'
-                    }`}>
-                      <div className="text-center">
-                        <div className="text-xl mb-1">🏪</div>
-                        <div className="text-xs text-white/80">eBay UK</div>
-                        {progressStages.has('ebay') && (
-                          <div className="text-xs text-green-400 mt-1">✓ Complete</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      progress.stage === 'cardmarket' ? 'bg-purple-500/30 scale-105' : 
-                      progressStages.has('cardmarket') ? 'bg-purple-500/50' : 'bg-white/10'
-                    }`}>
-                      <div className="text-center">
-                        <div className="text-xl mb-1">🎮</div>
-                        <div className="text-xs text-white/80">Pokemon TCG API</div>
-                        {progressStages.has('cardmarket') && (
-                          <div className="text-xs text-green-400 mt-1">✓ Complete</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-8">
-                <div className="w-full bg-white/20 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out" 
-                    style={{ width: `${progress ? getProgressPercentage(progress.stage) : 0}%` }}
-                  ></div>
-                </div>
-                <p className="text-white/50 text-xs mt-2">
-                  This usually takes 3-6 seconds
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="container mx-auto md:px-6 py-6 md:py-12 relative z-10 overflow-visible">
         {/* Header */}
@@ -881,7 +835,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
               <div className="flex gap-3 flex-col md:flex-row w-full md:w-auto">
               <Button
                 onClick={handleAnalyze}
-                disabled={loading || !searchTerm.trim()}
+                disabled={loading || !(searchTerm || '').trim()}
                 color="primary"
                 size="large"
                 className="px-4 md:px-8 py-4"
@@ -905,7 +859,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                 
                 <Button
                   onClick={handleRefresh}
-                  disabled={loading || !searchTerm.trim()}
+                  disabled={loading || !(searchTerm || '').trim()}
                   color="secondary"
                   size="large"
                   className="px-4 md:px-8 py-4"
@@ -1045,6 +999,18 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       <p className="text-sm md:text-base dark:text-white/60 text-black/60">Based on current market average of £{formatPrice(result.analysis.final_average || 0)}</p>
                     </div>
                   </div>
+                ) : result.ebay_prices?.length > 0 ? (
+                  <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl p-4 md:p-8 mb-8">
+                    <div className="text-center">
+                      <h3 className="text-lg md:text-2xl font-bold dark:text-white text-black mb-4">⚡ Preliminary Analysis</h3>
+                      <div className="text-xl md:text-3xl font-bold dark:text-blue-300 text-blue-700 mb-2">
+                        £{formatPrice(result.analysis.ebay_average || result.ebay_prices.reduce((sum, item) => sum + item.price, 0) / result.ebay_prices.length)}
+                      </div>
+                      <p className="text-sm md:text-base dark:text-white/60 text-black/60">
+                        Based on {result.ebay_prices.length} eBay sales • Pending market data...
+                      </p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-2xl p-4 md:p-8 mb-8">
                     <div className="text-center">
@@ -1102,7 +1068,15 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       <h4 className="text-lg font-semibold dark:text-white text-black">eBay UK</h4>
                     </div>
                     
-                    {result.ebay_prices.length > 0 ? (
+                    {loading && (!result.ebay_prices || result.ebay_prices.length === 0) ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center mb-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                          <span className="text-sm dark:text-white/70 text-black/70">Loading eBay prices...</span>
+                        </div>
+                        <ListingShimmer />
+                      </div>
+                    ) : result.ebay_prices.length > 0 ? (
                       <div>
                         {/* Promo and Sealed Filtering */}
                         {result.analysis.promo_info?.isPromo && (
@@ -1246,7 +1220,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                                       )}
                                     </div>
                                   ))
-                                })()}}
+                                })()}
                               </div>
                             </div>
                           )}
@@ -1266,7 +1240,15 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                       <h4 className="text-lg font-semibold dark:text-white text-black">Market data</h4>
                     </div>
                     
-                    {result.cardmarket ? (
+                    {loading && !result.cardmarket ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center mb-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mr-2"></div>
+                          <span className="text-sm dark:text-white/70 text-black/70">Loading TCG data...</span>
+                        </div>
+                        <PriceShimmer />
+                      </div>
+                    ) : result.cardmarket ? (
                       <div>
                         <div className="text-2xl font-bold dark:text-purple-300 text-purple-700 mb-3">
                           £{formatPrice(result.cardmarket.price)}
@@ -1409,7 +1391,16 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
                   </div>
                 )}
                 {/* Comprehensive Card Details */}
-                {result.card_details && (result.card_details.images || result.card_details.tcgplayer_pricing || result.card_details.cardmarket_pricing || result.card_details.name) && (
+                {loading && !result.card_details ? (
+                  <div className="mt-8 bg-black/5 dark:bg-white/5 rounded-2xl p-6">
+                    <h4 className="text-lg font-semibold dark:text-white text-black mb-6">🎴 Complete Card Information</h4>
+                    <div className="flex items-center mb-4">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500 mr-2"></div>
+                      <span className="text-sm dark:text-white/70 text-black/70">Loading card details...</span>
+                    </div>
+                    <CardShimmer />
+                  </div>
+                ) : result.card_details && (result.card_details.images || result.card_details.tcgplayer_pricing || result.card_details.cardmarket_pricing || result.card_details.name) && (
                   <div className="mt-8 bg-black/5 dark:bg-white/5 rounded-2xl p-6">
                     <h4 className="text-lg font-semibold dark:text-white text-black mb-6">🎴 Complete Card Information</h4>
                     

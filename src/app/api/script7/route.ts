@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../lib/auth'
 import { getUserPreferences, UserPreferences } from '../../../lib/db'
 import { capitalizeCardName } from '../../../lib/utils'
+import pokemonDB from '../../../../lib/pokemon-database'
+import smartPriceCache from '../../../../lib/smart-price-cache'
 
 // Types for our API responses
 interface EbayItem {
@@ -170,17 +172,33 @@ function setCachedResult(cardName: string, data: AnalysisResult): void {
 
 export async function POST(request: NextRequest) {
   try {
-    const { searchTerm, streamProgress = false, refresh = false } = await request.json()
+    let searchTerm, streamProgress = false, refresh = false
     
-    if (!searchTerm) {
-      return NextResponse.json({ error: 'Search term is required' }, { status: 400 })
+    try {
+      const body = await request.json()
+      searchTerm = body.searchTerm
+      streamProgress = body.streamProgress || false
+      refresh = body.refresh || false
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError)
+      return NextResponse.json({ error: 'Invalid request format' }, { status: 400 })
+    }
+    
+    console.log(`🔍 Script7 Request - searchTerm: "${searchTerm}", streamProgress: ${streamProgress}, refresh: ${refresh}`)
+    
+    if (!searchTerm || typeof searchTerm !== 'string' || !searchTerm.trim()) {
+      console.error('❌ Invalid search term:', searchTerm)
+      return NextResponse.json({ error: 'Search term is required and must be a non-empty string' }, { status: 400 })
     }
 
     // Get user session and preferences
     const session = await getServerSession(authOptions)
     
+    console.log(`🔐 Session check - User ID: ${session?.user?.id || 'None'}`)
+    
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('❌ Authentication failed - no valid session')
+      return NextResponse.json({ error: 'Authentication required. Please log in.' }, { status: 401 })
     }
 
     const userPreferences = await getUserPreferences(session.user.id)
@@ -251,6 +269,15 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(progressData)}\n\n`))
           }
 
+          const sendPartial = (partialData: Partial<AnalysisResult>) => {
+            const partialUpdate = {
+              type: 'partial',
+              data: partialData,
+              timestamp: new Date().toISOString()
+            }
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(partialUpdate)}\n\n`))
+          }
+
           const sendComplete = (data: AnalysisResult) => {
             // Cache the result
             setCachedResult(searchTerm, data)
@@ -273,7 +300,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Start the analysis
-          analyzeCard(searchTerm, userPreferences, sendProgress)
+          analyzeCard(searchTerm, userPreferences, sendProgress, sendPartial)
             .then(sendComplete)
             .catch(error => sendError(error.message))
         }
@@ -310,42 +337,212 @@ export async function POST(request: NextRequest) {
 export async function analyzeCard(
   cardName: string,
   userPreferences: UserPreferences,
-  sendProgress?: (stage: string, message: string) => void
+  sendProgress?: (stage: string, message: string) => void,
+  sendPartial?: (partialData: Partial<AnalysisResult>) => void
 ): Promise<AnalysisResult> {
   
   const progress = sendProgress || (() => {})
+  const sendPartialUpdate = sendPartial || (() => {})
   
   progress('starting', 'Initializing price analysis...')
   
-  // Run searches in parallel - removed Price Charting
-  const [ebayPrices, pokemonTcgResult] = await Promise.all([
-    searchEbaySoldItems(cardName, progress),
-    searchPokemonTcgApi(cardName, progress)
-  ])
+  // Initialize base result structure
+  let partialResult = {
+    card_name: cardName,
+    timestamp: new Date().toISOString(),
+    ebay_prices: [],
+    cardmarket: null,
+    card_details: undefined,
+    analysis: {}
+  }
+  
+  // Send initial empty structure
+  sendPartialUpdate(partialResult as Partial<AnalysisResult>)
+  
+  // Run eBay search first (faster)
+  progress('ebay', 'Searching eBay sold items...')
+  const ebayPrices = await searchEbaySoldItems(cardName, progress)
+  
+  // Calculate eBay average immediately
+  const ebayAveragePrice = ebayPrices.length > 0 
+    ? ebayPrices.reduce((sum, item) => sum + item.price, 0) / ebayPrices.length 
+    : 0
+  
+  // Send eBay results as soon as they're available with calculated average
+  partialResult.ebay_prices = ebayPrices
+  partialResult.analysis = {
+    ...partialResult.analysis,
+    ebay_average: ebayAveragePrice
+  }
+  sendPartialUpdate(partialResult as Partial<AnalysisResult>)
+  
+  // Initialize local database
+  await pokemonDB.initialize()
+  
+  // Search local database for card details (lightning fast)
+  progress('cardmarket', 'Searching local card database...')
+  const localResults = pokemonDB.search(cardName, 5) // Get more results to find exact match
+  let localCardDetails: CardDetails | null = null
+  let cardId: string | null = null
+  
+  if (localResults.length > 0) {
+    // Log all found cards for debugging
+    console.log(`🔍 Local search found ${localResults.length} cards:`)
+    localResults.forEach((result, index) => {
+      console.log(`  ${index + 1}. ${result.card.name} (${result.card.number}) from ${result.card.set?.name || 'Unknown Set'}`)
+    })
+    
+    // Try to find exact match by card number if search term contains a specific number
+    let card = localResults[0].card
+    const searchTermUpper = cardName.toUpperCase()
+    
+    // Extract potential card numbers from search term (SWSH284, TG20, SV123, etc.)
+    const cardNumberMatch = searchTermUpper.match(/(SWSH\d+|TG\d+|SV\d+\w*|[A-Z]{2,}\d+\w*)/g)
+    
+    if (cardNumberMatch && cardNumberMatch.length > 0) {
+      const targetNumber = cardNumberMatch[0]
+      console.log(`🎯 Looking for card number: ${targetNumber}`)
+      
+      const exactMatch = localResults.find(result => 
+        result.card.number.toUpperCase() === targetNumber
+      )
+      
+      if (exactMatch) {
+        card = exactMatch.card
+        console.log(`✅ Found exact card match: ${card.name} (${card.number}) from ${card.set?.name}`)
+      } else {
+        console.log(`⚠️ No exact match found for ${targetNumber}, using first result: ${card.name} (${card.number})`)
+      }
+    } else {
+      console.log(`📝 No specific card number detected, using first result: ${card.name} (${card.number})`)
+    }
+    
+    cardId = card.id
+    
+    // Convert local card to CardDetails format
+    localCardDetails = {
+      id: card.id,
+      name: card.name,
+      number: card.number,
+      set: card.set ? {
+        id: card.set.id || '',
+        name: card.set.name,
+        series: card.set.series || '',
+        releaseDate: card.set.releaseDate,
+        total: Number(card.set.total) || 0
+      } : undefined,
+      images: card.images,
+      rarity: card.rarity,
+      artist: card.artist,
+      types: card.types,
+      hp: card.hp ? Number(card.hp) : undefined,
+      attacks: card.attacks,
+      weaknesses: card.weaknesses,
+      resistances: card.resistances,
+      retreatCost: card.retreatCost,
+      convertedRetreatCost: card.convertedRetreatCost,
+      subtypes: card.subtypes,
+      supertype: card.supertype,
+      nationalPokedexNumbers: card.nationalPokedexNumbers,
+      legalities: card.legalities,
+      tcgplayer: card.tcgplayer
+    }
+    
+    console.log(`⚡ Found card in local database: ${card.name} (${card.set?.name})`)
+    
+    // Send card details immediately
+    partialResult.card_details = localCardDetails
+    sendPartialUpdate(partialResult as Partial<AnalysisResult>)
+  }
+
+  // Get pricing using smart cache system
+  progress('cardmarket', 'Fetching pricing data...')
+  let priceSource: PriceSource | null = null
+  
+  if (cardId) {
+    try {
+      const smartPrice = await smartPriceCache.getPricing(cardId, cardName)
+      if (smartPrice) {
+        priceSource = {
+          title: localCardDetails?.name || cardName,
+          price: smartPrice.price,
+          source: smartPrice.source,
+          url: smartPrice.url
+        }
+        console.log(`💰 Smart cache provided price: £${smartPrice.price.toFixed(2)} from ${smartPrice.source}`)
+      }
+    } catch (error) {
+      console.log(`⚠️ Smart cache failed, falling back to API: ${error}`)
+    }
+  }
+  
+  // Fallback to original API if smart cache fails
+  if (!priceSource) {
+    progress('cardmarket', 'Fetching Pokemon TCG API pricing...')
+    const pokemonTcgResult = await searchPokemonTcgApi(cardName, progress)
+    priceSource = pokemonTcgResult.priceSource
+    
+    // Update card details if we didn't get them locally
+    if (!localCardDetails) {
+      localCardDetails = pokemonTcgResult.cardDetails
+    }
+  }
+
+  // Send final pricing results
+  partialResult.cardmarket = priceSource
+  if (!partialResult.card_details) {
+    partialResult.card_details = localCardDetails
+  }
+  sendPartialUpdate(partialResult as Partial<AnalysisResult>)
 
   progress('analysis', 'Calculating final analysis...')
 
   // Extract price source and card details
-  const pokemonTcgData = pokemonTcgResult.priceSource
-  const cardDetails = pokemonTcgResult.cardDetails
+  const pokemonTcgData = priceSource
+  const finalCardDetails = localCardDetails
 
   // Detect promo and sealed status
-  const promoInfo = detectPromoCard(cardDetails, cardName)
+  const promoInfo = detectPromoCard(finalCardDetails, cardName)
   const filteredEbayResults = filterEbayResultsBySealed(ebayPrices, promoInfo)
 
   // Calculate analysis
   const allPrices: number[] = []
   
+  // Debug eBay prices
+  console.log(`🔍 DEBUG - eBay Prices Array:`, JSON.stringify(ebayPrices, null, 2))
+  console.log(`🔍 DEBUG - eBay Prices Count: ${ebayPrices.length}`)
+  ebayPrices.forEach((item, index) => {
+    console.log(`🔍 DEBUG - eBay Item ${index}: price=${item.price}, title="${item.title}"`)
+  })
+  
   // Add all eBay prices (both sealed and unsealed) for base calculation
-  ebayPrices.forEach(item => allPrices.push(item.price))
+  ebayPrices.forEach(item => {
+    if (typeof item.price === 'number' && !isNaN(item.price)) {
+      allPrices.push(item.price)
+      console.log(`✅ Added price to allPrices: £${item.price}`)
+    } else {
+      console.log(`❌ Invalid price: ${item.price} (type: ${typeof item.price})`)
+    }
+  })
   
   // Add Pokemon TCG API price
-  if (pokemonTcgData) allPrices.push(pokemonTcgData.price)
+  if (pokemonTcgData) {
+    allPrices.push(pokemonTcgData.price)
+    console.log(`✅ Added TCG price to allPrices: £${pokemonTcgData.price}`)
+  }
+  
+  console.log(`🔍 DEBUG - All Prices Array: [${allPrices.join(', ')}]`)
 
   // Calculate eBay average from all results (not just unsealed)
   const ebayAverage = ebayPrices.length > 0 
-    ? ebayPrices.reduce((sum, item) => sum + item.price, 0) / ebayPrices.length
+    ? ebayPrices.reduce((sum, item) => {
+        const price = typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0
+        console.log(`🔍 DEBUG - Adding to eBay average: ${price}`)
+        return sum + price
+      }, 0) / ebayPrices.length
     : 0
+    
+  console.log(`🔍 DEBUG - eBay Average Calculation: ${ebayAverage}`)
 
   const finalAverage = allPrices.length > 0 
     ? allPrices.reduce((sum, price) => sum + price, 0) / allPrices.length
@@ -391,7 +588,7 @@ export async function analyzeCard(
     timestamp: new Date().toISOString(),
     ebay_prices: ebayPrices,
     cardmarket: pokemonTcgData,
-    card_details: cardDetails,
+    card_details: finalCardDetails,
     analysis: {
       ebay_average: parseFloat(ebayAverage.toFixed(2)),
       cardmarket_price: pokemonTcgData?.price || 0,
@@ -667,9 +864,9 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
       const hasSearchParams = url.includes('_skw=') || url.includes('epid=')
       const isMalformedUrl = hasSearchParams
       
-      // Check for suspiciously low prices (likely graded or different market)
+      // Check for suspiciously low prices (likely errors or different market)
       const price = parseFloat(item.sale_price)
-      const isSuspiciouslyLow = price < 8.0 // Lowered from £12 to £8 to allow more legitimate listings
+      const isSuspiciouslyLow = price < 0.50 // Only filter out truly suspicious prices like £0.01
       
       console.log(`🔍 Filtering item: "${item.title}"`)
       console.log(`   Price: £${item.sale_price} (suspiciously low: ${isSuspiciouslyLow})`)
@@ -694,14 +891,19 @@ async function performEbaySearch(searchQuery: string): Promise<EbayItem[]> {
       console.log('---')
     })
     
-    const results = filteredProducts.map((item: any) => ({
-      title: item.title,
-      price: parseFloat(item.sale_price),
-      url: `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(item.title)}&LH_Sold=1&LH_Complete=1&LH_Auction=1&Graded=No&LH_PrefLoc=1`,
-      source: 'eBay (Sold)',
-      condition: 'Used/Ungraded',
-      soldDate: item.date_sold
-    }))
+    const results = filteredProducts.map((item: any) => {
+      const price = parseFloat(item.sale_price)
+      console.log(`🔍 Converting eBay item: "${item.title}" sale_price=${item.sale_price} -> price=${price}`)
+      
+      return {
+        title: item.title,
+        price: price,
+        url: `https://www.ebay.co.uk/sch/i.html?_nkw=${encodeURIComponent(item.title)}&LH_Sold=1&LH_Complete=1&LH_Auction=1&Graded=No&LH_PrefLoc=1`,
+        source: 'eBay (Sold)',
+        condition: 'Used/Ungraded',
+        soldDate: item.date_sold
+      }
+    })
     
     console.log(`✅ eBay Search Found: ${results.length} recent sold items`)
     if (results.length > 0) {
@@ -896,21 +1098,37 @@ async function searchPokemonTcgApi(
     console.log(`🔍 Pokemon TCG API Search: "${cardName}" -> strategies: [${strategies.join(', ')}]`)
     
     // Try each strategy until one succeeds
-    for (const strategy of strategies) {
+    for (let i = 0; i < strategies.length; i++) {
+      const strategy = strategies[i]
+      
+      // Add delay between attempts to avoid overwhelming the API
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * i)) // Progressive delay
+      }
+      
       try {
         const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(strategy)}&pageSize=10`
         console.log(`📡 Pokemon TCG API URL: ${url}`)
         
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+        
         const response = await fetch(url, {
           headers: {
             'User-Agent': 'PokemonIntelligence/1.0'
-          }
+          },
+          signal: controller.signal
         })
+        
+        clearTimeout(timeoutId)
 
         console.log(`🌐 Pokemon TCG API Response Status: ${response.status}`)
 
         if (!response.ok) {
           console.log(`❌ Pokemon TCG API returned ${response.status} for strategy: "${strategy}"`)
+          if (response.status >= 500) {
+            console.log(`🚨 Server error detected (${response.status}), API may be down`)
+          }
           continue // Try next strategy
         }
 
@@ -1006,7 +1224,11 @@ async function searchPokemonTcgApi(
           return { priceSource, cardDetails }
         }
       } catch (error) {
-        console.log(`⚠️ Pokemon TCG API strategy failed: "${strategy}" - ${error}`)
+        if (error.name === 'AbortError') {
+          console.log(`⏱️ Pokemon TCG API timeout for strategy: "${strategy}"`)
+        } else {
+          console.log(`⚠️ Pokemon TCG API strategy failed: "${strategy}" - ${error}`)
+        }
         continue // Try next strategy
       }
     }
@@ -1019,11 +1241,17 @@ async function searchPokemonTcgApi(
         const fallbackUrl = `https://api.pokemontcg.io/v2/cards?q=name:*${firstWord}*&pageSize=5`
         console.log(`📡 Fallback Pokemon TCG API URL: ${fallbackUrl}`)
         
+        const fallbackController = new AbortController()
+        const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 10000) // 10 second timeout for fallback
+        
         const fallbackResponse = await fetch(fallbackUrl, {
           headers: {
             'User-Agent': 'PokemonIntelligence/1.0'
-          }
+          },
+          signal: fallbackController.signal
         })
+        
+        clearTimeout(fallbackTimeoutId)
         
         if (fallbackResponse.ok) {
           const fallbackData = await fallbackResponse.json()
@@ -1115,14 +1343,22 @@ async function searchPokemonTcgApi(
           }
         }
       } catch (error) {
-        console.log(`⚠️ Fallback Pokemon TCG API search failed: ${error}`)
+        if (error.name === 'AbortError') {
+          console.log(`⏱️ Fallback Pokemon TCG API timeout`)
+        } else {
+          console.log(`⚠️ Fallback Pokemon TCG API search failed: ${error}`)
+        }
       }
     }
     
     console.log(`❌ No Pokemon TCG API results found for: "${cardName}"`)
     return { priceSource: null, cardDetails: null }
   } catch (error) {
-    console.error('❌ Pokemon TCG API search failed:', error)
+    if (error.name === 'AbortError') {
+      console.error('⏱️ Pokemon TCG API: Request timed out')
+    } else {
+      console.error('❌ Pokemon TCG API search failed:', error)
+    }
     return { priceSource: null, cardDetails: null }
   }
 }
