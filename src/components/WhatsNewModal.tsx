@@ -18,6 +18,14 @@ interface WhatsNewModalProps {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'v2.5.0',
+    date: '2025-01-27',
+    title: 'Major Search & Analysis UX Revolution',
+    description: 'Complete overhaul of the search experience with progressive loading, instant eBay results, smart autocomplete, and enhanced card matching. The search modal is gone - now you get immediate results with beautiful shimmer effects while data loads. Click any autocomplete item for instant specific card analysis!',
+    type: 'feature',
+    icon: '🚀'
+  },
+  {
     version: 'v2.4.1',
     date: '2025-01-27',
     title: 'UI Updates',
