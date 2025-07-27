@@ -359,9 +359,13 @@ export async function analyzeCard(
   // Send initial empty structure
   sendPartialUpdate(partialResult as Partial<AnalysisResult>)
   
-  // Run eBay search first (faster)
+  // Run eBay search first (faster) with user's exact search term
   progress('ebay', 'Searching eBay sold items...')
+  console.log(`🎯 eBay searching for user's exact term: "${cardName}"`)
   const ebayPrices = await searchEbaySoldItems(cardName, progress)
+  
+  // Initialize local database for card details
+  await pokemonDB.initialize()
   
   // Calculate eBay average immediately
   const ebayAveragePrice = ebayPrices.length > 0 
@@ -376,12 +380,9 @@ export async function analyzeCard(
   }
   sendPartialUpdate(partialResult as Partial<AnalysisResult>)
   
-  // Initialize local database
-  await pokemonDB.initialize()
-  
-  // Search local database for card details (lightning fast)
+  // Search local database for card details (already initialized above)
   progress('cardmarket', 'Searching local card database...')
-  const localResults = pokemonDB.search(cardName, 5) // Get more results to find exact match
+  const localResults = pokemonDB.search(cardName, 5)
   let localCardDetails: CardDetails | null = null
   let cardId: string | null = null
   
@@ -726,11 +727,16 @@ async function searchEbayWithApi(
     // Try each search variation until we find results
     for (const searchTerm of simplifiedSearches) {
       // Don't add "pokemon card" if the search term already contains specific card info
+      // Enhanced search terms (name + number + set) are already specific enough
       const hasCardInfo = searchTerm.toLowerCase().includes('pokemon') || 
                          searchTerm.includes('/165') || 
                          searchTerm.includes('/191') ||
                          searchTerm.includes('151') ||
-                         searchTerm.includes('scarlet violet')
+                         searchTerm.includes('scarlet violet') ||
+                         // Check if it's an enhanced search term (contains card number patterns)
+                         /\b\d+\b/.test(searchTerm) ||
+                         // Check if it contains set names (BREAKpoint, Evolutions, etc.)
+                         /\b(BREAKpoint|Evolutions|Base Set|Jungle|Fossil|Team Rocket|Gym|Neo|eCard|EX|Diamond|Pearl|Platinum|HeartGold|SoulSilver|Black|White|XY|Sun|Moon|Sword|Shield|Brilliant|Shining|Legends|Arceus|Battle|Styles|Fusion|Strike|Chilling|Reign|Evolving|Skies|Celebrations|Star|Birth|Astral|Radiance|Pokémon|GO|Lost|Origin|Silver|Tempest|Crown|Zenith|Brilliant|Stars|Fusion|Strike|Vivid|Voltage|Darkness|Ablaze|Rebel|Clash|Battle|Styles|Scarlet|Violet|Paldea|Evolved|Obsidian|Flames|Surging|Sparks|Shrouded|Fable|Stellar|Miracle|Twilight|Masquerade|Paradox|Rift)\b/i.test(searchTerm)
       
       const searchQuery = hasCardInfo ? searchTerm : `${searchTerm} pokemon card`
       
