@@ -30,8 +30,8 @@ def search_ebay_uk_sold(card_name, max_results=4):
     try:
         # Search for SOLD AUCTIONS ONLY - matching exact parameters
         search_query = f"{card_name} pokemon card"
-        # Simplified URL for better compatibility
-        ebay_url = f"https://www.ebay.co.uk/sch/i.html?_nkw={quote(search_query)}&_sacat=0&LH_Sold=1&LH_Complete=1&rt=nc&_ipg=50"
+        # Simplified URL for better compatibility with UK-only filtering
+        ebay_url = f"https://www.ebay.co.uk/sch/i.html?_nkw={quote(search_query)}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&rt=nc&_ipg=50"
         
         print(f"   Searching: {ebay_url}")
         
