@@ -114,7 +114,7 @@ export interface PopulationEntry {
   grade_6: number
   total_population: number
   gem_rate: number // Percentage of grade 10s
-  source: string // 'pikawiz', 'psa_api', etc.
+  source: string // 'psa_api', etc. (pikawiz disabled)
   last_updated: string
   created_at?: string
 }

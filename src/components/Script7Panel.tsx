@@ -206,10 +206,10 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
 
               {/* Population Data Section */}
-              <PopulationDataSection 
+              {/* <PopulationDataSection 
                 populationData={result?.card_details?.population_data}
                 loading={loading}
-              />
+              /> */}
 
 
 

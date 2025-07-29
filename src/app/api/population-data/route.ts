@@ -30,63 +30,10 @@ interface AllPopulationData {
 // Helper function to create delays between requests
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-// Function to scrape Pikawiz data
+// DISABLED: Pikawiz scraping removed
 async function scrapePikawizData(cardName: string, setName?: string, cardNumber?: string): Promise<PopulationData | null> {
-  try {
-    // Call our Pikawiz scraper
-    const baseUrl = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:3000' 
-      : process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.com'
-    
-    // Try to determine the set slug from the set name
-    let setSlug = 'prismatic-evolutions' // default
-    if (setName) {
-      setSlug = setName.toLowerCase()
-        .replace(/[^a-z0-9]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
-    }
-    
-    const response = await fetch(`${baseUrl}/api/scrape-pikawiz?set=${setSlug}`)
-    const result = await response.json()
-    
-    if (result.success && result.data.cards.length > 0) {
-      // Find the specific card in the scraped data
-      const foundCard = result.data.cards.find((card: any) => 
-        card.name.toLowerCase().includes(cardName.toLowerCase()) ||
-        (cardNumber && card.cardNumber === cardNumber)
-      )
-      
-      if (foundCard) {
-        return {
-          service: 'PSA',
-          totalPopulation: foundCard.totalPSA,
-          gemRate: foundCard.totalPSA > 0 ? (foundCard.psa10 / foundCard.totalPSA) * 100 : 0,
-          grades: [
-            { grade: 10, count: foundCard.psa10, label: 'PSA 10' },
-            { grade: 9, count: foundCard.psa9, label: 'PSA 9' },
-            { grade: 8, count: foundCard.psa8, label: 'PSA 8' },
-            { grade: 7, count: foundCard.psa7, label: 'PSA 7' },
-            { grade: 6, count: foundCard.psa6, label: 'PSA 6' }
-          ],
-          lastUpdated: result.data.lastUpdated,
-          cardInfo: {
-            name: foundCard.name,
-            set: result.data.setName,
-            number: foundCard.cardNumber
-          }
-        }
-      }
-    }
-    
-    // If no specific card found, return mock data with clear labeling
-    console.log(`⚠️ Card not found in Pikawiz data, using mock data for: ${cardName}`)
-    return getMockPopulationData(cardName, 'PSA')
-    
-  } catch (error) {
-    console.error('Error scraping Pikawiz data:', error)
-    return getMockPopulationData(cardName, 'PSA')
-  }
+  // Pikawiz scraping has been disabled
+  return null
 }
 
 // Mock data for testing (replace with actual scraping)
