@@ -423,11 +423,13 @@ export async function GET(request: NextRequest) {
     // Fetch data from requested services in parallel
     const promises: Promise<void>[] = []
 
+    // PSA: Disabled slow Pikawiz scraping (26+ seconds) - using fast mock data instead
+    // TODO: Replace with GradedMetrics database lookup or find faster PSA data source
     if (services.includes('PSA')) {
-      console.log(`🕸️ Fetching PSA population from Pikawiz...`)
+      console.log(`⚡ Using fast PSA mock data (Pikawiz scraping disabled - too slow)`)
       
       promises.push(
-        scrapePikawizData(cardName, setName, cardNumber).then(data => {
+        Promise.resolve(getMockPopulationData(cardName, 'PSA')).then(data => {
           if (data) populationData.psa = data
         })
       )
