@@ -47,6 +47,21 @@ const nextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
   },
   
+  // Prevent caching of large API responses
+  async headers() {
+    return [
+      {
+        source: '/api/health',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+    ]
+  },
+  
   // Reduce bundle size
   modularizeImports: {
     'motion': {

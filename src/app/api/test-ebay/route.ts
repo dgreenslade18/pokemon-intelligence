@@ -30,9 +30,12 @@ export async function GET(request: NextRequest) {
 
     console.log(`📡 URL: ${url}?${params}`)
 
+    const authHeader = `Bearer ${ebayToken}`
+    console.log(`🔑 Authorization Header Sent: ${authHeader.substring(0, 30)}...`)
+
     const response = await fetch(`${url}?${params}`, {
       headers: {
-        'Authorization': `Bearer ${ebayToken}`,
+        'Authorization': authHeader,
         'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB',
         'X-EBAY-C-ENDUSERCTX': 'contextualLocation=country%3DGB'
       }

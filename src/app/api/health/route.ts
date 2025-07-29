@@ -68,9 +68,13 @@ async function checkTCGDxAPI(): Promise<HealthStatus['tcgdx_api']> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 3000) // 3 second timeout
     
-    const response = await fetch('https://api.tcgdex.net/v2/en/cards', {
+    // Only fetch a single card to test API health - prevents 2MB+ response
+    const response = await fetch('https://api.tcgdx.net/v2/en/cards?pagination=1&page=1', {
       signal: controller.signal,
-      headers: { 'Accept': 'application/json' }
+      headers: { 
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache' // Prevent caching of health check responses
+      }
     })
     
     clearTimeout(timeout)

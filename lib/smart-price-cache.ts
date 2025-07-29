@@ -187,8 +187,11 @@ class SmartPriceCache {
 
       console.log(`🔗 Fetching pricing from API for ${cardName}...`)
       
+      const apiUrl = `https://api.pokemontcg.io/v2/cards?q=name:"${cardName}"&pageSize=1`
+      console.log(`📡 API URL: ${apiUrl}`)
+      
       // Simulate API call (replace with actual TCG API call)
-      const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${cardName}"&pageSize=1`, {
+      const response = await fetch(apiUrl, {
         signal: controller.signal,
         headers: { 'User-Agent': 'CardIntelligence/1.0' }
       })
@@ -201,7 +204,10 @@ class SmartPriceCache {
       }
 
       const data = await response.json()
+      console.log(`📦 API Response: Found ${data.data?.length || 0} cards`)
+      
       if (data.data && data.data.length > 0) {
+        console.log(`🔍 First card found: "${data.data[0].name}" from set "${data.data[0].set?.name}"`)
         const card = data.data[0]
         
         // Extract pricing from TCGPlayer data
@@ -225,6 +231,8 @@ class SmartPriceCache {
           this.updateApiHealth(fetchTime < 2000 ? +5 : +2)
           console.log(`✅ API price fetched in ${fetchTime}ms: £${gbpPrice.toFixed(2)}`)
           return priceData
+        } else {
+          console.log(`💰 No TCGPlayer pricing found for "${card.name}". Available price types:`, Object.keys(card.tcgplayer?.prices || {}))
         }
       }
 

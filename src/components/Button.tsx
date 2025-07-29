@@ -10,6 +10,7 @@ export type ButtonColor =
   | 'outline'
   | 'danger'
   | 'ghost'
+  | 'search'
 
 export type ButtonSize = 'small' | 'medium' | 'large'
 
@@ -38,17 +39,18 @@ export const Button = memo(({
   const buttonSize = size
 
   const classes = clsx(
-		"font-body font-medium relative cursor-pointer overflow-hidden ease-in-out transition-[scale,color,background-color] whitespace-nowrap  text-center items-center  group duration-400 justify-center select-none appearance-none group-active:scale-[0.975] active:scale-[0.975] inline-flex gap-2 rounded-full text-[0.938rem] px-5 leading-[0.9] tracking-[0.01em] ",
+		"font-body font-medium  cursor-pointer overflow-hidden ease-in-out transition-[scale,color,background-color] whitespace-nowrap  text-center items-center  group duration-400 justify-center select-none appearance-none group-active:scale-[0.975] active:scale-[0.975] inline-flex gap-2 rounded-full text-[0.938rem] px-5 leading-[0.9] tracking-[0.01em] ",
     className,
     // Color variants
-    color === 'primary' && 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
-    color === 'secondary' && 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white',
-    color === 'white' && 'bg-white text-black rounded-full',
-    color === 'danger' && 'bg-red-700 text-white rounded-full',
-    color === 'success' && 'bg-green-600 text-white hover:bg-green-700',
-    color === 'warning' && 'bg-yellow-600 text-white hover:bg-yellow-700',
-    color === 'outline' && 'bg-transparent text-white border border-white/20 hover:bg-white/10',
-    color === 'ghost' && 'bg-transparent text-white hover:bg-white/10',
+    color === 'primary' && 'relative bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
+    color === 'secondary' && 'relative bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white',
+    color === 'white' && 'relative bg-white text-black rounded-full',
+    color === 'danger' && 'relative bg-red-700 text-white rounded-full',
+    color === 'success' && 'relative bg-green-600 text-white hover:bg-green-700',
+    color === 'warning' && 'relative bg-yellow-600 text-white hover:bg-yellow-700',
+    color === 'outline' && 'relative bg-transparent text-white border border-white/20 hover:bg-white/10',
+    color === 'ghost' && 'relative bg-transparent text-white hover:bg-white/10',
+    color === 'search' && 'bg-transparent text-black',
     // Size variants
     buttonSize === 'small' && 'py-2 px-3 text-sm',
     buttonSize === 'medium' && 'py-3 px-4',
@@ -59,18 +61,22 @@ export const Button = memo(({
 
   // Check if children contains SVG elements
   const hasSVG = (children: React.ReactNode): boolean => {
+    if (!children) return false
     if (typeof children === 'string') return false
     if (Array.isArray(children)) {
       return children.some(child => hasSVG(child))
     }
-    if (children && typeof children === 'object' && 'props' in children) {
-      const childProps = children as { props: { children?: React.ReactNode } }
-      return hasSVG(childProps.props.children)
-    }
-    if (children && typeof children === 'object' && 'type' in children) {
-      const childType = children as { type: string }
-      return childType.type === 'svg' || hasSVG(children)
-    }
+         if (React.isValidElement(children)) {
+       // Check if this element is an SVG
+       if (children.type === 'svg') {
+         return true
+       }
+       // Recursively check children
+       const props = children.props as any
+       if (props && props.children) {
+         return hasSVG(props.children)
+       }
+     }
     return false
   }
 
@@ -135,19 +141,27 @@ export const Button = memo(({
     >
 			
 			<span className="pointer-events-none relative z-5">
-				<span className="inline-block">
-					{characters.map((char, index) => (
-						<span
-							key={index}
-							className="inline-block"
-							style={{
-								animation: isAnimating ? `deleteType 1s ease-in-out forwards ${index * 0.03}s` : "none",
-							}}
-						>
-							{char === " " ? "\u00A0" : char}
-						</span>
-					))}
-				</span>
+				{containsSVG ? (
+					// If contains SVG, render children directly without text animation
+					<span className="inline-flex items-center gap-2">
+						{children}
+					</span>
+				) : (
+					// Text-only content with animation
+					<span className="inline-block">
+						{characters.map((char, index) => (
+							<span
+								key={index}
+								className="inline-block"
+								style={{
+									animation: isAnimating ? `deleteType 1s ease-in-out forwards ${index * 0.03}s` : "none",
+								}}
+							>
+								{char === " " ? "\u00A0" : char}
+							</span>
+						))}
+					</span>
+				)}
 			</span>
 		</button>
 	);

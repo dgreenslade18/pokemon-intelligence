@@ -61,7 +61,7 @@ export interface SearchResult {
 }
 
 // Set ID to readable name mapping
-const SET_NAMES: Record<string, string> = {
+export const SET_NAMES: Record<string, string> = {
   'base1': 'Base Set',
   'base2': 'Jungle',
   'base3': 'Fossil',
@@ -90,6 +90,8 @@ const SET_NAMES: Record<string, string> = {
   'swsh11tg': 'Lost Origin Trainer Gallery',
   'swsh12tg': 'Silver Tempest Trainer Gallery',
   'swsh9tg': 'Brilliant Stars Trainer Gallery',
+  'swsh12pt5' : 'Crown Zenith',
+  'swsh12pt5gg' : 'Crown Zenith GG',
   'swshp': 'SWSH Black Star Promos',
   'sv1': 'Scarlet & Violet',
   'sv2': 'Paldea Evolved',
@@ -99,8 +101,14 @@ const SET_NAMES: Record<string, string> = {
   'sv6': 'Twilight Masquerade',
   'sv7': 'Stellar Crown',
   'sv8': 'Surging Sparks',
-  'sv3pt5': 'Obsidian Flames 151',
-  'sv4pt5': 'Paradox Rift Paldean Fates',
+  'sv9' : 'Journey Together',
+  'sv10' : 'Destined Rivals',
+  'sv3pt5' : '151',
+  'sv8pt5': 'Prismatic Evolutions',
+  'sv6pt5' : 'Shrouded Fable',
+  'sv4pt5': 'Paldean Fates',
+  'rsv10pt5' : 'White Flare',
+  'zsv10pt5' : 'Black Bolt',
   'svp': 'SVP Black Star Promos',
   'sm1': 'Sun & Moon',
   'sm2': 'Guardians Rising',
@@ -273,6 +281,24 @@ class PokemonDatabase {
     }
 
     try {
+      // Download sets metadata first
+      console.log('📋 Downloading sets metadata...')
+      const setsMetadataResponse = await fetch('https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/sets/en.json')
+      const setsMetadata = await setsMetadataResponse.json()
+      
+      // Create a lookup map for set metadata
+      const setMetadataMap = new Map()
+      setsMetadata.forEach((setMeta: any) => {
+        setMetadataMap.set(setMeta.id, {
+          name: setMeta.name,
+          printedTotal: setMeta.printedTotal,
+          releaseDate: setMeta.releaseDate,
+          series: setMeta.series
+        })
+      })
+      
+      console.log(`✅ Downloaded metadata for ${setsMetadata.length} sets`)
+
       // Get list of set files
       const setsResponse = await fetch('https://api.github.com/repos/PokemonTCG/pokemon-tcg-data/contents/cards/en')
       const setsData = await setsResponse.json()
@@ -299,7 +325,15 @@ class PokemonDatabase {
             
             // Extract set ID from filename (e.g., "swsh10tg.json" -> "swsh10tg")
             const setId = setFile.name.replace('.json', '')
-            const setName = SET_NAMES[setId] || setId.toUpperCase()
+            
+            // Get set metadata from our downloaded metadata
+            const setMeta = setMetadataMap.get(setId)
+            const setName = setMeta?.name || SET_NAMES[setId] || setId.toUpperCase()
+            const setTotal = setMeta?.printedTotal || setCards.length // Fallback to card count if no metadata
+            const setSeries = setMeta?.series || this.getSeriesFromSetId(setId)
+            const setReleaseDate = setMeta?.releaseDate || ''
+            
+            console.log(`📦 Processing ${setId}: "${setName}" (${setTotal} printed cards, ${setCards.length} total variants)`)
             
             // Add set information to each card
             const enrichedCards = setCards.map((card: any) => ({
@@ -307,9 +341,9 @@ class PokemonDatabase {
               set: {
                 id: setId,
                 name: setName,
-                series: this.getSeriesFromSetId(setId),
-                releaseDate: '',
-                total: 0
+                series: setSeries,
+                releaseDate: setReleaseDate,
+                total: setTotal
               }
             }))
             
@@ -323,11 +357,12 @@ class PokemonDatabase {
 
       console.log(`✅ Downloaded ${allCards.length} cards from ${processedSets} sets`)
 
-      // Cache the data
+      // Cache the data including sets metadata
       const cacheData = {
         timestamp: Date.now(),
         cards: allCards,
-        setsProcessed: processedSets
+        setsProcessed: processedSets,
+        setsMetadata: Array.from(setMetadataMap.entries())
       }
 
       fs.writeFileSync(

@@ -99,6 +99,91 @@ export interface EmailSubmission {
   email_sent_at?: Date
 }
 
+// Add population data schema
+export interface PopulationEntry {
+  id?: number
+  card_name: string
+  card_number: string
+  set_name: string
+  set_slug: string
+  grading_service: 'PSA' | 'CGC' | 'ACE'
+  grade_10: number
+  grade_9: number
+  grade_8: number
+  grade_7: number
+  grade_6: number
+  total_population: number
+  gem_rate: number // Percentage of grade 10s
+  source: string // 'pikawiz', 'psa_api', etc.
+  last_updated: string
+  created_at?: string
+}
+
+// Function to store population data
+export async function insertPopulationData(data: PopulationEntry) {
+  const query = `
+    INSERT INTO population_data (
+      card_name, card_number, set_name, set_slug, grading_service,
+      grade_10, grade_9, grade_8, grade_7, grade_6, total_population,
+      gem_rate, source, last_updated, created_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+    ON CONFLICT (card_name, card_number, set_slug, grading_service)
+    DO UPDATE SET
+      grade_10 = EXCLUDED.grade_10,
+      grade_9 = EXCLUDED.grade_9,
+      grade_8 = EXCLUDED.grade_8,
+      grade_7 = EXCLUDED.grade_7,
+      grade_6 = EXCLUDED.grade_6,
+      total_population = EXCLUDED.total_population,
+      gem_rate = EXCLUDED.gem_rate,
+      last_updated = EXCLUDED.last_updated
+    RETURNING id
+  `
+  
+  const values = [
+    data.card_name, data.card_number, data.set_name, data.set_slug,
+    data.grading_service, data.grade_10, data.grade_9, data.grade_8,
+    data.grade_7, data.grade_6, data.total_population, data.gem_rate,
+    data.source, data.last_updated
+  ]
+  
+  return executeQuery(query, values)
+}
+
+// Function to get population data for a card
+export async function getPopulationData(cardName: string, setName?: string, cardNumber?: string) {
+  let query = `
+    SELECT * FROM population_data 
+    WHERE card_name ILIKE $1
+  `
+  const values: any[] = [`%${cardName}%`]
+  
+  if (setName) {
+    query += ` AND set_name ILIKE $${values.length + 1}`
+    values.push(`%${setName}%`)
+  }
+  
+  if (cardNumber) {
+    query += ` AND card_number = $${values.length + 1}`
+    values.push(cardNumber)
+  }
+  
+  query += ` ORDER BY last_updated DESC`
+  
+  return executeQuery(query, values)
+}
+
+// Function to get all population data for a set
+export async function getSetPopulationData(setSlug: string) {
+  const query = `
+    SELECT * FROM population_data 
+    WHERE set_slug = $1
+    ORDER BY card_number, grading_service
+  `
+  
+  return executeQuery(query, [setSlug])
+}
+
 // Initialize database tables
 export async function initDb() {
   try {

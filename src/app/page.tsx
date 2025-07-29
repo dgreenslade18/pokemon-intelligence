@@ -55,9 +55,9 @@ export default function HomePage() {
         <div className="relative z-10">
           {/* Header */}
           <Header />
-          <div className="max-w-[1280px] mx-auto px-4 py-8">
+          
             <Script7Panel onBack={() => {}} hideBackButton={true} />
-          </div>
+          
         </div>
       </main>
     );
@@ -70,22 +70,32 @@ export default function HomePage() {
 
     setIsSubmitting(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch("/api/email-submission", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email: email.trim() }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         setSubmitted(true);
         setEmail("");
       } else {
-        console.error("Failed to submit email");
+        console.warn("Failed to submit email:", response.status);
       }
     } catch (error) {
-      console.error("Error submitting email:", error);
+      if (error.name === 'AbortError') {
+        console.log("Email submission was cancelled");
+      } else {
+        console.warn("Error submitting email:", error.message || error);
+      }
     } finally {
       setIsSubmitting(false);
     }

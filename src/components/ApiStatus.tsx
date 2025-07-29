@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface HealthStatus {
   pokemon_tcg_api: {
@@ -28,49 +28,82 @@ export default function ApiStatus() {
   const [isLoading, setIsLoading] = useState(true)
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
-  const checkApiHealth = async () => {
+  const checkApiHealth = useCallback(async (signal?: AbortSignal) => {
     try {
-      const response = await fetch('/api/health')
-      const data = await response.json()
-      setHealthStatus(data)
-      setLastChecked(new Date())
-    } catch (error) {
-      console.error('Failed to check API health:', error)
-      // Set fallback status
-      setHealthStatus({
-        pokemon_tcg_api: {
-          status: 'down',
-          response_time: null,
-          last_checked: new Date().toISOString(),
-          error: 'Health check failed'
-        },
-        tcgdx_api: {
-          status: 'down',
-          response_time: null,
-          last_checked: new Date().toISOString(),
-          error: 'Health check failed'
-        },
-        ebay_api: {
-          status: 'down',
-          last_checked: new Date().toISOString(),
-          error: 'Health check failed'
-        },
-        overall_status: 'down'
+      const response = await fetch('/api/health', {
+        signal,
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
       })
+      
+      if (!response.ok) {
+        throw new Error(`Health check failed with status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      // Only update state if request wasn't aborted
+      if (!signal?.aborted) {
+        setHealthStatus(data)
+        setLastChecked(new Date())
+      }
+    } catch (error) {
+      // Don't log errors for aborted requests (common during hot reload)
+      if (error.name === 'AbortError') {
+        console.log('ApiStatus health check aborted (this is normal during development)')
+        return
+      }
+      
+      console.warn('ApiStatus health check failed:', error.message || error)
+      
+      // Only update state if request wasn't aborted
+      if (!signal?.aborted) {
+        // Set fallback status
+        setHealthStatus({
+          pokemon_tcg_api: {
+            status: 'down',
+            response_time: null,
+            last_checked: new Date().toISOString(),
+            error: 'Health check failed'
+          },
+          tcgdx_api: {
+            status: 'down',
+            response_time: null,
+            last_checked: new Date().toISOString(),
+            error: 'Health check failed'
+          },
+          ebay_api: {
+            status: 'down',
+            last_checked: new Date().toISOString(),
+            error: 'Health check failed'
+          },
+          overall_status: 'down'
+        })
+      }
     } finally {
-      setIsLoading(false)
+      if (!signal?.aborted) {
+        setIsLoading(false)
+      }
     }
-  }
+  }, [])
 
   useEffect(() => {
-    // Initial check
-    checkApiHealth()
+    const abortController = new AbortController()
+    
+    // Initial check with abort signal
+    checkApiHealth(abortController.signal)
     
     // Check every 5 minutes
-    const interval = setInterval(checkApiHealth, 5 * 60 * 1000)
+    const interval = setInterval(() => {
+      checkApiHealth() // Don't pass abort signal for interval checks
+    }, 5 * 60 * 1000)
     
-    return () => clearInterval(interval)
-  }, [])
+    return () => {
+      abortController.abort() // Cancel initial request if component unmounts
+      clearInterval(interval)
+    }
+  }, [checkApiHealth])
 
   const getStatusColor = (status: 'up' | 'down' | 'degraded') => {
     switch (status) {
