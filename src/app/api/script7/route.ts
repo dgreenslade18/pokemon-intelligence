@@ -767,8 +767,12 @@ async function searchEbaySoldItems(
 ): Promise<EbayItem[]> {
   
   try {
+    // Add delay between searches to avoid bot detection
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+    await delay(1000) // 1 second delay between searches
+    
     // Force use of enhanced web scraping (more accurate than API)
-    console.log('🎯 Using enhanced web scraper (competitor-level filtering)')
+    console.log('🎯 Using enhanced web scraper (SINGLE REQUEST - avoiding bot detection)')
     return await searchEbayWithScraping(cardName, cardDetails, extendedTimeRange)
     
     // Disabled: Old API approach (less accurate, gets wrong cards)
@@ -1067,15 +1071,8 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
   try {
     console.log('🕷️  [V4] eBay Extended Scraper: Starting for:', cardName, extendedTimeRange ? '(Extended Range)' : '(Standard Range)')
     
-    // Enhanced search strategy based on competitor analysis
+    // Enhanced search strategy: CARD NAME + CARD NUMBER/SET TOTAL format
     let preciseSearchTerm = cardName.trim()
-    
-    // NUCLEAR OPTION: Strip any /total format that might have been passed in
-    if (preciseSearchTerm.includes('/') && /\d+\/\d+/.test(preciseSearchTerm)) {
-      const parts = preciseSearchTerm.split('/')
-      preciseSearchTerm = parts[0].trim()
-      console.log(`🧹 ENTRY: Stripped /total format, now: ${preciseSearchTerm}`)
-    }
     
     // Check if this is a TG (Trainer Gallery) card and handle it specially
     const isTGCard = /TG\d+/i.test(cardName)
@@ -1100,19 +1097,9 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
           preciseSearchTerm = `${cardDetails.name} ${cardDetails.number}`
           console.log(`📋 Using TG database format: ${preciseSearchTerm}`)
         } else {
-          // For regular cards, start with just name + number (more likely to match eBay listings)
-          preciseSearchTerm = `${cardDetails.name} ${cardDetails.number}`
-          console.log(`📋 Using database card format: ${preciseSearchTerm}`)
-          
-          // FORCE THE ISSUE: Don't let anything override this
-          console.log(`🔧 FORCING search term to: ${preciseSearchTerm}`)
-          
-          // NUCLEAR OPTION: Strip any /total format that might exist
-          if (preciseSearchTerm.includes('/')) {
-            const parts = preciseSearchTerm.split('/')
-            preciseSearchTerm = parts[0].trim()
-            console.log(`🧹 STRIPPED /total format, now: ${preciseSearchTerm}`)
-          }
+          // NEW FORMAT: Use CARD NAME + CARD NUMBER/SET TOTAL
+          preciseSearchTerm = `${cardDetails.name} ${cardDetails.number}/${cardDetails.set.total}`
+          console.log(`📋 Using enhanced format with /total: ${preciseSearchTerm}`)
         }
       } else {
         // Extract card name and number for basic targeting as fallback
@@ -1150,6 +1137,7 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
     }
     
     const fullSearchTerm = `${preciseSearchTerm} ${exclusions}`
+    console.log(`🎯 Final eBay search term: "${fullSearchTerm}"`)
     const encodedSearch = encodeURIComponent(fullSearchTerm)
     
     // Calculate date ranges based on requirements
@@ -1175,47 +1163,18 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
     const ninetyDaysAgoStr = formatDate(dates.ninetyDaysAgo)
     const oneYearAgoStr = formatDate(dates.oneYearAgo)
     
-    // Create search URLs based on whether extended range is requested
-    let searchUrls
+    // SINGLE REQUEST STRATEGY - Conservative approach to avoid bot detection
+    const singleSearchUrl = extendedTimeRange 
+      ? `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=100`
+      : `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=60&LH_SoldDate=1&rt=nc&LH_SoldDateStart=${thirtyDaysAgoStr}&LH_SoldDateEnd=${todayStr}`
     
-    if (extendedTimeRange) {
-      // Extended search for maximum historical data - remove date restrictions to get everything
-      searchUrls = [
-        // Primary search - get all available sold listings (no date restrictions)
-        `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=200`,
-        
-        // Backup search with different sort order to catch more items
-        `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=1&_ipg=100`
-      ]
-      
-      console.log('🔗 Extended eBay searches (Maximum Coverage - No Date Limits):')
-      console.log(`   Primary: All sold items, sorted by end date (200 items)`)
-      console.log(`   Backup: All sold items, sorted by price (100 items)`)
-      
-      // Debug the actual dates being used
-      console.log('🔍 EXTENDED SEARCH DEBUG - Removing Date Restrictions:')
-      console.log(`   Strategy: Get ALL available sold listings, let frontend filter`)
-      console.log(`   Expected: Should match manual eBay search with 185+ results`)
-    } else {
-      // Standard search for 30-day coverage
-      searchUrls = [
-        // Recent sales (last 15 days) - get more of these
-        `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=40&LH_SoldDate=1&rt=nc&LH_SoldDateStart=${fifteenDaysAgoStr}&LH_SoldDateEnd=${todayStr}`,
-        
-        // Historical sales (15-30 days ago) - get fewer but ensure coverage
-        `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=30&LH_SoldDate=1&rt=nc&LH_SoldDateStart=${thirtyDaysAgoStr}&LH_SoldDateEnd=${fifteenDaysAgoStr}`
-      ]
-      
-      console.log('🔗 Standard eBay searches (30-day coverage):')
-      console.log(`   Recent (${fifteenDaysAgoStr} - ${todayStr}): 40 items`)
-      console.log(`   Historical (${thirtyDaysAgoStr} - ${fifteenDaysAgoStr}): 30 items`)
-    }
+    console.log('🔗 CONSERVATIVE eBay search (Single Request):')
+    console.log(`   URL: ${singleSearchUrl}`)
+    console.log(`   Strategy: One request only to avoid bot detection`)
     
-    // Fetch all date ranges in parallel for speed
-    const searchPromises = searchUrls.map(async (url, index) => {
-      const periodName = extendedTimeRange 
-        ? ['Recent', 'Medium', '3-Month', 'Long-term'][index] || `Period-${index}`
-        : ['Recent', 'Historical'][index] || `Period-${index}`
+    // SINGLE REQUEST ONLY - No parallel processing
+    const searchResult = await (async (url) => {
+      const periodName = 'Single-Search'
       
       console.log(`🚀 [${periodName}] Starting search for URL: ${url}`)
       
@@ -1240,6 +1199,26 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
         const html = await response.text()
         const $ = cheerio.load(html)
         const items: EbayItem[] = []
+
+        // DEBUG: Check what we actually received
+        console.log(`🔍 [${periodName}] HTML length: ${html.length} characters`)
+        console.log(`🔍 [${periodName}] HTML preview: ${html.substring(0, 500)}...`)
+        
+        // Check for bot detection
+        if (html.includes('Pardon our interruption') || html.includes('Checking your browser') || html.length < 1000) {
+          console.log(`🚫 [${periodName}] Bot detection detected or empty page`)
+          return { periodName, items: [] }
+        }
+        
+        // Check how many s-item elements exist
+        const sItemCount = $('.s-item').length
+        console.log(`🔍 [${periodName}] Found ${sItemCount} .s-item elements`)
+        
+        // If no s-item elements, try alternative selectors
+        if (sItemCount === 0) {
+          const itemCards = $('.item-card, .srp-item, [data-testid*="item"], .search-item').length
+          console.log(`🔍 [${periodName}] Alternative selectors found: ${itemCards} items`)
+        }
 
         $('.s-item').each((itemIndex, element) => {
           const itemElement = $(element)
@@ -1328,13 +1307,10 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
         }
         return { periodName, items: [] }
       }
-    })
+    })(singleSearchUrl)
     
-    // Wait for all searches to complete
-    const results = await Promise.all(searchPromises)
-    
-    // Combine all results
-    const allItems = results.flatMap(result => result.items)
+    // Get items from single search result
+    const allItems = searchResult.items
     
     // Enhanced deduplication based on multiple criteria
     const uniqueItems = allItems.filter((item, index, self) => {
@@ -1394,85 +1370,9 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
     console.log(`   Unique items: ${uniqueItems.length}`)
     console.log(`   Date coverage: ${extendedTimeRange ? '1 year' : '30 days'}`)
     
-    // TG card fallback: if we have very few results for TG cards, try alternative searches without exclusions
-    if (isTGCard && uniqueItems.length < 10 && searchTerms.length > 1) {
-      console.log(`⚠️ TG card fallback: Only ${uniqueItems.length} results found, trying alternative search terms...`)
-      
-      // Try alternative search terms without the aggressive exclusions
-      for (let i = 1; i < searchTerms.length; i++) {
-        const altSearchTerm = searchTerms[i]
-        const lightExclusions = '-(japanese, jpn, korean, chinese, fake, replica, proxy, custom)'
-        const altFullSearchTerm = `${altSearchTerm} ${lightExclusions}`
-        const altEncodedSearch = encodeURIComponent(altFullSearchTerm)
-        
-        console.log(`🔄 Trying TG fallback search: "${altFullSearchTerm}"`)
-        
-        try {
-          // Use a simplified search URL for the fallback
-          const fallbackUrl = `https://www.ebay.co.uk/sch/i.html?_nkw=${altEncodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&rt=nc&_ipg=200`
-          
-          const fallbackController = new AbortController()
-          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 20000) // 20 second timeout for fallback
-          
-          const response = await fetch(fallbackUrl, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-              'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
-            },
-            signal: fallbackController.signal
-          })
-          
-          clearTimeout(fallbackTimeoutId)
-          
-          if (response.ok) {
-            const $ = cheerio.load(await response.text())
-            const fallbackItems: EbayItem[] = []
-            
-            $('.s-item').each((itemIndex, element) => {
-              const $element = $(element)
-              const title = $element.find('.s-item__title').text().trim()
-              const priceText = $element.find('.s-item__price').text().trim()
-              const link = $element.find('.s-item__link').attr('href')
-              const imageUrl = $element.find('.s-item__image img').attr('src')
-              const soldDateText = $element.find('.s-item__title--tag').text().trim()
-              
-              if (title && link && priceText) {
-                const price = parseFloat(priceText.replace(/[£$,]/g, ''))
-                const soldDate = soldDateText.includes('Sold') ? soldDateText.replace('Sold ', '') : 'Unknown'
-                
-                if (price > 0.50 && !title.toLowerCase().includes('psa') && !title.toLowerCase().includes('graded')) {
-                  fallbackItems.push({
-                    title: title,
-                    price: price,
-                    url: link,
-                    source: 'eBay (TG Fallback)',
-                    image: imageUrl || '',
-                    condition: 'Ungraded',
-                    soldDate: soldDate
-                  })
-                }
-              }
-            })
-            
-            console.log(`✅ TG fallback "${altSearchTerm}" found ${fallbackItems.length} additional items`)
-            uniqueItems.push(...fallbackItems)
-            
-            // If we found good results, break out of the loop
-            if (fallbackItems.length >= 5) {
-              break
-            }
-          }
-        } catch (error) {
-          if (error.name === 'AbortError') {
-            console.log(`⏱️ TG fallback search timed out for "${altSearchTerm}"`)
-          } else {
-            console.log(`❌ TG fallback search failed for "${altSearchTerm}":`, error)
-          }
-        }
-      }
-      
-      console.log(`🎯 Final TG search results: ${uniqueItems.length} total items`)
+    // DISABLED: TG card fallback removed to prevent additional requests that trigger bot detection
+    if (isTGCard && uniqueItems.length < 10) {
+      console.log(`⚠️ TG card: Only ${uniqueItems.length} results found (fallback disabled to avoid bot detection)`)
     }
     
     return uniqueItems
