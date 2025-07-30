@@ -2,8 +2,24 @@
   "functions": {
     "src/app/api/ebay-notifications/route.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/market-insights/collect-prices/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/market-insights/calculate-trends/route.ts": {
+      "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/market-insights/collect-prices",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/market-insights/calculate-trends",
+      "schedule": "0 7 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/ebay-notifications",

@@ -19,7 +19,6 @@ export default function MarketDataSection({ cardmarket, loading = false }: Marke
   return (
     <div className="bento-card rounded-3xl p-6 md:p-8">
       <h3 className="text-xl font-semibold mb-6 flex items-center">
-        <span className="mr-3">📊</span>
         Market Data
       </h3>
 

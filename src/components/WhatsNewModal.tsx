@@ -18,6 +18,30 @@ interface WhatsNewModalProps {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'v2.6.2',
+    date: '2025-01-28',
+    title: 'Layout Height Fix',
+    description: 'Fixed container height adjustment issues where the body height would not properly expand when content loaded. Removed problematic absolute positioning and improved responsive layout behavior.',
+    type: 'fix',
+    icon: '🔧'
+  },
+  {
+    version: 'v2.6.1',
+    date: '2025-01-28',
+    title: 'Enhanced eBay Scraping System',
+    description: 'Major improvements to eBay scraping with better price extraction, enhanced sold listings analysis, and improved promotional/variant detection. Added robust error handling and fallback mechanisms for more reliable data collection.',
+    type: 'improvement',
+    icon: '🔍'
+  },
+  {
+    version: 'v2.6.0',
+    date: '2025-01-28',
+    title: 'Market Insights Dashboard',
+    description: 'Introducing the new Market Insights feature! Get real-time trending cards data, market analysis, and price movements. Features beautiful charts, trend indicators, and seamless integration with the main analysis tool. Automatically displays when no search is active.',
+    type: 'feature',
+    icon: '📊'
+  },
+  {
     version: 'v2.5.0',
     date: '2025-01-27',
     title: 'Major Search & Analysis UX Revolution',

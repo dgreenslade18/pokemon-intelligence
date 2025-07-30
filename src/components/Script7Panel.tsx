@@ -12,6 +12,7 @@ import MarketDataSection from './Script7/MarketDataSection'
 import ProgressDisplay from './Script7/ProgressDisplay'
 import SaveToListSection from './Script7/SaveToListSection'
 import PopulationDataSection from './Script7/PopulationDataSection'
+import MarketInsights from './MarketInsights'
 import { useAnalysis } from './Script7/useAnalysis'
 import { Script7PanelProps, AutocompleteItem } from './Script7/types'
 
@@ -167,7 +168,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   }
 
   return (
-    <div className="container mx-auto bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-gray-900 dark:to-gray-800/30">
+    <div className="container mx-auto light:bg-gradient-to-br dark:bg-transparent from-slate-50 to-blue-50/30 ">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="space-y-6">
           {/* Search Section */}
@@ -216,39 +217,50 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
           </div>
           <div className="col-span-2 space-y-6">
 
-          {/* Results Section */}
-          {(result || loading || error) && (
-            <div ref={resultsRef} className="space-y-6">
-              {/* Progress and Error Display */}
-              <ProgressDisplay 
-                error={error}
-                loading={loading}
-                progress={progress}
-              />
+          {/* Conditional Right Panel - Market Insights or Search Results */}
+          <div className="min-h-[400px]">
+            {/* Market Insights - Shows when no search activity */}
+            {!(result || loading || error) && (
+              <div className="transition-all duration-500 ease-in-out opacity-100 translate-y-0">
+                <MarketInsights />
+              </div>
+            )}
 
-              {/* Price Range Section */}
-              <PriceRangeSection 
-                ebayPrices={result?.ebay_prices}
-                analysis={result?.analysis}
-                loading={loading}
-              />
+            {/* Search Results - Shows when search is active */}
+            {(result || loading || error) && (
+              <div className="transition-all duration-500 ease-in-out opacity-100 translate-y-0">
+                <div ref={resultsRef} className="space-y-6">
+                  {/* Progress and Error Display */}
+                  <ProgressDisplay 
+                    error={error}
+                    loading={loading}
+                    progress={progress}
+                  />
 
-              {/* eBay Pricing Section */}
-              <EbayPricingSection 
-                ebayPrices={result?.ebay_prices}
-                allSalesData={result?.analysis?.chart_data?.all_sales}
-                loading={loading}
-              />
+                  {/* Price Range Section */}
+                  <PriceRangeSection 
+                    ebayPrices={result?.ebay_prices}
+                    analysis={result?.analysis}
+                    loading={loading}
+                  />
 
-              {/* Market Data Section */}
-              {/* <MarketDataSection 
-                cardmarket={result?.cardmarket as any}
-                loading={loading}
-              /> */}
+                  {/* eBay Pricing Section */}
+                  <EbayPricingSection 
+                    ebayPrices={result?.ebay_prices}
+                    allSalesData={result?.analysis?.chart_data?.all_sales}
+                    loading={loading}
+                    promoInfo={result?.analysis?.promo_info}
+                  />
 
-            
-            </div>
-          )}
+                  {/* Market Data Section */}
+                  {/* <MarketDataSection 
+                    cardmarket={result?.cardmarket as any}
+                    loading={loading}
+                  /> */}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

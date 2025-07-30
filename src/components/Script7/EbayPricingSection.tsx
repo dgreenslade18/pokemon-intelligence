@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { EbayItem } from './types'
-import { formatPrice } from './utils'
+import Link from 'next/link'
+import { EbayItem, PromoInfo } from './types'
+import { formatPrice, formatUKDate } from './utils'
 import { ListingShimmer } from '../LoadingShimmer'
 import MarketChart from './MarketChart'
 
@@ -8,9 +9,10 @@ interface EbayPricingSectionProps {
   ebayPrices?: EbayItem[]
   allSalesData?: EbayItem[]  // Extended data for chart
   loading?: boolean
+  promoInfo?: PromoInfo
 }
 
-export default function EbayPricingSection({ ebayPrices, allSalesData, loading = false }: EbayPricingSectionProps) {
+export default function EbayPricingSection({ ebayPrices, allSalesData, loading = false, promoInfo }: EbayPricingSectionProps) {
   const [showSealedOnly, setShowSealedOnly] = useState(false)
   const [showUnsealedOnly, setShowUnsealedOnly] = useState(false)
 
@@ -28,12 +30,11 @@ export default function EbayPricingSection({ ebayPrices, allSalesData, loading =
     <div className="bento-card rounded-3xl p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold flex items-center">
-          <span className="mr-3">🏪</span>
           eBay Recent Sales
         </h3>
         
-        {/* Filter Controls */}
-        {ebayPrices && ebayPrices.length > 0 && (
+        {/* Filter Controls - Only show for promo cards */}
+        {ebayPrices && ebayPrices.length > 0 && promoInfo?.isPromo && (
           <div className="flex gap-2">
             <button
               onClick={() => setShowSealedOnly(!showSealedOnly)}
@@ -80,46 +81,42 @@ export default function EbayPricingSection({ ebayPrices, allSalesData, loading =
           {/* Individual Listings */}
           <div className="grid gap-4">
             {filteredEbayResults.map((item, index) => (
-              <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <div className="flex items-start gap-4">
+              <Link
+                key={index}
+                href={item.url || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
                   {item.image && (
                     <img 
                       src={item.image} 
                       alt={item.title}
-                      className="w-12 h-16 object-cover rounded-lg flex-shrink-0"
+                      className="w-10 h-12 object-cover rounded-md flex-shrink-0"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement
                         target.style.display = 'none'
                       }}
                     />
                   )}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
+                  <div className="flex items-center justify-between w-full min-w-0 gap-4">
+                    <h4 className="font-medium text-gray-900 text-sm dark:text-white truncate flex-1 min-w-0">
                       {item.title}
                     </h4>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                       <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                        {formatPrice(item.price)}
+                        £{formatPrice(item.price)}
                       </div>
                       {item.soldDate && (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Sold: {item.soldDate}
+                        <div className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          {formatUKDate(item.soldDate)}
                         </div>
                       )}
                     </div>
-                    {item.url && (
-                      <a 
-                        href={item.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-blue-600 dark:text-blue-400 hover:underline text-sm mt-1 inline-block"
-                      >
-                        View on eBay →
-                      </a>
-                    )}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

@@ -273,7 +273,7 @@ export default function SearchSection({
         <Button
           onClick={onAnalyze}
           disabled={loading || !(searchTerm || "").trim()}
-          className="absolute right-3 top-1/2 -translate-y-1/2"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-black dark:text-white"
           color="search"
         >
             <svg

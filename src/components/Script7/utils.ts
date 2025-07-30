@@ -4,6 +4,28 @@ export const formatPrice = (price: number | string): string => {
   return num.toFixed(2)
 }
 
+// Format date to UK format (DD MMM YYYY)
+export const formatUKDate = (dateString: string): string => {
+  if (!dateString) return ''
+  
+  try {
+    const date = new Date(dateString)
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) return dateString
+    
+    // Format as DD MMM YYYY (e.g., "15 Jan 2024")
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+  } catch (error) {
+    // Return original string if parsing fails
+    return dateString
+  }
+}
+
 // Get progress icon based on stage
 export const getProgressIcon = (stage: string): string => {
   switch (stage) {

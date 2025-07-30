@@ -1,0 +1,14 @@
+
+> pokemon-arbitrage-ui@1.0.0 dev
+> next dev --turbo
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+  ▲ Next.js 14.2.30 (turbo)
+  - Local:        http://localhost:3001
+  - Environments: .env.local
+  - Experiments (use with caution):
+    · cpus
+    · turbo
+
+ ✓ Starting...
+ ✓ Ready in 925ms

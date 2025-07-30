@@ -734,11 +734,11 @@ export default function CompListPage() {
         {/* Statistics */}
         {compList.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
-            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6">
+            <div className="dark:bg-white/10 bg-white/75 rounded-2xl p-4 sm:p-6">
               <div className="text-2xl sm:text-3xl font-bold dark:text-white text-black mb-2">{compList.length}</div>
               <div className="dark:text-white/60 text-black/60 text-sm sm:text-base">Total Cards</div>
             </div>
-            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6">
+            <div className="dark:bg-white/10 bg-white/75 rounded-2xl p-4 sm:p-6">
               <div className="text-2xl sm:text-3xl font-bold dark:text-green-400 text-green-600 mb-2">
                 £{(() => {
                   const validTcgPrices = compList.filter(item => item.tcg_price && item.tcg_price > 0)
@@ -749,7 +749,7 @@ export default function CompListPage() {
               </div>
               <div className="dark:text-white/60 text-black/60 text-sm sm:text-base">Avg TCG Price</div>
             </div>
-            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6">
+            <div className="dark:bg-white/10 bg-white/75 rounded-2xl p-4 sm:p-6">
               <div className="text-2xl sm:text-3xl font-bold dark:text-blue-400 text-blue-600 mb-2">
                 £{(() => {
                   const validEbayPrices = compList.filter(item => item.ebay_average && item.ebay_average > 0)
@@ -760,7 +760,7 @@ export default function CompListPage() {
               </div>
               <div className="dark:text-white/60 text-black/60 text-sm sm:text-base">Avg eBay Price</div>
             </div>
-            <div className="dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6">
+            <div className="dark:bg-white/10 bg-white/75 rounded-2xl p-4 sm:p-6">
               <div className="text-2xl sm:text-3xl font-bold dark:text-purple-400 text-purple-600 mb-2">
                 {averageConfidence.toFixed(1)}
               </div>
@@ -779,7 +779,7 @@ export default function CompListPage() {
                 placeholder="Search cards..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 dark:bg-white/10 bg-black/10 border dark:border-white/20 border-black/20 rounded-2xl dark:text-white text-black dark:placeholder-white/50 placeholder-black/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 dark:focus:bg-black/15 transition-all duration-300"
+                className="w-full px-4 py-3 dark:bg-white/10 bg-white/75 border dark:border-white/20 border-black/20 rounded-2xl dark:text-white text-black dark:placeholder-white/50 placeholder-black/50 focus:outline-none focus:border-blue-400 focus:bg-white/15 dark:focus:bg-black/15 transition-all duration-300"
               />
             </div>
             
@@ -828,8 +828,8 @@ export default function CompListPage() {
                 key={item.id} 
                 className={`${
                   viewMode === 'list' 
-                    ? 'dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6 border border-white/20 dark:border-black/20 hover:bg-white/15 grid-item-enhanced flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 list-item-animate'
-                    : 'dark:bg-white/10 bg-black/10 rounded-2xl p-4 sm:p-6 border border-white/20 dark:border-black/20 hover:bg-white/15 grid-item-enhanced grid-resize-animate'
+                    ? 'dark:bg-white/10 bg-white/50 rounded-2xl p-4 sm:p-6 border border-black/10 dark:border-black/20 hover:bg-white/15 grid-item-enhanced flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 list-item-animate'
+                    : 'dark:bg-white/10 bg-white/50 rounded-2xl p-4 sm:p-6 border border-black/10 dark:border-black/20 hover:bg-white/15 grid-item-enhanced grid-resize-animate'
                 } transform hover:scale-105`}
                 style={{
                   animationDelay: `${index * 50}ms`,

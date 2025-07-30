@@ -227,7 +227,6 @@ export default function PriceRangeSection({ ebayPrices, analysis, loading = fals
   return (
     <div className="bento-card rounded-3xl p-6 md:p-8">
       <h3 className="text-xl font-semibold mb-6 flex items-center">
-        <span className="mr-3">📊</span>
         Price Range Analysis
         {analysis?.total_ebay_items_analyzed && analysis.total_ebay_items_analyzed > ebayPrices.length && (
           <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">

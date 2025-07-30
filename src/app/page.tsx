@@ -56,8 +56,10 @@ export default function HomePage() {
           {/* Header */}
           <Header />
           
+          {/* Main Content - Now just Script7Panel with integrated Market Insights */}
+          <div className="px-6 py-8">
             <Script7Panel onBack={() => {}} hideBackButton={true} />
-          
+          </div>
         </div>
       </main>
     );
