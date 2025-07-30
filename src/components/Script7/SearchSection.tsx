@@ -10,6 +10,13 @@ interface SearchSectionProps {
   loading: boolean;
   hideBackButton?: boolean;
   onBack?: () => void;
+  // Graded search props
+  searchType?: 'raw' | 'graded';
+  onSearchTypeChange?: (type: 'raw' | 'graded') => void;
+  gradingCompany?: string;
+  onGradingCompanyChange?: (company: string) => void;
+  grade?: string;
+  onGradeChange?: (grade: string) => void;
 }
 
 export default function SearchSection({
@@ -20,6 +27,12 @@ export default function SearchSection({
   loading,
   hideBackButton = false,
   onBack,
+  searchType = 'raw',
+  onSearchTypeChange,
+  gradingCompany = '',
+  onGradingCompanyChange,
+  grade = '',
+  onGradeChange,
 }: SearchSectionProps) {
   const [autocompleteResults, setAutocompleteResults] = useState<
     AutocompleteItem[]
@@ -178,15 +191,13 @@ export default function SearchSection({
     setShowAutocomplete(false);
     setAutocompleteResults([]);
 
-    console.log(`🎯 Autocomplete selected: ${specificSearchTerm}`);
-    setTimeout(() => {
-      onSuggestionClick(suggestion);
-    }, 100);
+    console.log(`🎯 Autocomplete selected: ${specificSearchTerm} - Ready for manual analysis`);
+    // Removed automatic analysis trigger - users can now adjust advanced search options first
   };
 
   return (
     <div className="bento-card rounded-3xl p-4 mb-8 relative z-10 !overflow-visible">
-      <div className="flex">
+      <div className="flex relative">
         <div className="relative w-full" ref={autocompleteRef}>
           <input
             ref={searchInputRef}
@@ -328,6 +339,89 @@ export default function SearchSection({
               </g>
             </svg>
           </Button>
+        </div>
+        
+        {/* Advanced Search Section */}
+        <div className="mt-4 space-y-3">
+          <details className="group">
+            <summary className="cursor-pointer text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors">
+              Advanced Search Options
+            </summary>
+            <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
+              {/* Search Type */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Search Type
+                </label>
+                <div className="flex gap-3">
+                  <label className="flex items-center text-sm">
+                    <input
+                      type="radio"
+                      name="searchType"
+                      value="raw"
+                      checked={searchType === 'raw'}
+                      onChange={(e) => onSearchTypeChange?.(e.target.value as 'raw' | 'graded')}
+                      className="w-3 h-3 text-purple-600 mr-1"
+                    />
+                    Raw Cards
+                  </label>
+                  <label className="flex items-center text-sm">
+                    <input
+                      type="radio"
+                      name="searchType"
+                      value="graded"
+                      checked={searchType === 'graded'}
+                      onChange={(e) => onSearchTypeChange?.(e.target.value as 'raw' | 'graded')}
+                      className="w-3 h-3 text-purple-600 mr-1"
+                    />
+                    Graded Cards
+                  </label>
+                </div>
+              </div>
+
+              {/* Grading Options */}
+              {searchType === 'graded' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Grading Company
+                    </label>
+                    <select
+                      value={gradingCompany}
+                      onChange={(e) => onGradingCompanyChange?.(e.target.value)}
+                      className="w-full px-2 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Select</option>
+                      <option value="PSA">PSA</option>
+                      <option value="BGS">BGS</option>
+                      <option value="CGC">CGC</option>
+                      <option value="ACE">ACE</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Grade
+                    </label>
+                    <select
+                      value={grade}
+                      onChange={(e) => onGradeChange?.(e.target.value)}
+                      className="w-full px-2 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Select</option>
+                      <option value="10">10</option>
+                      <option value="9.5">9.5</option>
+                      <option value="9">9</option>
+                      <option value="8.5">8.5</option>
+                      <option value="8">8</option>
+                      <option value="7">7</option>
+                      <option value="6">6</option>
+                      <option value="5">5</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
         </div>
       </div>
     );

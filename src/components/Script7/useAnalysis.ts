@@ -46,7 +46,13 @@ export const useAnalysis = () => {
     cleanup()
   }, [cleanup])
 
-  const performAnalysis = useCallback(async (cardName: string, refresh: boolean = false) => {
+  const performAnalysis = useCallback(async (
+    cardName: string, 
+    refresh: boolean = false,
+    searchType: 'raw' | 'graded' = 'raw',
+    gradingCompany?: string,
+    grade?: string
+  ) => {
     // Cancel any existing request
     cleanup()
     
@@ -76,7 +82,7 @@ export const useAnalysis = () => {
     }, 120000) // 2 minute timeout
 
     try {
-      console.log(`🚀 Starting analysis for: ${cardName}`)
+      console.log(`🚀 Starting analysis for: ${cardName} (${searchType})`)
       
       // **SIMPLE FETCH REQUEST** - No more SSE!
       const response = await fetch('/api/script7', {
@@ -86,7 +92,10 @@ export const useAnalysis = () => {
         },
         body: JSON.stringify({ 
           searchTerm: cardName.trim(),
-          refresh: refresh
+          refresh: refresh,
+          searchType: searchType,
+          gradingCompany: gradingCompany,
+          grade: grade
         }),
         signal: controller.signal
       })

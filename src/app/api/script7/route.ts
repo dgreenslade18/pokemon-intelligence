@@ -164,22 +164,74 @@ interface FilteredEbayResults {
 const cache = new Map<string, { data: AnalysisResult; timestamp: number }>()
 const CACHE_DURATION = 30 * 60 * 1000 // 30 minutes
 
-function getCachedResult(cardName: string): AnalysisResult | null {
-  const key = cardName.toLowerCase().trim()
-  const cached = cache.get(key)
+// Separate cache for eBay data to avoid redundant scraping
+const ebayCache = new Map<string, { data: EbayItem[]; timestamp: number }>()
+const EBAY_CACHE_DURATION = 15 * 60 * 1000 // 15 minutes
+
+function getCachedEbayResult(
+  cardName: string,
+  extendedTimeRange: boolean,
+  searchType: 'raw' | 'graded' = 'raw',
+  gradingCompany?: string,
+  grade?: string
+): EbayItem[] | null {
+  const gradingKey = searchType === 'graded' ? `_${gradingCompany || ''}_${grade || ''}` : ''
+  const key = `ebay_${cardName.toLowerCase().trim()}_${extendedTimeRange}_${searchType}${gradingKey}`
+  const cached = ebayCache.get(key)
   
-  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-    console.log(`📋 Cache hit for: ${cardName}`)
+  if (cached && (Date.now() - cached.timestamp) < EBAY_CACHE_DURATION) {
+    console.log(`📋 eBay cache hit for: ${cardName} (extended: ${extendedTimeRange})`)
     return cached.data
   }
   
   return null
 }
 
-function setCachedResult(cardName: string, data: AnalysisResult): void {
-  const key = cardName.toLowerCase().trim()
+function setCachedEbayResult(
+  cardName: string,
+  data: EbayItem[],
+  extendedTimeRange: boolean,
+  searchType: 'raw' | 'graded' = 'raw',
+  gradingCompany?: string,
+  grade?: string
+): void {
+  const gradingKey = searchType === 'graded' ? `_${gradingCompany || ''}_${grade || ''}` : ''
+  const key = `ebay_${cardName.toLowerCase().trim()}_${extendedTimeRange}_${searchType}${gradingKey}`
+  ebayCache.set(key, { data, timestamp: Date.now() })
+  console.log(`💾 eBay result cached for: ${cardName} (extended: ${extendedTimeRange})`)
+}
+
+function getCachedResult(
+  cardName: string,
+  searchType: 'raw' | 'graded' = 'raw',
+  gradingCompany?: string,
+  grade?: string
+): AnalysisResult | null {
+  // Create a unique cache key that includes search type and grading parameters
+  const gradingKey = searchType === 'graded' ? `_${gradingCompany || ''}_${grade || ''}` : ''
+  const key = `${cardName.toLowerCase().trim()}_${searchType}${gradingKey}`
+  const cached = cache.get(key)
+  
+  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    console.log(`📋 Cache hit for: ${cardName} (${searchType}${gradingCompany ? ` ${gradingCompany}` : ''}${grade ? ` ${grade}` : ''})`)
+    return cached.data
+  }
+  
+  return null
+}
+
+function setCachedResult(
+  cardName: string,
+  data: AnalysisResult,
+  searchType: 'raw' | 'graded' = 'raw',
+  gradingCompany?: string,
+  grade?: string
+): void {
+  // Create a unique cache key that includes search type and grading parameters
+  const gradingKey = searchType === 'graded' ? `_${gradingCompany || ''}_${grade || ''}` : ''
+  const key = `${cardName.toLowerCase().trim()}_${searchType}${gradingKey}`
   cache.set(key, { data, timestamp: Date.now() })
-  console.log(`💾 Cached result for: ${cardName}`)
+  console.log(`💾 Cached result for: ${cardName} (${searchType}${gradingCompany ? ` ${gradingCompany}` : ''}${grade ? ` ${grade}` : ''})`)
 }
 
 function determineAvailablePeriods(ebayData: EbayItem[]): string[] {
@@ -251,18 +303,25 @@ function calculateStringSimilarity(str1: string, str2: string): number {
 
 export async function POST(request: NextRequest) {
   try {
-    let searchTerm, refresh = false
+    let searchTerm: string
+    let refresh = false
+    let searchType: 'raw' | 'graded' = 'raw'
+    let gradingCompany = ''
+    let grade = ''
     
     try {
       const body = await request.json()
       searchTerm = body.searchTerm
       refresh = body.refresh || false
+      searchType = body.searchType === 'graded' ? 'graded' : 'raw'
+      gradingCompany = body.gradingCompany || ''
+      grade = body.grade || ''
     } catch (parseError) {
       console.error('❌ Failed to parse request body:', parseError)
       return NextResponse.json({ error: 'Invalid request format' }, { status: 400 })
     }
     
-    console.log(`🔍 Script7 Request - searchTerm: "${searchTerm}", refresh: ${refresh}`)
+    console.log(`🔍 Script7 Request - searchTerm: "${searchTerm}", refresh: ${refresh}, searchType: ${searchType}, gradingCompany: ${gradingCompany}, grade: ${grade}`)
     
     if (!searchTerm || typeof searchTerm !== 'string' || !searchTerm.trim()) {
       console.error('❌ Invalid search term:', searchTerm)
@@ -283,7 +342,7 @@ export async function POST(request: NextRequest) {
 
     // Check cache first (unless refresh is requested)
     if (!refresh) {
-    const cachedResult = getCachedResult(searchTerm)
+    const cachedResult = getCachedResult(searchTerm, searchType, gradingCompany, grade)
     if (cachedResult) {
       return NextResponse.json({
         success: true,
@@ -294,9 +353,10 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Clear cache for this search term if refresh is requested
-      const key = searchTerm.toLowerCase().trim()
+      const gradingKey = searchType === 'graded' ? `_${gradingCompany || ''}_${grade || ''}` : ''
+      const key = `${searchTerm.toLowerCase().trim()}_${searchType}${gradingKey}`
       cache.delete(key)
-      console.log(`🗑️  Cache cleared for: ${searchTerm}`)
+      console.log(`🗑️  Cache cleared for: ${searchTerm} (${searchType}${gradingCompany ? ` ${gradingCompany}` : ''}${grade ? ` ${grade}` : ''})`)
     }
 
     // **SIMPLE REQUEST/RESPONSE** - No more streaming!
@@ -304,11 +364,11 @@ export async function POST(request: NextRequest) {
     
     try {
       // Run the analysis (this is the core function that does all the work)
-      const result = await analyzeCard(searchTerm, userPreferences)
+      const result = await analyzeCard(searchTerm, userPreferences, searchType, gradingCompany, grade)
       
       // Cache the result
-      setCachedResult(searchTerm, result)
-      console.log(`✅ Analysis completed and cached for: ${searchTerm}`)
+      setCachedResult(searchTerm, result, searchType, gradingCompany, grade)
+      console.log(`✅ Analysis completed and cached for: ${searchTerm} (${searchType}${gradingCompany ? ` ${gradingCompany}` : ''}${grade ? ` ${grade}` : ''})`)
       
       // Return simple JSON response
       return NextResponse.json({
@@ -350,7 +410,10 @@ export async function POST(request: NextRequest) {
 
 export async function analyzeCard(
   cardName: string,
-  userPreferences: UserPreferences
+  userPreferences: UserPreferences,
+  searchType: 'raw' | 'graded' = 'raw',
+  gradingCompany?: string,
+  grade?: string
 ): Promise<AnalysisResult> {
   
   console.log(`🎯 Starting analysis for: "${cardName}"`)
@@ -394,14 +457,26 @@ export async function analyzeCard(
       let card = localResults[0].card
       const searchTermUpper = cardName.toUpperCase()
       
-      // Extract potential card numbers from search term (SWSH284, TG20, SV123, 117, etc.)
-      const cardNumberMatch = searchTermUpper.match(/(SWSH\d+|TG\d+|SV\d+\w*|[A-Z]{2,}\d+\w*|\b\d{1,3}\b)/g)
+      // Handle "number/total" format first (e.g., "271/264")
+      const numberTotalMatch = searchTermUpper.match(/\b(\d{1,3})\/\d{1,3}\b/)
+      let targetNumber: string | null = null
       
-      if (cardNumberMatch && cardNumberMatch.length > 0) {
-        const targetNumber = cardNumberMatch[cardNumberMatch.length - 1] // Take the last match (most likely the card number)
-        console.log(`🎯 Looking for card number: ${targetNumber}`)
-        console.log(`🔍 All number matches found: ${cardNumberMatch.join(', ')}`)
+      if (numberTotalMatch) {
+        // Extract the card number (before the slash) from "number/total" format
+        targetNumber = numberTotalMatch[1]
+        console.log(`🎯 Found number/total format, looking for card number: ${targetNumber}`)
+      } else {
+        // Extract potential card numbers from search term (SWSH284, TG20, SV123, 117, etc.)
+        const cardNumberMatch = searchTermUpper.match(/(SWSH\d+|TG\d+|SV\d+\w*|[A-Z]{2,}\d+\w*|\b\d{1,3}\b)/g)
         
+        if (cardNumberMatch && cardNumberMatch.length > 0) {
+          targetNumber = cardNumberMatch[cardNumberMatch.length - 1] // Take the last match (most likely the card number)
+          console.log(`🎯 Looking for card number: ${targetNumber}`)
+          console.log(`🔍 All number matches found: ${cardNumberMatch.join(', ')}`)
+        }
+      }
+      
+      if (targetNumber) {
         const exactMatch = localResults.find(result => 
           result.card.number.toUpperCase() === targetNumber ||
           result.card.number === targetNumber
@@ -477,9 +552,34 @@ export async function analyzeCard(
     // Run eBay search with specific card name (if found) or user's search term
     console.log(`🎯 eBay searching for: "${specificCardName}"`)
     
-    try {
-      ebayPrices = await searchEbaySoldItems(specificCardName, localCardDetails)
-      console.log(`📊 eBay search returned ${ebayPrices.length} items`)
+    // **OPTIMIZATION: Run both eBay searches in parallel instead of sequentially**
+    console.log(`🚀 Starting parallel eBay searches for faster results...`)
+    
+    // Start with regular search first
+    const regularSearchPromise = searchEbaySoldItems(specificCardName, localCardDetails, false, searchType, gradingCompany, grade)
+    
+    // Check if we can skip extended search for speed
+    const regularResult = await regularSearchPromise
+    
+    let extendedSearchPromise: Promise<EbayItem[]>
+    
+    if (regularResult.length >= 50) {
+      console.log(`⚡ Regular search returned ${regularResult.length} items - skipping extended search for speed`)
+      extendedSearchPromise = Promise.resolve(regularResult) // Use same data
+    } else {
+      console.log(`🔍 Regular search returned ${regularResult.length} items - running extended search for more data`)
+      extendedSearchPromise = searchEbaySoldItems(specificCardName, localCardDetails, true, searchType, gradingCompany, grade)
+    }
+    
+    const [regularSearchResult, extendedSearchResult] = await Promise.allSettled([
+      Promise.resolve(regularResult), // Already completed
+      extendedSearchPromise
+    ])
+    
+    // Handle regular search results
+    if (regularSearchResult.status === 'fulfilled') {
+      ebayPrices = regularSearchResult.value
+      console.log(`📊 Regular eBay search returned ${ebayPrices.length} items`)
       
       // Send eBay results as soon as they're available
       const ebayAveragePrice = ebayPrices.length > 0 
@@ -492,21 +592,19 @@ export async function analyzeCard(
         ebay_average: ebayAveragePrice
       }
       console.log(`✅ SECTION 2A: eBay search completed successfully`)
-      
-    } catch (error) {
-      console.error(`❌ SECTION 2A: eBay search failed:`, error)
+    } else {
+      console.error(`❌ SECTION 2A: eBay search failed:`, regularSearchResult.reason)
       ebayPrices = []
       console.log(`🔄 SECTION 2A: Continuing with empty eBay results`)
     }
     
-    try {
-      // Get extended data for chart functionality (independent fetch)
-      extendedEbayData = await searchEbaySoldItems(specificCardName, localCardDetails, true)
+    // Handle extended search results
+    if (extendedSearchResult.status === 'fulfilled') {
+      extendedEbayData = extendedSearchResult.value
       console.log(`📊 Extended eBay search returned ${extendedEbayData.length} items`)
       console.log(`✅ SECTION 2B: Extended eBay search completed successfully`)
-      
-    } catch (error) {
-      console.error(`❌ SECTION 2B: Extended eBay search failed:`, error)
+    } else {
+      console.error(`❌ SECTION 2B: Extended eBay search failed:`, extendedSearchResult.reason)
       extendedEbayData = ebayPrices // Fallback to main results
       console.log(`🔄 SECTION 2B: Using main eBay results as fallback`)
     }
@@ -517,7 +615,7 @@ export async function analyzeCard(
     console.error(`❌ SECTION 2: eBay data collection failed:`, error)
     ebayPrices = []
     extendedEbayData = []
-    console.log(`🔄 SECTION 2: Continuing with empty eBay data`)
+    console.log(`🔄 SECTION 2: Continuing with empty eBay results`)
   }
 
   // SECTION 3: Pricing API (Skipped)
@@ -763,63 +861,57 @@ export async function analyzeCard(
 async function searchEbaySoldItems(
   cardName: string,
   cardDetails: CardDetails | null,
-  extendedTimeRange: boolean = false
+  extendedTimeRange: boolean = false,
+  searchType: 'raw' | 'graded' = 'raw',
+  gradingCompany?: string,
+  grade?: string
 ): Promise<EbayItem[]> {
   
   try {
-    console.log(`🎯 eBay searching for: "${cardName}"`)
+    console.log(`🎯 eBay searching for: "${cardName}" (${searchType})`)
     
-    // Add delay between searches to avoid bot detection
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-    await delay(1000) // 1 second delay between searches
+    // Check eBay cache first
+    const gradingKey = searchType === 'graded' ? `_${gradingCompany || ''}_${grade || ''}` : ''
+    const cacheKey = `ebay_${cardName.toLowerCase().trim()}_${extendedTimeRange}_${searchType}${gradingKey}`
+    const cached = ebayCache.get(cacheKey)
     
-    // Try browser automation first (bypasses bot detection)
-    let scrapingResults = await searchEbayWithBrowser(cardName, cardDetails, extendedTimeRange)
-    
-    // If browser automation fails, try simple scraping
-    if (scrapingResults.length === 0) {
-      console.log('🔄 Browser automation failed, trying simple scraping...')
-      scrapingResults = await searchEbayWithScraping(cardName, cardDetails, extendedTimeRange)
+    if (cached && (Date.now() - cached.timestamp) < EBAY_CACHE_DURATION) {
+      console.log(`📋 eBay cache hit for: ${cardName} (extended: ${extendedTimeRange})`)
+      return cached.data
     }
     
-    // If scraping returns results, use them
+    // Reduced delay for faster searches
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+    await delay(500) // Reduced from 1000ms to 500ms
+    
+    // Try scraping first (faster than browser automation)
+    let scrapingResults = await searchEbayWithScraping(cardName, cardDetails, extendedTimeRange, searchType, gradingCompany, grade)
+    
+    // If scraping fails, try browser automation
+    if (scrapingResults.length === 0) {
+      console.log('🔄 Scraping failed, trying browser automation...')
+      scrapingResults = await searchEbayWithBrowser(cardName, cardDetails, extendedTimeRange, searchType, gradingCompany, grade)
+    }
+    
+    // If both fail, try API as last resort
+    if (scrapingResults.length === 0) {
+      console.log('🔄 Browser automation failed, trying API fallback...')
+      scrapingResults = await searchEbayWithApi(cardName, cardDetails)
+    }
+    
+    // Cache successful results
     if (scrapingResults.length > 0) {
+      ebayCache.set(cacheKey, { data: scrapingResults, timestamp: Date.now() })
+      console.log(`💾 eBay result cached for: ${cardName} (extended: ${extendedTimeRange})`)
       console.log(`✅ Scraping successful: ${scrapingResults.length} items found`)
       return scrapingResults
     }
     
-    // If scraping returns no results, try the eBay API as fallback
-    console.log(`⚠️ Scraping returned no results (likely blocked), trying eBay API fallback...`)
-    const apiResults = await searchEbayWithApi(cardName, cardDetails)
-    
-    if (apiResults.length > 0) {
-      console.log(`✅ eBay API fallback successful: ${apiResults.length} items found`)
-      return apiResults
-    }
-    
-    console.log(`⚠️ Both scraping and API returned no results for: ${cardName}`)
-    console.log(`💡 This is likely due to eBay bot detection + API rate limits`)
-    
-    // Return empty array - the analysis will handle this gracefully
+    console.log(`⚠️ All eBay search methods failed for: ${cardName}`)
     return []
     
   } catch (error) {
     console.error('eBay search failed:', error)
-    
-    // If scraping throws an error (like bot detection), try API fallback
-    console.log(`🔄 Scraping failed (likely bot detection), trying eBay API fallback...`)
-    try {
-      const apiResults = await searchEbayWithApi(cardName, cardDetails)
-      if (apiResults.length > 0) {
-        console.log(`✅ eBay API fallback successful after scraping error: ${apiResults.length} items found`)
-        return apiResults
-      }
-    } catch (apiError) {
-      console.error('eBay API fallback also failed:', apiError)
-    }
-    
-    console.log(`❌ All eBay data sources failed for: ${cardName}`)
-    console.log(`💡 This is likely due to eBay bot detection + API rate limits being exceeded`)
     return []
   }
 }
@@ -980,7 +1072,14 @@ async function searchEbayWithApi(
   }
 }
 
-async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails | null, extendedTimeRange: boolean = false): Promise<EbayItem[]> {
+async function searchEbayWithScraping(
+  cardName: string, 
+  cardDetails: CardDetails | null, 
+  extendedTimeRange: boolean = false,
+  searchType: 'raw' | 'graded' = 'raw',
+  gradingCompany?: string,
+  grade?: string
+): Promise<EbayItem[]> {
   try {
     console.log('🕷️  [V4] eBay Extended Scraper: Starting for:', cardName, extendedTimeRange ? '(Extended Range)' : '(Standard Range)')
     
@@ -1029,29 +1128,45 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
       }
     }
     
-    // Exact exclusion filters as specified
-    const exclusions = '-(vertical, line, sequin, cosmos, sheen, confetti, glitter, mirror, reverse, non-holo, non, jumbo, oversized, large, choose, cards, multibuy, fake, replica, proxy, custom, ooak, singles, bundle, japanese, jpn, korean, chinese, psa)'
+    // Construct search term and exclusions based on search type
+    let finalSearchTerm = preciseSearchTerm
+    let exclusions = ''
     
-    // For TG cards, also prepare alternative search terms since they can be listed various ways
-    let searchTerms = [preciseSearchTerm]
-    if (isTGCard) {
-      const tgMatch = preciseSearchTerm.match(/(.*?)\s+(TG\d+)/i)
-      if (tgMatch) {
-        const pokemonName = tgMatch[1].trim()
-        const tgNumber = tgMatch[2].toUpperCase()
-        
-        // Add alternative search formats commonly used for TG cards
-        searchTerms.push(`${pokemonName} trainer gallery`)
-        searchTerms.push(`${pokemonName} brilliant stars trainer gallery`)
-        searchTerms.push(`${pokemonName} ${tgNumber.replace('TG', 'TG ')}`) // "TG 04" format
-        
-        console.log(`📋 TG card alternative search terms: ${searchTerms.join(', ')}`)
+    if (searchType === 'graded') {
+      // For graded cards, add grading company and grade to search term
+      if (gradingCompany) {
+        finalSearchTerm = `${preciseSearchTerm} ${gradingCompany}`
       }
+      if (grade) {
+        finalSearchTerm = `${finalSearchTerm} ${grade}`
+      }
+      
+      // For graded cards, exclude OTHER grading companies (not the selected one)
+      const allGradingCompanies = ['psa', 'bgs', 'cgc', 'ace']
+      const otherGradingCompanies = allGradingCompanies.filter(company => 
+        company.toLowerCase() !== gradingCompany.toLowerCase()
+      )
+      
+      const otherGradingExclusions = otherGradingCompanies.length > 0 
+        ? `, ${otherGradingCompanies.join(', ')}`
+        : ''
+      
+      exclusions = `-(vertical, line, sequin, cosmos, sheen, confetti, glitter, mirror, reverse, non-holo, non, jumbo, oversized, large, choose, cards, multibuy, fake, replica, proxy, custom, ooak, singles, bundle, japanese, jpn, korean, chinese${otherGradingExclusions})`
+      
+      console.log(`📋 [Browser] Graded search: "${finalSearchTerm}" with company: ${gradingCompany}, grade: ${grade}`)
+      console.log(`📋 [Browser] Excluding other grading companies: ${otherGradingCompanies.join(', ')}`)
+    } else {
+      // For raw cards, use current exclusions (including ALL grading companies)
+      exclusions = '-(vertical, line, sequin, cosmos, sheen, confetti, glitter, mirror, reverse, non-holo, non, jumbo, oversized, large, choose, cards, multibuy, fake, replica, proxy, custom, ooak, singles, bundle, japanese, jpn, korean, chinese, psa, bgs, cgc, ace, graded, grade)'
+      
+      console.log(`📋 [Browser] Raw search: "${finalSearchTerm}"`)
     }
     
-    const fullSearchTerm = `${preciseSearchTerm} ${exclusions}`
-    console.log(`🎯 Final eBay search term: "${fullSearchTerm}"`)
-    const encodedSearch = encodeURIComponent(fullSearchTerm)
+    const fullSearchTerm = `${finalSearchTerm} ${exclusions}`
+    console.log(`🎯 [Browser] Final eBay search term (${searchType}): "${fullSearchTerm}"`)
+    
+    // Build eBay UK search URL for sold items
+    const searchQuery = encodeURIComponent(fullSearchTerm);
     
     // Calculate date ranges based on requirements
     const now = new Date()
@@ -1078,8 +1193,8 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
     
     // SINGLE REQUEST STRATEGY - Conservative approach to avoid bot detection
     const singleSearchUrl = extendedTimeRange 
-      ? `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=100`
-      : `https://www.ebay.co.uk/sch/i.html?_nkw=${encodedSearch}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=60&LH_SoldDate=1&rt=nc&LH_SoldDateStart=${thirtyDaysAgoStr}&LH_SoldDateEnd=${todayStr}`
+      ? `https://www.ebay.co.uk/sch/i.html?_nkw=${searchQuery}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=100`
+      : `https://www.ebay.co.uk/sch/i.html?_nkw=${searchQuery}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1&_sop=12&_ipg=60&LH_SoldDate=1&rt=nc&LH_SoldDateStart=${thirtyDaysAgoStr}&LH_SoldDateEnd=${todayStr}`
     
     console.log('🔗 CONSERVATIVE eBay search (Single Request):')
     console.log(`   URL: ${singleSearchUrl}`)
@@ -1093,7 +1208,7 @@ async function searchEbayWithScraping(cardName: string, cardDetails: CardDetails
       
       try {
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout per search
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // Reduced from 30000ms to 15000ms (15 seconds)
         
         const response = await fetch(url, {
           headers: {
@@ -1765,7 +1880,10 @@ function filterEbayResultsBySealed(items: EbayItem[], promoInfo: PromoInfo): Fil
 async function searchEbayWithBrowser(
   cardName: string,
   cardDetails: CardDetails | null,
-  extendedTimeRange: boolean = false
+  extendedTimeRange: boolean = false,
+  searchType: 'raw' | 'graded' = 'raw',
+  gradingCompany?: string,
+  grade?: string
 ): Promise<EbayItem[]> {
   let browser;
   
@@ -1832,11 +1950,42 @@ async function searchEbayWithBrowser(
       }
     }
     
-    // Exact exclusion filters as specified
-    const exclusions = '-(vertical, line, sequin, cosmos, sheen, confetti, glitter, mirror, reverse, non-holo, non, jumbo, oversized, large, choose, cards, multibuy, fake, replica, proxy, custom, ooak, singles, bundle, japanese, jpn, korean, chinese, psa)'
+    // Construct search term and exclusions based on search type
+    let finalSearchTerm = preciseSearchTerm
+    let exclusions = ''
     
-    const fullSearchTerm = `${preciseSearchTerm} ${exclusions}`
-    console.log(`🎯 Final eBay search term: "${fullSearchTerm}"`)
+    if (searchType === 'graded') {
+      // For graded cards, add grading company and grade to search term
+      if (gradingCompany) {
+        finalSearchTerm = `${preciseSearchTerm} ${gradingCompany}`
+      }
+      if (grade) {
+        finalSearchTerm = `${finalSearchTerm} ${grade}`
+      }
+      
+      // For graded cards, exclude OTHER grading companies (not the selected one)
+      const allGradingCompanies = ['psa', 'bgs', 'cgc', 'ace']
+      const otherGradingCompanies = allGradingCompanies.filter(company => 
+        company.toLowerCase() !== gradingCompany.toLowerCase()
+      )
+      
+      const otherGradingExclusions = otherGradingCompanies.length > 0 
+        ? `, ${otherGradingCompanies.join(', ')}`
+        : ''
+      
+      exclusions = `-(vertical, line, sequin, cosmos, sheen, confetti, glitter, mirror, reverse, non-holo, non, jumbo, oversized, large, choose, cards, multibuy, fake, replica, proxy, custom, ooak, singles, bundle, japanese, jpn, korean, chinese${otherGradingExclusions})`
+      
+      console.log(`📋 [Browser] Graded search: "${finalSearchTerm}" with company: ${gradingCompany}, grade: ${grade}`)
+      console.log(`📋 [Browser] Excluding other grading companies: ${otherGradingCompanies.join(', ')}`)
+    } else {
+      // For raw cards, use current exclusions (including ALL grading companies)
+      exclusions = '-(vertical, line, sequin, cosmos, sheen, confetti, glitter, mirror, reverse, non-holo, non, jumbo, oversized, large, choose, cards, multibuy, fake, replica, proxy, custom, ooak, singles, bundle, japanese, jpn, korean, chinese, psa, bgs, cgc, ace, graded, grade)'
+      
+      console.log(`📋 [Browser] Raw search: "${finalSearchTerm}"`)
+    }
+    
+    const fullSearchTerm = `${finalSearchTerm} ${exclusions}`
+    console.log(`🎯 [Browser] Final eBay search term (${searchType}): "${fullSearchTerm}"`)
     
     // Build eBay UK search URL for sold items
     const searchQuery = encodeURIComponent(fullSearchTerm);
@@ -1867,10 +2016,10 @@ async function searchEbayWithBrowser(
     console.log(`🔍 Full eBay URL: ${url}`);
     
     // Navigate with realistic timing
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 }); // Reduced from 30000ms
     
     // Wait for results to load
-    await page.waitForSelector('.s-item', { timeout: 15000 }).catch(() => {
+    await page.waitForSelector('.s-item', { timeout: 10000 }).catch(() => { // Reduced from 15000ms
       console.log('⚠️ No .s-item elements found, trying alternative selectors');
     });
     

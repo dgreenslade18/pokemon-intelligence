@@ -50,7 +50,7 @@ export const Button = memo(({
     color === 'warning' && 'relative bg-yellow-600 text-white hover:bg-yellow-700',
     color === 'outline' && 'relative bg-transparent text-white border border-white/20 hover:bg-white/10',
     color === 'ghost' && 'relative bg-transparent text-white hover:bg-white/10',
-    color === 'search' && 'bg-transparent text-black',
+    color === 'search' && 'bg-transparent text-black dark:text-white !pr-2',
     // Size variants
     buttonSize === 'small' && 'py-2 px-3 text-sm',
     buttonSize === 'medium' && 'py-3 px-4',

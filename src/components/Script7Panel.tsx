@@ -25,6 +25,11 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
   const [showMultipleResults, setShowMultipleResults] = useState(false)
   const [multipleSearchResults, setMultipleSearchResults] = useState<AutocompleteItem[]>([])
   
+  // Graded search state
+  const [searchType, setSearchType] = useState<'raw' | 'graded'>('raw')
+  const [gradingCompany, setGradingCompany] = useState<string>('')
+  const [grade, setGrade] = useState<string>('')
+  
   const resultsRef = useRef<HTMLDivElement>(null)
 
   // Use the analysis hook
@@ -78,7 +83,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
       }
 
       // If no multiple results or only one result, proceed with normal analysis
-      performAnalysis(searchTerm.trim())
+      performAnalysis(searchTerm.trim(), false, searchType, gradingCompany, grade)
     } catch (error) {
       console.error('Analysis error:', error)
       // Error will be handled by the useAnalysis hook
@@ -122,17 +127,16 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
     try {
       const cardData = {
-        card_name: result.card_name,
-        ebay_average_price: result.ebay_prices?.length > 0 
+        cardName: result.card_name,
+        ebayAverage: result.ebay_prices?.length > 0 
           ? result.ebay_prices.reduce((sum, item) => sum + item.price, 0) / result.ebay_prices.length 
           : 0,
-        cardmarket_price: (result.cardmarket as any)?.market?.mid || 0,
-        analysis: result.analysis,
-        image_url: result.card_details?.images?.large || result.card_details?.images?.small || '',
-        set_name: result.card_details?.set?.name || 'Unknown Set',
-        number: result.card_details?.number || '',
-        rarity: result.card_details?.rarity || 'Unknown',
-        list_id: listId
+        tcgPrice: (result.cardmarket as any)?.market?.mid || 0,
+        recommendedPrice: result.analysis?.recommendation || '',
+        cardImageUrl: result.card_details?.images?.large || result.card_details?.images?.small || '',
+        setName: result.card_details?.set?.name || 'Unknown Set',
+        cardNumber: result.card_details?.number || '',
+        listId: listId
       }
 
       const response = await fetch('/api/comp-list', {
@@ -180,6 +184,12 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
             loading={loading}
             hideBackButton={hideBackButton}
             onBack={onBack}
+            searchType={searchType}
+            onSearchTypeChange={setSearchType}
+            gradingCompany={gradingCompany}
+            onGradingCompanyChange={setGradingCompany}
+            grade={grade}
+            onGradeChange={setGrade}
           />
 
           {/* Multiple Results Modal */}
