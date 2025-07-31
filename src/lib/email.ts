@@ -105,7 +105,7 @@ export async function sendInviteEmail(email: string, inviteToken: string) {
           Connect with other collectors and sellers in our Discord server for real-time feedback, bug reports, new feature releases, and community discussions.
         </p>
         <div style="text-align: center;">
-          <a href="YOUR_DISCORD_INVITE_LINK_HERE" 
+          <a href="https://discord.gg/s6AGM8cm" 
              target="_blank"
              rel="noopener noreferrer"
              style="background: #5865f2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">

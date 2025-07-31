@@ -37,7 +37,7 @@ export default function SignUp() {
             </h3>
             
             <p className="text-white/80 leading-relaxed">
-              Pokemon Intelligence is currently in private beta. 
+              Pokemon Intelligence is currently in private alpha. 
               To get access, please request an invitation on our landing page.
             </p>
 

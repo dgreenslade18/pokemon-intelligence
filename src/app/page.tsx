@@ -155,7 +155,7 @@ export default function HomePage() {
                 You're Invited
               </h1>
               <p className="text-black/60 dark:text-white/60 block text-l md:text-xl font-regular md:mx-0 mx-auto">
-                Join the exclusive beta for Card Intelligence
+                Join the exclusive alpha for Card Intelligence
               </p>
 
               <p className="text-black/60 dark:text-white/60 block text-md md:text-l font-regular md:mx-0 mx-auto mb-12">
