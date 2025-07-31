@@ -2,6 +2,7 @@ import React from 'react'
 import './globals.css'
 import AuthSessionProvider from '../components/SessionProvider'
 import { ThemeProvider } from '../components/ThemeProvider'
+import Footer from '../components/Footer'
 import { layGrotesk, layGroteskHeading } from './fonts'
 
 export const metadata = {
@@ -30,10 +31,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${layGrotesk.variable} ${layGroteskHeading.variable}`}>
-      <body>
+      <body className="flex flex-col min-h-screen">
         <ThemeProvider>
           <AuthSessionProvider>
-            {children}
+            <div className="flex-1">
+              {children}
+            </div>
+            <Footer />
           </AuthSessionProvider>
         </ThemeProvider>
       </body>
