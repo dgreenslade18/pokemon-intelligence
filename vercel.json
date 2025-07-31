@@ -8,6 +8,9 @@
     },
     "src/app/api/market-insights/calculate-trends/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/script7/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [

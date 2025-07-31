@@ -1876,7 +1876,7 @@ function filterEbayResultsBySealed(items: EbayItem[], promoInfo: PromoInfo): Fil
   }
 }
 
-// Add this new function before the existing searchEbayWithScraping function
+// Add this new function before the existing searchEbayWithScraping function  
 async function searchEbayWithBrowser(
   cardName: string,
   cardDetails: CardDetails | null,
@@ -1888,19 +1888,32 @@ async function searchEbayWithBrowser(
   let browser;
   
   try {
-    const puppeteer = require('puppeteer');
+    // Check if we're in a serverless environment that supports browser automation
+    if (process.env.VERCEL_ENV && !process.env.PUPPETEER_EXECUTABLE_PATH) {
+      console.log('🚀 Initializing Vercel-compatible browser automation...');
+    }
+    
+    const puppeteer = require('puppeteer-core');
+    const chromium = require('@sparticuz/chromium');
     
     console.log(`🚀 Using browser automation for UK eBay: "${cardName}"`);
     
+    // Configure for Vercel serverless environment
+    const executablePath = await chromium.executablePath();
+    console.log(`🔧 Chrome executable path: ${executablePath ? 'Found' : 'Not found'}`);
+    
     browser = await puppeteer.launch({
-      headless: true,
       args: [
+        ...chromium.args,
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-web-security',
         '--disable-features=VizDisplayCompositor'
-      ]
+      ],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: executablePath,
+      headless: chromium.headless,
     });
     
     const page = await browser.newPage();
@@ -2150,10 +2163,21 @@ async function searchEbayWithBrowser(
     
   } catch (error) {
     console.error('❌ Browser automation failed:', error);
+    
+    // If it's a Chrome/Chromium related error, log additional debug info
+    if (error.message?.includes('Chrome') || error.message?.includes('chromium')) {
+      console.error('💡 Browser automation requires proper Chrome setup for serverless environments');
+      console.error('💡 Falling back to API-only search method');
+    }
+    
     return [];
   } finally {
     if (browser) {
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error('⚠️ Error closing browser:', closeError);
+      }
     }
   }
 }
