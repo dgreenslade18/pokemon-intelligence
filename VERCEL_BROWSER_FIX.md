@@ -1,52 +1,103 @@
-# Browser Automation Fix for Vercel Deployment
+# Browser Automation Fix for Vercel Deployment - UPDATED
 
 ## Problem
 The application was failing on Vercel with browser automation errors:
 ```
-❌ Browser automation failed: Error: Could not find Chrome (ver. 138.0.7204.168)
+❌ Browser automation failed: Error: The input directory "/var/task/.next/server/bin" does not exist.
 ```
 
-This occurred because Vercel's serverless environment doesn't have Chrome installed by default, but the app was using regular Puppeteer which requires a local Chrome installation.
+This occurred because Vercel's serverless environment was having issues with the @sparticuz/chromium package's executable path resolution.
 
 ## Solution
-Replaced regular Puppeteer with a Vercel-compatible browser automation setup:
+Updated the browser automation setup with a more robust configuration for Vercel:
 
 ### Changes Made
 
-1. **Updated package.json dependencies:**
-   - Removed: `puppeteer: ^24.15.0`
-   - Added: `puppeteer-core: ^24.15.0` and `@sparticuz/chromium: ^131.0.0`
+1. **Updated Next.js configuration (next.config.js):**
+   - Added `serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core']`
 
-2. **Updated browser automation code in `src/app/api/script7/route.ts`:**
-   - Now uses `puppeteer-core` with `@sparticuz/chromium`
-   - Includes proper serverless configuration
-   - Added better error handling and logging
+2. **Updated package.json dependencies:**
+   - Updated `@sparticuz/chromium` to `^123.0.0` (stable working version)
+   - Updated `puppeteer-core` to `^22.6.2` (compatible version)
+   - Set Node.js engine to `18.x` for better compatibility
 
-3. **Updated Vercel configuration:**
-   - Added `maxDuration: 60` for script7 API route to handle browser automation timing
+3. **Updated browser automation code in `src/app/api/script7/route.ts`:**
+   - Switched to dynamic imports for better serverless compatibility
+   - Added better error handling for executable path resolution
+   - Added additional Chrome args for stability in serverless environment
+   - Used `.default` exports for imported modules
+
+### Key Configuration Changes
+
+#### Next.js Config (next.config.js)
+```javascript
+const nextConfig = {
+  // External packages for serverless functions (required for Puppeteer on Vercel)
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  // ... other config
+}
+```
+
+#### Package.json
+```json
+{
+  "dependencies": {
+    "@sparticuz/chromium": "^123.0.0",
+    "puppeteer-core": "^22.6.2"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
+```
+
+#### Browser Automation Code
+```javascript
+// Dynamic imports for better serverless compatibility
+const puppeteer = await import('puppeteer-core');
+const chromium = await import('@sparticuz/chromium');
+
+// Better error handling for executable path
+let executablePath;
+try {
+  executablePath = await chromium.default.executablePath();
+} catch (pathError) {
+  throw new Error('Chrome executable path could not be resolved');
+}
+
+browser = await puppeteer.default.launch({
+  args: [...chromium.default.args, /* additional args */],
+  executablePath: executablePath,
+  // ... other options
+});
+```
 
 ### How It Works
-- `@sparticuz/chromium` provides a pre-compiled Chromium binary optimized for serverless environments
-- `puppeteer-core` connects to this binary instead of looking for a system Chrome installation
-- The configuration includes proper args and settings for Vercel's constraints
+- `serverExternalPackages` tells Next.js not to bundle these packages, letting them run in the Node.js runtime
+- Dynamic imports prevent bundling issues and improve compatibility
+- Stable package versions ensure reliable executable path resolution
+- Additional Chrome args improve stability in Vercel's serverless environment
 
 ### Fallback Chain
-The app now has a robust fallback system:
-1. **Regular scraping** (fetch + cheerio) - fastest
-2. **Browser automation** (puppeteer-core + @sparticuz/chromium) - for when scraping is blocked
-3. **API fallback** (RapidAPI eBay service) - when browser automation fails
+The app maintains a robust fallback system:
+1. **Browser automation** (puppeteer-core + @sparticuz/chromium) - primary method
+2. **Regular scraping** (fetch + cheerio) - when browser automation fails
+3. **API fallback** (RapidAPI eBay service) - final fallback
 
-### Next Steps
+### Testing
 After deployment:
-1. Test the browser automation works in production
-2. Monitor logs to ensure the new setup resolves the Chrome error
-3. Consider adjusting timeouts based on actual performance
+1. Monitor logs to ensure browser automation works without the executable path error
+2. Test the script7 functionality to verify screenshots and automation work
+3. Check that the fallback system activates properly if needed
 
-### Development Setup
-For local development, the code will automatically detect the environment and use the appropriate browser setup.
+### Troubleshooting
+If issues persist:
+- Check Vercel function logs for specific error messages
+- Ensure the maxDuration is set appropriately in vercel.json (currently 60 seconds)
+- Verify that the Node.js version matches between local and Vercel environments
 
 ## Files Modified
-- `package.json` - Updated dependencies
+- `next.config.js` - Added serverExternalPackages configuration
+- `package.json` - Updated dependencies and Node.js version
 - `src/app/api/script7/route.ts` - Updated browser automation code
-- `vercel.json` - Added maxDuration for script7 route
-- `VERCEL_BROWSER_FIX.md` - This documentation file 
+- `VERCEL_BROWSER_FIX.md` - Updated documentation 

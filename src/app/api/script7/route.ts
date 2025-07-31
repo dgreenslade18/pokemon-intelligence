@@ -1888,32 +1888,41 @@ async function searchEbayWithBrowser(
   let browser;
   
   try {
-    // Check if we're in a serverless environment that supports browser automation
-    if (process.env.VERCEL_ENV && !process.env.PUPPETEER_EXECUTABLE_PATH) {
-      console.log('🚀 Initializing Vercel-compatible browser automation...');
-    }
-    
-    const puppeteer = require('puppeteer-core');
-    const chromium = require('@sparticuz/chromium');
-    
     console.log(`🚀 Using browser automation for UK eBay: "${cardName}"`);
     
-    // Configure for Vercel serverless environment
-    const executablePath = await chromium.executablePath();
-    console.log(`🔧 Chrome executable path: ${executablePath ? 'Found' : 'Not found'}`);
+    // Dynamic imports for better serverless compatibility
+    // @ts-ignore - Dynamic imports for serverless environment
+    const puppeteer = await import('puppeteer-core');
+    // @ts-ignore - Dynamic imports for serverless environment
+    const chromium = await import('@sparticuz/chromium');
     
-    browser = await puppeteer.launch({
+    // Configure for Vercel serverless environment with better error handling
+    let executablePath;
+    try {
+      executablePath = await chromium.default.executablePath();
+      console.log(`🔧 Chrome executable path resolved successfully`);
+    } catch (pathError) {
+      console.error('❌ Failed to resolve Chrome executable path:', pathError);
+      throw new Error('Chrome executable path could not be resolved');
+    }
+    
+    browser = await puppeteer.default.launch({
       args: [
-        ...chromium.args,
+        ...chromium.default.args,
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
+        '--disable-features=VizDisplayCompositor',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection'
       ],
-      defaultViewport: chromium.defaultViewport,
+      defaultViewport: chromium.default.defaultViewport,
       executablePath: executablePath,
-      headless: chromium.headless,
+      headless: chromium.default.headless,
     });
     
     const page = await browser.newPage();

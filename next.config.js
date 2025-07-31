@@ -8,6 +8,9 @@ const nextConfig = {
   output: 'standalone',
   outputFileTracing: true,
   
+  // External packages for serverless functions (required for Puppeteer on Vercel)
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  
   // Experimental optimizations for faster builds
   experimental: {
     // Enable turbo for faster builds
