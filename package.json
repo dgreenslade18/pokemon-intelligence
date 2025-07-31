@@ -2,7 +2,6 @@
   "name": "pokemon-arbitrage-ui",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "next dev --turbo",
     "build": "NEXT_TELEMETRY_DISABLED=1 next build",
@@ -42,6 +41,6 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "npm": ">=8.0.0"
   }
 }
