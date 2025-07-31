@@ -57,7 +57,7 @@ export async function sendWelcomeEmail(email: string) {
 }
 
 export async function sendInviteEmail(email: string, inviteToken: string) {
-  const inviteUrl = `http://localhost:3000/auth/invite/${inviteToken}`
+  const inviteUrl = `https://www.cardintelligence.co.uk/auth/invite/${inviteToken}`
   const subject = 'You\'re invited to Card Intelligence!'
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -69,7 +69,7 @@ export async function sendInviteEmail(email: string, inviteToken: string) {
       <div style="background: #f0fdf4; padding: 30px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
         <h2 style="color: #111827; margin: 0 0 20px 0;">🎉 You're invited!</h2>
         <p style="color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
-          Great news! You've been granted access to Card Intelligence. Click the button below to create your account and set your password.
+          Great news! You've been granted access to the alpha version of Card Intelligence. <Br> Click the button below to create your account and set your password.
         </p>
         
         <div style="text-align: center; margin: 30px 0;">
@@ -87,10 +87,10 @@ export async function sendInviteEmail(email: string, inviteToken: string) {
       <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
         <h3 style="color: #111827; margin: 0 0 15px 0;">What you'll be able to do:</h3>
         <ul style="color: #374151; line-height: 1.6; margin: 0; padding-left: 20px;">
-          <li>Analyze Pokemon card prices across eBay and TCG API</li>
+          <li>Analyse UK Pokemon card prices across eBay</li>
           <li>Track price changes and market trends</li>
           <li>Build comparison lists for your inventory</li>
-          <li>Get confidence scores for buying decisions</li>
+          <li>Get confidence scores for buying decisions (coming soon)</li>
         </ul>
       </div>
       
