@@ -18,6 +18,14 @@ interface WhatsNewModalProps {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'v2.6.3',
+    date: '2025-01-31',
+    title: 'Vercel Browser Automation Fix',
+    description: 'Fixed critical Vercel deployment issue where browser automation would fail with "executable path does not exist" error. Updated to compatible package versions, added serverless configuration, and improved error handling for more reliable screenshot functionality.',
+    type: 'fix',
+    icon: '🚀'
+  },
+  {
     version: 'v2.6.2',
     date: '2025-01-28',
     title: 'Layout Height Fix',
