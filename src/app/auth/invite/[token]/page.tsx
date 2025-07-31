@@ -237,7 +237,7 @@ export default function InviteSignup() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-black dark:text-white placeholder-black/70 dark:placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 dark:bg-white/20 border dark:border-white/30 rounded-xl text-black dark:text-white placeholder-black/70 dark:placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Create a password (min 8 characters)"
                   />
                 </div>

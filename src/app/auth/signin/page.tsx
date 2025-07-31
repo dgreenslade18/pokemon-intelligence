@@ -76,7 +76,7 @@ export default function SignIn() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-black dark:text-white placeholder-black/70 dark:placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white/20 border border-black/20 dark:border-white/30 rounded-xl text-black dark:text-white placeholder-black/70 dark:placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -91,7 +91,7 @@ export default function SignIn() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-black dark:text-white placeholder-black/70 dark:placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white/20 border border-black/20 dark:border-white/30 rounded-xl text-black dark:text-white placeholder-black/70 dark:placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your password"
                   />
                 </div>
