@@ -404,7 +404,7 @@ export default function CompListPanel({ onBack, hideBackButton = false }: CompLi
           ) : (
             <div className="space-y-6">
               {compList.map((item) => (
-                <div key={item.id} className="bento-card rounded-3xl p-6 md:p-8">
+                <div key={item.id} className="bento-card rounded-3xl p-5 md:p-8">
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Card Image */}
                     {item.card_image_url && (

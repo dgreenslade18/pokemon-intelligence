@@ -173,7 +173,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
   return (
     <div className="container mx-auto light:bg-gradient-to-br dark:bg-transparent from-slate-50 to-blue-50/30 ">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 md:gap-8">
         <div className="space-y-6">
           {/* Search Section */}
           <SearchSection
@@ -225,7 +225,7 @@ export default function Script7Panel({ onBack, hideBackButton = false }: Script7
 
 
           </div>
-          <div className="col-span-2 space-y-6">
+          <div className="col-span-2 space-y-6 mt-8 md:mt-0">
 
           {/* Conditional Right Panel - Market Insights or Search Results */}
           <div className="min-h-[400px]">

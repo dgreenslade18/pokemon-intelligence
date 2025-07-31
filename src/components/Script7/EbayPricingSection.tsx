@@ -27,7 +27,7 @@ export default function EbayPricingSection({ ebayPrices, allSalesData, loading =
   }) || []
 
   return (
-    <div className="bento-card rounded-3xl p-6 md:p-8">
+    <div className="bento-card rounded-3xl p-5 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold flex items-center">
           eBay Recent Sales
@@ -79,7 +79,7 @@ export default function EbayPricingSection({ ebayPrices, allSalesData, loading =
           <MarketChart ebayPrices={filteredEbayResults} allSalesData={allSalesData} />
 
           {/* Individual Listings */}
-          <div className="grid gap-4">
+          <div className="block md:grid md:gap-4 space-y-4 md:space-y-0">
             {filteredEbayResults.map((item, index) => (
               <Link
                 key={index}
@@ -100,8 +100,8 @@ export default function EbayPricingSection({ ebayPrices, allSalesData, loading =
                       }}
                     />
                   )}
-                  <div className="flex items-center justify-between w-full min-w-0 gap-4">
-                    <h4 className="font-medium text-gray-900 text-sm dark:text-white truncate flex-1 min-w-0">
+                  <div className="block md:flex items-center justify-between w-full min-w-0 gap-4">
+                    <h4 className="font-medium text-gray-900 text-sm dark:text-white truncate flex-1 min-w-0 max-w-full">
                       {item.title}
                     </h4>
                     <div className="flex items-center gap-4 flex-shrink-0">

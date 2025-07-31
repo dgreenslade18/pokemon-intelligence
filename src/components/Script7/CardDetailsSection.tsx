@@ -7,14 +7,14 @@ interface CardDetailsSectionProps {
 
 export default function CardDetailsSection({ cardDetails }: CardDetailsSectionProps) {
   return (
-    <div className="bento-card rounded-3xl p-6 md:p-8">
+    <div className="bento-card rounded-3xl p-5 md:p-8">
       <h3 className="text-xl font-semibold mb-6 flex items-center">
         Card Information
       </h3>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Card Image */}
-        <div className="flex justify-center lg:justify-start">
+        <div className="flex justify-center lg:justify-start max-w-[50%] md:max-w-full">
           {cardDetails.images?.large || cardDetails.images?.small ? (
             <img 
               src={cardDetails.images.large || cardDetails.images.small} 
@@ -32,7 +32,7 @@ export default function CardDetailsSection({ cardDetails }: CardDetailsSectionPr
         {/* Card Details */}
         <div className="space-y-4">
           <div>
-            <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
               {cardDetails.name}
             </h4>
             {/* {cardDetails.supertype && (

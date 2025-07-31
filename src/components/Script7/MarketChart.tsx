@@ -499,8 +499,8 @@ export default function MarketChart({ ebayPrices, allSalesData }: MarketChartPro
     <div className="h-full bg-transparent rounded-lg p-0 relative">
       <div className="w-full h-full relative">
         {/* Custom Legend and Time Period Selector */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center justify-between mb-6 flex-col md:flex-row">
+          <div className="flex items-center gap-6 text-sm mb-2 md:mb-0">
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-purple-500 rounded-full"></div>
               <span className="dark:text-white/70 text-black/70 font-medium">Market Price</span>

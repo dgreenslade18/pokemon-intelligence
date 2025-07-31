@@ -225,11 +225,11 @@ export default function PriceRangeSection({ ebayPrices, analysis, loading = fals
   const q3Price = prices[q3Index]
 
   return (
-    <div className="bento-card rounded-3xl p-6 md:p-8">
-      <h3 className="text-xl font-semibold mb-6 flex items-center">
+    <div className="bento-card rounded-3xl p-5 md:p-8">
+      <h3 className="text-xl font-semibold mb-6 block md:flex items-center">
         Price Range Analysis
         {analysis?.total_ebay_items_analyzed && analysis.total_ebay_items_analyzed > ebayPrices.length && (
-          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+          <span className="md:ml-2 text-sm text-gray-500 dark:text-gray-400 block md:inline">
             (Based on {analysis.total_ebay_items_analyzed} total sales)
           </span>
         )}
@@ -292,7 +292,7 @@ export default function PriceRangeSection({ ebayPrices, analysis, loading = fals
             trendData.color === 'blue' ? 'text-blue-800 dark:text-blue-200' :
             'text-gray-800 dark:text-gray-200'
           }`}>
-            <span className="mr-1">{trendData.icon}</span>
+            {/* <span className="mr-1">{trendData.icon}</span> */}
             {trendData.trend === 'insufficient' ? 'N/A' : 
              trendData.trend === 'up' ? `+${trendData.change.toFixed(1)}%` :
              trendData.trend === 'down' ? `-${trendData.change.toFixed(1)}%` :

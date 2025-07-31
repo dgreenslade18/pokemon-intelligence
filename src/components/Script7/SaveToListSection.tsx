@@ -21,7 +21,7 @@ export default function SaveToListSection({
   }
 
   return (
-    <div className="bento-card rounded-3xl p-6 md:p-8">
+    <div className="bento-card rounded-3xl p-5 md:p-8">
       <div className="flex items-center justify-between">
         <div>
         <Button

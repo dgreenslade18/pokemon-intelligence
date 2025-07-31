@@ -147,22 +147,23 @@ export default function SearchSection({
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showAutocomplete) return;
-
     switch (e.key) {
       case "ArrowDown":
+        if (!showAutocomplete) return;
         e.preventDefault();
         setSelectedSuggestionIndex((prev) =>
           prev < autocompleteResults.length - 1 ? prev + 1 : prev
         );
         break;
       case "ArrowUp":
+        if (!showAutocomplete) return;
         e.preventDefault();
         setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : -1));
         break;
       case "Enter":
         e.preventDefault();
         if (
+          showAutocomplete &&
           selectedSuggestionIndex >= 0 &&
           autocompleteResults[selectedSuggestionIndex]
         ) {
@@ -172,6 +173,7 @@ export default function SearchSection({
         }
         break;
       case "Escape":
+        if (!showAutocomplete) return;
         setShowAutocomplete(false);
         setSelectedSuggestionIndex(-1);
         break;
@@ -196,7 +198,7 @@ export default function SearchSection({
   };
 
   return (
-    <div className="bento-card rounded-3xl p-4 mb-8 relative z-10 !overflow-visible">
+    <div className="bento-card rounded-lg p-4 pb-4 md:mb-8 relative z-10 !overflow-visible">
       <div className="flex relative">
         <div className="relative w-full" ref={autocompleteRef}>
           <input
@@ -206,7 +208,7 @@ export default function SearchSection({
             onChange={(e) => onSearchTermChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Enter card name + number"
-            className="w-full px-6 py-3 text-lg rounded-2xl border-2 border-black/10 dark:border-white/10 bg-white dark:bg-black/20 text-black dark:text-white placeholder-black/40 dark:placeholder-white/40 focus:border-purple-500 dark:focus:border-purple-400 focus:outline-none transition-colors"
+            className="w-full px-3 md:px-6 py-3 text-lg rounded-2xl border-2 border-black/10 dark:border-white/10 bg-white dark:bg-black/20 text-black dark:text-white placeholder-black/40 dark:placeholder-white/40 focus:border-purple-500 dark:focus:border-purple-400 focus:outline-none transition-colors"
             disabled={loading}
           />
 
