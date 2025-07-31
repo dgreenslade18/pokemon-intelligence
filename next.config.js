@@ -8,15 +8,36 @@ const nextConfig = {
   output: 'standalone',
   outputFileTracing: true,
   
-  // External packages for serverless functions (required for Puppeteer on Vercel)
-  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
-  
+  // Webpack configuration for browser automation packages
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Handle browser-specific APIs during build
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        child_process: false,
+      }
+      
+      // External packages for server-side rendering
+      config.externals = config.externals || []
+      config.externals.push({
+        '@sparticuz/chromium': 'commonjs @sparticuz/chromium',
+        'puppeteer-core': 'commonjs puppeteer-core',
+      })
+    }
+    return config
+  },
+
   // Experimental optimizations for faster builds
   experimental: {
+    // External packages for serverless functions (required for Puppeteer on Vercel)
+    serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
     // Enable turbo for faster builds
     turbo: {
-      loaders: {
-        '.svg': ['@svgr/webpack'],
+      rules: {
+        '*.svg': ['@svgr/webpack'],
       },
     },
     // Enable faster bundling
