@@ -48,7 +48,7 @@ export const Button = memo(({
     color === 'danger' && 'relative bg-red-700 text-white rounded-full',
     color === 'success' && 'relative bg-green-600 text-white hover:bg-green-700',
     color === 'warning' && 'relative bg-yellow-600 text-white hover:bg-yellow-700',
-    color === 'outline' && 'relative bg-transparent text-white border border-white/20 hover:bg-white/10',
+    color === 'outline' && 'relative bg-transparent dark:text-white text-black border dark:border-white/20 border-black/20 hover:bg-white/10',
     color === 'ghost' && 'relative bg-transparent text-white hover:bg-white/10',
     color === 'search' && 'bg-transparent text-black dark:text-white !pr-2',
     // Size variants

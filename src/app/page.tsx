@@ -177,7 +177,7 @@ export default function HomePage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email address"
-                    className="flex-1 px-6 py-4 text-[15px] rounded-full leading-[0.9] bg-white/10 border border-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 w-full md:w-auto"
+                    className="flex-1 px-6 py-4 text-[15px] rounded-full leading-[0.9] dark:bg-white/10 dark:border dark:border-white/20 dark:text-white dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 w-full md:w-auto"
                     required
                   />
                   <Button
@@ -213,10 +213,10 @@ export default function HomePage() {
                 <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">📊</span>
                 </div>
-                <h3 className="text-white font-semibold mb-2">
+                <h3 className="dark:text-white text-black font-semibold mb-2">
                   Advanced Analytics
                 </h3>
-                <p className="text-gray-300 text-sm max-w-[60%] mx-auto">
+                <p className="dark:text-gray-300 text-black/60 text-sm max-w-[60%] mx-auto">
                   Real-time price tracking and market analysis
                 </p>
               </div>
@@ -225,10 +225,10 @@ export default function HomePage() {
                 <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">🎯</span>
                 </div>
-                <h3 className="text-white font-semibold mb-2">
+                <h3 className="dark:text-white text-black font-semibold mb-2">
                   Smart Insights
                 </h3>
-                <p className="text-gray-300 text-sm max-w-[60%] mx-auto">
+                <p className="dark:text-gray-300 text-black/60 text-sm max-w-[60%] mx-auto">
                   AI-powered trading recommendations
                 </p>
               </div>
@@ -237,10 +237,10 @@ export default function HomePage() {
                 <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">⚡</span>
                 </div>
-                <h3 className="text-white font-semibold mb-2">
+                <h3 className="dark:text-white text-black font-semibold mb-2">
                   Lightning Fast
                 </h3>
-                <p className="text-gray-300 text-sm max-w-[60%] mx-auto">
+                <p className="dark:text-gray-300 text-black/60 text-sm max-w-[60%] mx-auto">
                   Instant price comparisons across multiple platforms
                 </p>
               </div>
@@ -249,7 +249,7 @@ export default function HomePage() {
             {/* FAQ Section */}
             <LazyMotion features={domMax}>
               <div className="pb-12 pt-8 max-w-4xl mx-auto md:max-w-[780px]">
-                <h2 className="text-lg md:text-2xl font-medium text-white text-center mb-6 md:mb-12">
+                <h2 className="text-lg md:text-2xl font-medium dark:text-white text-black text-center mb-6 md:mb-12">
                   Frequently Asked Questions
                 </h2>
 
