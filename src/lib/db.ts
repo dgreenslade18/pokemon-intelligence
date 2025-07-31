@@ -57,6 +57,16 @@ export interface UserPreferences {
   updated_at: Date
 }
 
+export interface Invite {
+  id: string
+  email: string
+  token: string
+  created_at: Date
+  expires_at: Date
+  used: boolean
+  invited_by: string | null
+}
+
 export interface CompListItem {
   id: string
   user_id: string
@@ -201,6 +211,19 @@ export async function initDb() {
         subscription_status VARCHAR(50) DEFAULT 'testing' CHECK (subscription_status IN ('testing', 'pro', 'enterprise')),
         user_level VARCHAR(20) DEFAULT 'tester' CHECK (user_level IN ('tester', 'super_admin')),
         last_login TIMESTAMP WITH TIME ZONE
+      );
+    `
+
+    // Create invites table
+    await sql`
+      CREATE TABLE IF NOT EXISTS invites (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) NOT NULL,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        used BOOLEAN DEFAULT false,
+        invited_by UUID REFERENCES users(id) ON DELETE SET NULL
       );
     `
 
@@ -952,6 +975,60 @@ export async function verifyPasswordResetToken(token: string): Promise<string | 
   `
 
   return result.rows.length > 0 ? result.rows[0].id : null
+}
+
+// Invite operations
+export async function createInvite(email: string, invitedBy: string): Promise<Invite> {
+  const token = crypto.randomUUID()
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+
+  const result = await sql`
+    INSERT INTO invites (email, token, expires_at, invited_by)
+    VALUES (${email}, ${token}, ${expiresAt.toISOString()}, ${invitedBy})
+    RETURNING id, email, token, created_at, expires_at, used, invited_by
+  `
+
+  return result.rows[0] as Invite
+}
+
+export async function getInviteByToken(token: string): Promise<Invite | null> {
+  const result = await sql`
+    SELECT id, email, token, created_at, expires_at, used, invited_by
+    FROM invites 
+    WHERE token = ${token}
+  `
+
+  return result.rows.length > 0 ? result.rows[0] as Invite : null
+}
+
+export async function verifyInviteToken(token: string): Promise<{valid: boolean, email?: string}> {
+  const result = await sql`
+    SELECT email FROM invites 
+    WHERE token = ${token} 
+    AND expires_at > CURRENT_TIMESTAMP
+    AND used = false
+  `
+
+  if (result.rows.length > 0) {
+    return { valid: true, email: result.rows[0].email }
+  }
+  
+  return { valid: false }
+}
+
+export async function markInviteAsUsed(token: string): Promise<void> {
+  await sql`
+    UPDATE invites 
+    SET used = true 
+    WHERE token = ${token}
+  `
+}
+
+export async function deleteInvite(token: string): Promise<void> {
+  await sql`
+    DELETE FROM invites 
+    WHERE token = ${token}
+  `
 }
 
 export async function resetPassword(userId: string, newPasswordHash: string): Promise<void> {

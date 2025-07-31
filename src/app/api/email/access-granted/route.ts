@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../../lib/auth'
-import { getUserByEmail, createUser, generateTempPassword } from '../../../../lib/db'
-import { sendAccessGrantedEmail } from '../../../../lib/email'
-import bcrypt from 'bcryptjs'
+import { getUserByEmail, createInvite } from '../../../../lib/db'
+import { sendInviteEmail } from '../../../../lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,29 +43,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate temporary password
-    const tempPassword = await generateTempPassword()
-    const hashedPassword = await bcrypt.hash(tempPassword, 12)
+    // Create invite
+    const invite = await createInvite(email, user.id)
 
-    // Create user account
-    const newUser = await createUser(email, hashedPassword)
-
-    // Send access granted email
+    // Send invite email
     try {
-      await sendAccessGrantedEmail(email, tempPassword)
-      console.log('Access granted email sent successfully to:', email)
+      await sendInviteEmail(email, invite.token)
+      console.log('Invite email sent successfully to:', email)
     } catch (emailError) {
-      console.error('Failed to send access granted email:', emailError)
+      console.error('Failed to send invite email:', emailError)
       // Don't fail the whole request if email fails
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User created and access granted email sent',
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        user_level: newUser.user_level
+      message: 'Invite created and email sent',
+      invite: {
+        id: invite.id,
+        email: invite.email,
+        expires_at: invite.expires_at
       }
     })
 

@@ -56,6 +56,53 @@ export async function sendWelcomeEmail(email: string) {
   return sendEmail({ to: email, subject, html })
 }
 
+export async function sendInviteEmail(email: string, inviteToken: string) {
+  const inviteUrl = `http://localhost:3000/auth/invite/${inviteToken}`
+  const subject = 'You\'re invited to Card Intelligence!'
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #6366f1; margin: 0;">Card Intelligence</h1>
+        <p style="color: #6b7280; margin: 10px 0 0 0;">Made for sellers. Updated for today.</p>
+      </div>
+      
+      <div style="background: #f0fdf4; padding: 30px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #22c55e;">
+        <h2 style="color: #111827; margin: 0 0 20px 0;">🎉 You're invited!</h2>
+        <p style="color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
+          Great news! You've been granted access to Card Intelligence. Click the button below to create your account and set your password.
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${inviteUrl}" 
+             style="background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
+            Create Your Account
+          </a>
+        </div>
+        
+        <p style="color: #374151; line-height: 1.6; margin: 20px 0 0 0;">
+          <strong>Important:</strong> This invitation link will expire in 7 days. If you didn't expect this invitation, you can safely ignore this email.
+        </p>
+      </div>
+      
+      <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="color: #111827; margin: 0 0 15px 0;">What you'll be able to do:</h3>
+        <ul style="color: #374151; line-height: 1.6; margin: 0; padding-left: 20px;">
+          <li>Analyze Pokemon card prices across eBay and TCG API</li>
+          <li>Track price changes and market trends</li>
+          <li>Build comparison lists for your inventory</li>
+          <li>Get confidence scores for buying decisions</li>
+        </ul>
+      </div>
+      
+      <div style="text-align: center; color: #6b7280; font-size: 14px;">
+        <p>This is an automated message. Please do not reply to this email.</p>
+      </div>
+    </div>
+  `
+
+  return sendEmail({ to: email, subject, html })
+}
+
 export async function sendAccessGrantedEmail(email: string, tempPassword: string) {
   const subject = 'Your Card Intelligence access is ready!'
   const html = `
