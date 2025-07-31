@@ -47,6 +47,7 @@ export default function SearchSection({
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<HTMLDivElement>(null);
+  const isProgrammaticChange = useRef(false);
 
   // Calculate optimal dropdown position based on available space
   const calculateDropdownPosition = () => {
@@ -83,6 +84,12 @@ export default function SearchSection({
       setAutocompleteResults([]);
       setShowAutocomplete(false);
       setSelectedSuggestionIndex(-1);
+      return;
+    }
+
+    // Don't show autocomplete if this is a programmatic change (e.g., from clicking a suggestion)
+    if (isProgrammaticChange.current) {
+      isProgrammaticChange.current = false;
       return;
     }
 
@@ -189,12 +196,18 @@ export default function SearchSection({
       specificSearchTerm += ` ${cardNumber}`;
     }
 
+    // Mark this as a programmatic change to prevent autocomplete from reopening
+    isProgrammaticChange.current = true;
     onSearchTermChange(specificSearchTerm);
     setShowAutocomplete(false);
     setAutocompleteResults([]);
 
-    console.log(`🎯 Autocomplete selected: ${specificSearchTerm} - Ready for manual analysis`);
-    // Removed automatic analysis trigger - users can now adjust advanced search options first
+    console.log(`🎯 Autocomplete selected: ${specificSearchTerm} - Triggering automatic analysis`);
+    
+    // Trigger automatic analysis after a brief delay to ensure state updates
+    setTimeout(() => {
+      onAnalyze();
+    }, 100);
   };
 
   return (
