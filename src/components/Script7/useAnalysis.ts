@@ -133,7 +133,7 @@ export const useAnalysis = () => {
 
   const analyzeFromAutocomplete = useCallback((suggestion: AutocompleteItem) => {
     const specificSearchTerm = createSpecificSearchTerm(suggestion)
-    console.log(`🎯 Autocomplete selected: ${specificSearchTerm}`)
+    console.log(`🎯 Analyzing: ${specificSearchTerm}`)
     performAnalysis(specificSearchTerm)
   }, [performAnalysis])
 

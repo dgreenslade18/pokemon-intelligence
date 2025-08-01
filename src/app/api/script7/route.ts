@@ -227,7 +227,7 @@ function setCachedResult(
   gradingCompany?: string,
   grade?: string
 ): void {
-  // Create a unique cache key that includes search type and grading parameters
+  // Create a unique cache key that includes search type and grading parameters  
   const gradingKey = searchType === 'graded' ? `_${gradingCompany || ''}_${grade || ''}` : ''
   const key = `${cardName.toLowerCase().trim()}_${searchType}${gradingKey}`
   cache.set(key, { data, timestamp: Date.now() })
@@ -447,50 +447,60 @@ export async function analyzeCard(
     const localResults = await pokemonDB.search(cardName, 5)
     
     if (localResults.length > 0) {
-      // Log all found cards for debugging
-      console.log(`🔍 Local search found ${localResults.length} cards:`)
-      localResults.forEach((result, index) => {
-        console.log(`  ${index + 1}. ${result.card.name} (${result.card.number}) from ${result.card.set?.name || 'Unknown Set'}`)
-      })
-      
-      // Try to find exact match by card number if search term contains a specific number
+      // Try to find exact match by checking both set name and card number
       let card = localResults[0].card
       const searchTermUpper = cardName.toUpperCase()
       
-      // Handle "number/total" format first (e.g., "271/264")
+      // Extract set name from search term
+      const setNameMatch = searchTermUpper.match(/\b(CELEBRATIONS|WIZARDS|BASE|JUNGLE|FOSSIL|PROMO|BLACK\s+STAR|SWORD|SHIELD|SCARLET|VIOLET|SUN|MOON|DIAMOND|PEARL|PLATINUM|HEARTGOLD|SOULSILVER|CLASSIC|COLLECTION)\b/)
+      const targetSetName = setNameMatch ? setNameMatch[0] : null
+      
+      // Extract card number
       const numberTotalMatch = searchTermUpper.match(/\b(\d{1,3})\/\d{1,3}\b/)
       let targetNumber: string | null = null
       
       if (numberTotalMatch) {
-        // Extract the card number (before the slash) from "number/total" format
         targetNumber = numberTotalMatch[1]
-        console.log(`🎯 Found number/total format, looking for card number: ${targetNumber}`)
-      } else {
-        // Extract potential card numbers from search term (SWSH284, TG20, SV123, 117, etc.)
-        const cardNumberMatch = searchTermUpper.match(/(SWSH\d+|TG\d+|SV\d+\w*|[A-Z]{2,}\d+\w*|\b\d{1,3}\b)/g)
-        
-        if (cardNumberMatch && cardNumberMatch.length > 0) {
-          targetNumber = cardNumberMatch[cardNumberMatch.length - 1] // Take the last match (most likely the card number)
-          console.log(`🎯 Looking for card number: ${targetNumber}`)
-          console.log(`🔍 All number matches found: ${cardNumberMatch.join(', ')}`)
-        }
       }
       
       if (targetNumber) {
-        const exactMatch = localResults.find(result => 
-          result.card.number.toUpperCase() === targetNumber ||
-          result.card.number === targetNumber
-        )
-        
-        if (exactMatch) {
-          card = exactMatch.card
-          console.log(`✅ Found exact card match: ${card.name} (${card.number}) from ${card.set?.name}`)
-        } else {
-          console.log(`⚠️ No exact match found for ${targetNumber}, using first result: ${card.name} (${card.number})`)
-        }
-      } else {
-        console.log(`📝 No specific card number detected, using first result: ${card.name} (${card.number})`)
-      }
+                 // First try to match both set and number
+         if (targetSetName) {
+           const setAndNumberMatch = localResults.find(result => {
+             const cardSetName = result.card.set?.name?.toUpperCase() || ''
+             const cardNumber = result.card.number
+             // More flexible set name matching
+             const setMatches = cardSetName.includes(targetSetName) || 
+                               targetSetName.includes(cardSetName.split(' ')[0]) || // Match first word
+                               cardSetName.split(' ').some(word => word === targetSetName)
+             return setMatches && 
+                    (cardNumber === targetNumber || cardNumber.toUpperCase() === targetNumber)
+           })
+          
+                     if (setAndNumberMatch) {
+             card = setAndNumberMatch.card
+             console.log(`✅ Found specific card: ${card.name} #${card.number} from ${card.set?.name}`)
+           } else {
+             // Fallback to number-only matching
+             const numberOnlyMatch = localResults.find(result => 
+               result.card.number === targetNumber || result.card.number.toUpperCase() === targetNumber
+             )
+             
+             if (numberOnlyMatch) {
+               card = numberOnlyMatch.card
+             }
+           }
+         } else {
+           // Fallback to number-only matching
+           const numberMatch = localResults.find(result => 
+             result.card.number === targetNumber || result.card.number.toUpperCase() === targetNumber
+           )
+           
+           if (numberMatch) {
+             card = numberMatch.card
+           }
+         }
+       }
       
       cardId = card.id
       specificCardName = `${card.name} ${card.number}` // Use specific card name + number for eBay

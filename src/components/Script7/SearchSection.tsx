@@ -190,6 +190,11 @@ export default function SearchSection({
   const handleSuggestionClick = (suggestion: AutocompleteItem) => {
     let specificSearchTerm = suggestion.name || "";
 
+    // Include set information for better specificity
+    if (suggestion.set) {
+      specificSearchTerm += ` ${suggestion.set}`;
+    }
+
     // Use fullCardNumber (e.g., "117/122") if available, otherwise fall back to regular number
     const cardNumber = suggestion.fullCardNumber || suggestion.number;
     if (cardNumber) {
@@ -202,12 +207,10 @@ export default function SearchSection({
     setShowAutocomplete(false);
     setAutocompleteResults([]);
 
-    console.log(`🎯 Autocomplete selected: ${specificSearchTerm} - Triggering automatic analysis`);
+    console.log(`🎯 Autocomplete selected: ${specificSearchTerm}`);
     
-    // Trigger automatic analysis after a brief delay to ensure state updates
-    setTimeout(() => {
-      onAnalyze();
-    }, 100);
+    // Call the parent's suggestion click handler with the original suggestion
+    onSuggestionClick(suggestion);
   };
 
   return (
