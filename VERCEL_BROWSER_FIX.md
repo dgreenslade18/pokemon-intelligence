@@ -32,9 +32,29 @@ Updated the browser automation setup with a more robust configuration for Vercel
 #### Next.js Config (next.config.js)
 ```javascript
 const nextConfig = {
-  // External packages for serverless functions (required for Puppeteer on Vercel)
-  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
-  // ... other config
+  // Webpack configuration for browser automation packages
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        child_process: false,
+      }
+      config.externals = config.externals || []
+      config.externals.push({
+        '@sparticuz/chromium': 'commonjs @sparticuz/chromium',
+        'puppeteer-core': 'commonjs puppeteer-core',
+      })
+    }
+    return config
+  },
+  experimental: {
+    // External packages for serverless functions (required for Puppeteer on Vercel)
+    serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+    // ... other config
+  }
 }
 ```
 
@@ -42,11 +62,11 @@ const nextConfig = {
 ```json
 {
   "dependencies": {
-    "@sparticuz/chromium": "^123.0.0",
-    "puppeteer-core": "^22.6.2"
+    "@sparticuz/chromium": "^126.0.0",
+    "puppeteer-core": "^23.7.1"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   }
 }
 ```
