@@ -15,9 +15,19 @@ export default function UserHeader() {
   const [showApiStatusModal, setShowApiStatusModal] = useState(false)
   const [showWhatsNewModal, setShowWhatsNewModal] = useState(false)
   const [userLevel, setUserLevel] = useState<'tester' | 'super_admin' | null>(null)
+  const [isClient, setIsClient] = useState(false)
   const router = useRouter()
-  const { theme, toggleTheme } = useTheme()
+  
+  // Safely get theme context with fallback
+  const themeContext = useTheme()
+  const { theme, toggleTheme } = themeContext || { theme: 'dark', toggleTheme: () => {} }
+  
   const { healthStatus, getStatusIcon, getStatusText } = useApiStatus()
+
+  // Ensure we're on the client side before using theme
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // Check user level when session changes
   useEffect(() => {

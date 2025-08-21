@@ -44,11 +44,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     toggleTheme
   }
 
-  // During SSR/build phase, still provide the context but hide the content
+  // During SSR/build phase, still provide the context but don't hide content
   if (!mounted) {
     return (
       <ThemeContext.Provider value={contextValue}>
-        <div style={{ visibility: 'hidden' }}>{children}</div>
+        {children}
       </ThemeContext.Provider>
     )
   }
@@ -63,7 +63,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext)
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider')
+    // Provide a fallback instead of throwing an error
+    console.warn('useTheme must be used within a ThemeProvider. Using default values.')
+    return {
+      theme: 'dark' as Theme,
+      toggleTheme: () => {}
+    }
   }
   return context
 } 

@@ -890,9 +890,10 @@ async function searchEbaySoldItems(
       return cached.data
     }
     
-    // Reduced delay for faster searches
+    // Add random delay to avoid bot detection patterns
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-    await delay(500) // Reduced from 1000ms to 500ms
+    const randomDelay = 1000 + Math.random() * 2000 // Random delay between 1-3 seconds
+    await delay(randomDelay)
     
     // Try scraping first (faster than browser automation)
     let scrapingResults = await searchEbayWithScraping(cardName, cardDetails, extendedTimeRange, searchType, gradingCompany, grade)
@@ -1220,12 +1221,38 @@ async function searchEbayWithScraping(
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 15000) // Reduced from 30000ms to 15000ms (15 seconds)
         
-        const response = await fetch(url, {
+        // Enhanced anti-bot headers and proxy support
+        const requestOptions: any = {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0',
+            'DNT': '1'
           },
           signal: controller.signal
-        })
+        }
+
+        // Add proxy support if configured
+        const proxyUrls = process.env.PROXY_URLS
+        if (proxyUrls) {
+          const proxies = proxyUrls.split(',').map(p => p.trim())
+          const randomProxy = proxies[Math.floor(Math.random() * proxies.length)]
+          console.log(`🔗 Using proxy: ${randomProxy.replace(/\/\/.*?@/, '//***:***@')}`)
+          
+          // Parse proxy URL for fetch agent configuration
+          const ProxyAgent = require('https-proxy-agent').HttpsProxyAgent
+          requestOptions.agent = new ProxyAgent(randomProxy)
+        }
+
+        const response = await fetch(url, requestOptions)
         
         clearTimeout(timeoutId)
 
@@ -1243,8 +1270,13 @@ async function searchEbayWithScraping(
         console.log(`🔍 [${periodName}] HTML preview: ${html.substring(0, 500)}...`)
         
         // Check for bot detection
-        if (html.includes('Pardon our interruption') || html.includes('Checking your browser') || html.length < 1000) {
-          console.log(`🚫 [${periodName}] Bot detection detected or empty page`)
+        if (html.includes('Pardon our interruption') || 
+            html.includes('Checking your browser') || 
+            html.includes('Reference ID:') ||
+            html.includes('challenge-') ||
+            html.length < 1000) {
+          console.log(`🚫 [${periodName}] Bot detection detected or empty page (length: ${html.length})`)
+          console.log(`🚫 [${periodName}] HTML preview: ${html.substring(0, 200)}...`)
           return { periodName, items: [] }
         }
         
